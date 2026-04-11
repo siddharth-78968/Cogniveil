@@ -89,7 +89,7 @@ const Level3MRI = () => {
   };
 
   return (
-    <div style={styles.page}>
+  <div style={styles.page} data-analysing={analysing}>
       <div style={styles.bgGlow1} />
       <div style={styles.bgGrid} />
 
