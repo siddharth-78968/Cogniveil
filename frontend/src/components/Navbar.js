@@ -1,4 +1,4 @@
-
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,43 +6,41 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+    setMenuOpen(false);
   };
 
   const isActive = (path) => location.pathname === path;
 
+  const navLinks = [
+    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/tests', label: 'Daily Tests', icon: '🧪' },
+    { path: '/voice', label: 'Voice Journal', icon: '🎙️' },
+    { path: '/level2', label: 'Level 2', icon: '🔬' },
+    { path: '/level3', label: 'Level 3 MRI', icon: '🧠' },
+  ];
+
   return (
     <nav style={styles.nav}>
       <div style={styles.inner}>
-        {/* Logo */}
-        <div style={styles.logo} onClick={() => navigate('/')} >
+        <div style={styles.logo} onClick={() => { navigate('/'); setMenuOpen(false); }}>
           <span style={styles.logoBrain}>🧠</span>
           <span style={styles.logoText}>CogniVeil</span>
         </div>
 
-        {/* Links */}
+        {/* Desktop links */}
         {user && (
-          <div style={styles.links}>
-            {[
-              { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-              { path: '/tests', label: 'Daily Tests', icon: '🧪' },
-              { path: '/voice', label: 'Voice Journal', icon: '🎙️' },
-              { path: '/level2', label: 'Level 2', icon: '🔬' },
-              { path: '/level3', label: 'Level 3 MRI', icon: '🧠' },
-            ].map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                style={{
-                  ...styles.link,
-                  color: isActive(item.path) ? '#00d4aa' : '#ffffff50',
-                  borderBottom: isActive(item.path) ? '2px solid #00d4aa' : '2px solid transparent',
-                }}
-              >
+          <div className="desktop-links" style={styles.links}>
+            {navLinks.map((item) => (
+              <Link key={item.path} to={item.path} style={{
+                ...styles.link,
+                color: isActive(item.path) ? '#00d4aa' : '#ffffff50',
+                borderBottom: isActive(item.path) ? '2px solid #00d4aa' : '2px solid transparent',
+              }}>
                 <span style={styles.linkIcon}>{item.icon}</span>
                 {item.label}
               </Link>
@@ -50,19 +48,15 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* Right side */}
-        <div style={styles.right}>
+        {/* Desktop right */}
+        <div className="desktop-links" style={styles.right}>
           {user ? (
             <>
               <div style={styles.userBadge}>
-                <div style={styles.userAvatar}>
-                  {user.email[0].toUpperCase()}
-                </div>
+                <div style={styles.userAvatar}>{user.email[0].toUpperCase()}</div>
                 <span style={styles.userEmail}>{user.email.split('@')[0]}</span>
               </div>
-              <button onClick={handleLogout} style={styles.logoutBtn}>
-                Sign Out
-              </button>
+              <button onClick={handleLogout} style={styles.logoutBtn}>Sign Out</button>
             </>
           ) : (
             <>
@@ -71,12 +65,54 @@ const Navbar = () => {
             </>
           )}
         </div>
+
+        {/* Mobile hamburger */}
+        <button className="hamburger-btn" style={styles.hamburger} onClick={() => setMenuOpen(!menuOpen)}>
+          {menuOpen ? '✕' : '☰'}
+        </button>
       </div>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div style={styles.mobileMenu}>
+          {user ? (
+            <>
+              {navLinks.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  style={{
+                    ...styles.mobileLink,
+                    color: isActive(item.path) ? '#00d4aa' : 'white',
+                    backgroundColor: isActive(item.path) ? '#00d4aa10' : 'transparent',
+                  }}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span>{item.icon}</span> {item.label}
+                </Link>
+              ))}
+              <button onClick={handleLogout} style={styles.mobileLogout}>Sign Out</button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" style={styles.mobileLink} onClick={() => setMenuOpen(false)}>Sign In</Link>
+              <Link to="/register" style={{ ...styles.mobileLink, color: '#00d4aa' }} onClick={() => setMenuOpen(false)}>Get Started</Link>
+            </>
+          )}
+        </div>
+      )}
 
       <style>{`
         @keyframes navFade {
           from { opacity: 0; transform: translateY(-8px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 768px) {
+          .desktop-links { display: none !important; }
+          .hamburger-btn { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .hamburger-btn { display: none !important; }
         }
       `}</style>
     </nav>
@@ -96,19 +132,18 @@ const styles = {
   inner: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '0 2rem',
+    padding: '0 1rem',
     height: '60px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '2rem',
+    gap: '1rem',
   },
   logo: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
     cursor: 'pointer',
-    textDecoration: 'none',
     flexShrink: 0,
   },
   logoBrain: { fontSize: '1.4rem' },
@@ -130,10 +165,10 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.4rem',
-    padding: '0 1rem',
+    padding: '0 0.75rem',
     height: '60px',
     textDecoration: 'none',
-    fontSize: '0.88rem',
+    fontSize: '0.82rem',
     fontWeight: '500',
     fontFamily: "'Segoe UI', sans-serif",
     transition: 'color 0.2s',
@@ -143,7 +178,7 @@ const styles = {
   right: {
     display: 'flex',
     alignItems: 'center',
-    gap: '1rem',
+    gap: '0.75rem',
     flexShrink: 0,
   },
   userBadge: {
@@ -179,7 +214,6 @@ const styles = {
     fontSize: '0.82rem',
     cursor: 'pointer',
     fontFamily: "'Segoe UI', sans-serif",
-    transition: 'all 0.2s',
   },
   loginLink: {
     color: '#ffffff50',
@@ -195,6 +229,44 @@ const styles = {
     fontWeight: '700',
     padding: '0.45rem 1rem',
     borderRadius: '8px',
+    fontFamily: "'Segoe UI', sans-serif",
+  },
+  hamburger: {
+    background: 'none',
+    border: 'none',
+    color: 'white',
+    fontSize: '1.4rem',
+    cursor: 'pointer',
+    padding: '0.25rem',
+    flexShrink: 0,
+  },
+  mobileMenu: {
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: '#0d1117',
+    borderTop: '1px solid #ffffff08',
+    padding: '0.5rem 0',
+  },
+  mobileLink: {
+    padding: '0.9rem 1.5rem',
+    textDecoration: 'none',
+    color: 'white',
+    fontSize: '0.95rem',
+    fontFamily: "'Segoe UI', sans-serif",
+    borderBottom: '1px solid #ffffff05',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  mobileLogout: {
+    margin: '0.5rem 1rem',
+    backgroundColor: '#ef444415',
+    color: '#ef4444',
+    border: '1px solid #ef444430',
+    borderRadius: '8px',
+    padding: '0.75rem',
+    fontSize: '0.9rem',
+    cursor: 'pointer',
     fontFamily: "'Segoe UI', sans-serif",
   },
 };
