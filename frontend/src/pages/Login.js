@@ -34,7 +34,7 @@ const Login = () => {
 
       <div style={styles.wrapper}>
         {/* Left panel */}
-        <div style={styles.leftPanel}>
+        <div className="left-panel" style={styles.leftPanel}>
           <div style={styles.brandRow}>
             <span style={styles.brandIcon}>🧠</span>
             <span style={styles.brandName}>CogniVeil</span>
@@ -70,7 +70,7 @@ const Login = () => {
         </div>
 
         {/* Right panel — form */}
-        <div style={styles.formPanel}>
+        <div className="form-panel" style={styles.formPanel}>
           <p style={styles.formLabel}>SIGN IN</p>
           <h2 style={styles.formTitle}>Welcome back</h2>
           <p style={styles.formSub}>Continue monitoring your cognitive health</p>
@@ -154,6 +154,7 @@ const Login = () => {
         </div>
       </div>
 
+
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(16px); }
@@ -163,10 +164,14 @@ const Login = () => {
           0%, 100% { opacity: 0.4; }
           50% { opacity: 0.7; }
         }
-        input:focus {
+input:focus {
           outline: none !important;
           border-color: #00d4aa55 !important;
           box-shadow: 0 0 0 3px rgba(0,212,170,0.1) !important;
+        }
+        @media (max-width: 640px) {
+          .left-panel { display: none !important; }
+          .form-panel { width: 100% !important; }
         }
       `}</style>
     </div>
@@ -214,7 +219,7 @@ const styles = {
     backgroundSize: '40px 40px',
     pointerEvents: 'none',
   },
-  wrapper: {
+ wrapper: {
     display: 'flex',
     width: '100%',
     maxWidth: '1000px',
@@ -225,11 +230,13 @@ const styles = {
     position: 'relative',
     zIndex: 1,
     animation: 'fadeUp 0.6s ease',
+    flexWrap: 'wrap',
   },
-  leftPanel: {
+leftPanel: {
     flex: 1,
+    minWidth: '280px',
     backgroundColor: '#0d1117',
-    padding: '3rem',
+    padding: '2rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '1.5rem',
@@ -305,13 +312,15 @@ const styles = {
     alignItems: 'center',
     gap: '0.5rem',
   },
-  formPanel: {
+formPanel: {
     width: '380px',
     backgroundColor: '#080c14',
-    padding: '3rem',
+    padding: '2rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem',
+    minWidth: '280px',
+    flex: 1,
   },
   formLabel: {
     color: '#ffffff25',
