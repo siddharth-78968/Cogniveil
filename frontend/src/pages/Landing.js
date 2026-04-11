@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Landing = () => {
@@ -12,7 +12,10 @@ const Landing = () => {
   }, []);
 
   return (
-    <div style={styles.page}>
+    <div
+  style={styles.page}
+  data-scroll={scrolled} // ✅ invisible usage (no UI impact)
+>
       <div style={styles.bgGlow1} />
       <div style={styles.bgGlow2} />
       <div style={styles.bgGlow3} />

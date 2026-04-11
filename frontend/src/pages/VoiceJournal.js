@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveTestResult } from '../utils/api';
 
@@ -16,18 +16,17 @@ const VoiceJournal = () => {
   const timerInterval = useRef(null);
   const timerRef = useRef(0);
 
-  const prompts = [
-    "Describe what you did this morning in as much detail as you can.",
-    "Tell me about a memorable trip or vacation you took.",
-    "Describe your favourite meal and how it is prepared.",
-    "Talk about a person who has been important in your life.",
-    "Describe the neighbourhood or area where you grew up.",
-  ];
-
+const prompts = useMemo(() => [
+  "Describe what you did this morning in as much detail as you can.",
+  "Tell me about a memorable trip or vacation you took.",
+  "Describe your favourite meal and how it is prepared.",
+  "Talk about a person who has been important in your life.",
+  "Describe the neighbourhood or area where you grew up.",
+], []);
   useEffect(() => {
     const random = prompts[Math.floor(Math.random() * prompts.length)];
     setPrompt(random);
-  }, []);
+  }, [prompts]);
 
   const startRecording = async () => {
     try {
