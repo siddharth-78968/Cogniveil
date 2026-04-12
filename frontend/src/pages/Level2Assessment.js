@@ -43,12 +43,19 @@ const [form, setForm] = useState({
 
 const handleSubmit = async () => {
   setLoading(true);
+  
+  // Convert CogniScore (0-100) to MMSE scale (0-30) for the model
+  const modelForm = {
+    ...form,
+    CognitiveScore: Math.round((form.CognitiveScore / 100) * 30),
+  };
+  
   let attempts = 0;
   while (attempts < 3) {
     try {
       const res = await axios.post(
         'https://cogniveil-backend.onrender.com/predict/level2',
-        form,
+        modelForm,
         { 
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           timeout: 30000
