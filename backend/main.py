@@ -125,3 +125,53 @@ def level2_predict(data: dict, current_user: models.User = Depends(auth.get_curr
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@app.get("/setup-demo")
+def setup_demo(db: Session = Depends(get_db)):
+    import hashlib, random
+    from datetime import datetime, date, timedelta
+    
+    def hash_pw(p): return hashlib.sha256(p.encode()).hexdigest()
+    
+    def make_user(name, email, age):
+        existing = db.query(models.User).filter(models.User.email == email).first()
+        if existing: return existing
+        u = models.User(name=name, email=email, hashed_password=hash_pw("demo1234"), age=age, is_caregiver=False)
+        db.add(u); db.commit(); db.refresh(u)
+        return u
+    
+    def seed_scores(uid, base, trend):
+        for i in range(14):
+            d = datetime.now() - timedelta(days=(14-i))
+            s = max(0, min(100, base + trend*i + random.uniform(-3,3)))
+            db.add(models.CogniScore(user_id=uid, score=round(s,2), active_score=round(s+random.uniform(-5,5),2), passive_score=round(s+random.uniform(-5,5),2), risk_level="Low" if s>=75 else "Moderate" if s>=50 else "High", created_at=d))
+        db.commit()
+    
+    def seed_tests(uid, base):
+        for i in range(14):
+            d = datetime.now() - timedelta(days=(14-i))
+            for tt in ['pattern_recall','digit_span','word_recall','voice_journal']:
+                db.add(models.TestResult(user_id=uid, test_type=tt, score=round(max(0,min(100,base+random.uniform(-8,8))),2), duration_seconds=60, created_at=d))
+        db.commit()
+    
+    def seed_signals(uid, typing_base, backspace_base):
+        for i in range(14):
+            d = datetime.now() - timedelta(days=(14-i))
+            db.add(models.PassiveSignal(user_id=uid, typing_speed=round(typing_base+random.uniform(-5,5),2), backspace_rate=round(backspace_base+random.uniform(-0.02,0.02),2), scroll_hesitation=round(random.uniform(0,3),2), session_duration=300, created_at=d))
+        db.commit()
+    
+    p1 = make_user("Arjun Sharma", "arjun@demo.com", 68)
+    seed_scores(p1.id, 85, 0.2)
+    seed_tests(p1.id, 85)
+    seed_signals(p1.id, 80, 0.05)
+    
+    p2 = make_user("Meena Krishnan", "meena@demo.com", 72)
+    seed_scores(p2.id, 68, -1.2)
+    seed_tests(p2.id, 60)
+    seed_signals(p2.id, 60, 0.12)
+    
+    p3 = make_user("Rajan Pillai", "rajan@demo.com", 78)
+    seed_scores(p3.id, 32, -0.8)
+    seed_tests(p3.id, 30)
+    seed_signals(p3.id, 35, 0.25)
+    
+    return {"status": "Demo users seeded successfully!"}

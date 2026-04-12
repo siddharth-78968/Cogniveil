@@ -623,7 +623,7 @@ const Tests = () => {
             <div style={{ ...styles.progressBarInner, width: `${(completed.length / tests.length) * 100}%` }} />
           </div>
 
-          <div style={styles.testGrid}>
+          <div className="test-grid" style={styles.testGrid}>
             {tests.map((test, i) => {
               const isDone = completed.includes(test.id);
               return (
@@ -677,14 +677,23 @@ const Tests = () => {
         </div>
       )}
 
-      <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes glow { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
-        input:focus { outline: none !important; border-color: #00d4aa55 !important; box-shadow: 0 0 0 3px rgba(0,212,170,0.1) !important; }
-      `}</style>
+<style>{`
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes glow { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
+  input:focus { outline: none !important; border-color: #00d4aa55 !important; box-shadow: 0 0 0 3px rgba(0,212,170,0.1) !important; }
+  @media (max-width: 640px) {
+    .test-grid { grid-template-columns: 1fr !important; }
+    .test-box { padding: 1.5rem 1rem !important; }
+    .cell-grid { grid-template-columns: repeat(4, 52px) !important; gap: 6px !important; }
+    .digit-row { gap: 0.5rem !important; }
+    .digit-item { font-size: 2rem !important; min-width: 45px !important; padding: 0.4rem 0.6rem !important; }
+    .action-btn { padding: 0.75rem 1.5rem !important; }
+    .done-screen { padding: 1rem !important; }
+  }
+`}</style>
     </div>
   );
 };
