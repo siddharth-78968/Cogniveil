@@ -266,8 +266,8 @@ const inputStyle = {
       {fieldGroup('Depression Level', 'Depression_Status', 'select', ['No', 'Mild', 'Moderate', 'Severe'])}
       {fieldGroup('Sleep Quality', 'Sleep_Quality', 'select', ['Good', 'Fair', 'Poor'])}
       <div style={styles.field}>
-  <label style={styles.label}>Cognitive Test Score (0-30)</label>
-  <input type="number" style={inputStyle} value={form['CognitiveScore']} min={0} max={30} onChange={e => update('CognitiveScore', parseFloat(e.target.value))} />
+<label style={styles.label}>CogniScore (0-100)</label>
+  <input type="number" style={inputStyle} value={form['CognitiveScore']} min={0} max={100} onChange={e => update('CognitiveScore', parseFloat(e.target.value))} />
   <span style={styles.hint}>Your CogniScore from the dashboard (0-100). If unknown, enter 50.</span>
 </div>
     </div>
