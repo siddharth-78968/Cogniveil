@@ -105,9 +105,9 @@ def calculate_score(db: Session = Depends(get_db), current_user: models.User = D
 
     final_score = (active_score * 0.8) + (passive_score * 0.2)
 
-    if final_score >= 75:
+    if final_score >= 65:
         risk = "Low"
-    elif final_score >= 50:
+    elif final_score >= 40:
         risk = "Moderate"
     else:
         risk = "High"
