@@ -25,7 +25,7 @@ const [form, setForm] = useState({
     Hypertension: 'No',
     CholesterolLevel: 'Normal',
     Family_History: 'No',
-    CognitiveScore: 25,
+    CognitiveScore: 50,
     Depression_Status: 'No',
     Sleep_Quality: 'Good',
     Nutrition_Diet: 'Balanced',
@@ -41,21 +41,32 @@ const [form, setForm] = useState({
 
   const update = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
 
-  const handleSubmit = async () => {
-    setLoading(true);
+const handleSubmit = async () => {
+  setLoading(true);
+  let attempts = 0;
+  while (attempts < 3) {
     try {
       const res = await axios.post(
-        'http://localhost:8000/predict/level2',
+        'https://cogniveil-backend.onrender.com/predict/level2',
         form,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          timeout: 30000
+        }
       );
       setResult(res.data);
-    } catch (err) {
-      alert('Server is waking up (free tier). Please wait 30 seconds and try again.');
-    } finally {
       setLoading(false);
+      return;
+    } catch (err) {
+      attempts++;
+      if (attempts < 3) {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
     }
-  };
+  }
+  setLoading(false);
+  alert('Prediction failed. Please try again in 30 seconds.');
+};
 
   const getRiskColor = (risk) => {
     if (risk === 'Low') return '#00d4aa';
