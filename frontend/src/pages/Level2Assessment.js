@@ -63,16 +63,16 @@ const [form, setForm] = useState({
     return '#ef4444';
   };
 
-  const inputStyle = {
-    backgroundColor: '#0d1117',
-    border: '1px solid #ffffff15',
-    borderRadius: '8px',
-    padding: '0.6rem 0.9rem',
-    color: 'white',
-    fontSize: '0.9rem',
-    width: '100%',
-    boxSizing: 'border-box',
-  };
+const inputStyle = {
+  backgroundColor: '#0d1117',
+  border: '1px solid #ffffff12',
+  borderRadius: '10px',
+  padding: '0.75rem 1rem',
+  color: 'white',
+  fontSize: '0.95rem',
+  width: '100%',
+  boxSizing: 'border-box',
+};
 
   const selectStyle = { ...inputStyle };
 
