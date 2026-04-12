@@ -51,7 +51,7 @@ const [form, setForm] = useState({
       );
       setResult(res.data);
     } catch (err) {
-      alert('Prediction failed. Please try again.');
+      alert('Server is waking up (free tier). Please wait 30 seconds and try again.');
     } finally {
       setLoading(false);
     }

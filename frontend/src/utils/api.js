@@ -35,3 +35,5 @@ export const calculateScore = () => API.post('/score/calculate');
 export const saveSignal = (data) => API.post('/signals', data);
 export const saveTestResult = (data) => API.post('/tests', data);
 export const getTodaySignals = () => API.get('/signals/today');
+// Keep Render backend alive
+export const pingBackend = () => API.get('/');

@@ -11,6 +11,7 @@ import Landing from './pages/Landing';
 import Level2Assessment from './pages/Level2Assessment';
 import Level3MRI from './pages/Level3MRI';
 import VoiceJournal from './pages/VoiceJournal';
+import { pingBackend } from './utils/api';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -20,6 +21,11 @@ const ProtectedRoute = ({ children }) => {
 
 const AppContent = () => {
   const { user } = useAuth();
+
+  React.useEffect(() => {
+    pingBackend().catch(() => {});
+  }, []);
+
   return (
     <>
       <Navbar />
@@ -39,10 +45,10 @@ const AppContent = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/level2" element={
           <ProtectedRoute><Level2Assessment /></ProtectedRoute>
-          } />
+        } />
         <Route path="/level3" element={
           <ProtectedRoute><Level3MRI /></ProtectedRoute>
-          } />
+        } />
       </Routes>
     </>
   );
