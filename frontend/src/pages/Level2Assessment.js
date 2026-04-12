@@ -191,7 +191,7 @@ const inputStyle = {
           <label style={styles.label}>Height (cm)</label>
           <input
             type="number"
-            style={inputStyle}
+            style={{ ...inputStyle, fontSize: '1rem', padding: '0.9rem', width: '100%' }}
             value={bmiHeight}
             onChange={e => setBmiHeight(e.target.value)}
             placeholder="e.g. 170"
@@ -201,7 +201,7 @@ const inputStyle = {
           <label style={styles.label}>Weight (kg)</label>
           <input
             type="number"
-            style={inputStyle}
+            style={{ ...inputStyle, fontSize: '1rem', padding: '0.9rem', width: '100%' }}
             value={bmiWeight}
             onChange={e => setBmiWeight(e.target.value)}
             placeholder="e.g. 70"
@@ -517,6 +517,8 @@ bmiPopup: {
   borderRadius: '14px',
   padding: '1.25rem',
   marginTop: '0.75rem',
+  width: '100%',
+  boxSizing: 'border-box',
 },
 bmiPopupTitle: {
   color: 'white',
