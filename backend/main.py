@@ -140,6 +140,10 @@ def setup_demo(db: Session = Depends(get_db)):
         return u
     
     def seed_scores(uid, base, trend):
+        db.query(models.CogniScore).filter(models.CogniScore.user_id == uid).delete()
+        db.query(models.TestResult).filter(models.TestResult.user_id == uid).delete()
+        db.query(models.PassiveSignal).filter(models.PassiveSignal.user_id == uid).delete()
+        db.commit()
         for i in range(14):
             d = datetime.now() - timedelta(days=(14-i))
             s = max(0, min(100, base + trend*i + random.uniform(-3,3)))
