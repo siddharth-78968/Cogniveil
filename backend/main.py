@@ -103,7 +103,7 @@ def calculate_score(db: Session = Depends(get_db), current_user: models.User = D
         avg_backspace = sum(s.backspace_rate for s in signals) / len(signals)
         passive_score = max(0, min(100, avg_typing - (avg_backspace * 10)))
 
-    final_score = (active_score * 0.6) + (passive_score * 0.4)
+    final_score = (active_score * 0.8) + (passive_score * 0.2)
 
     if final_score >= 75:
         risk = "Low"
