@@ -550,7 +550,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div style={styles.mainGrid}>
+<div className="main-grid" style={styles.mainGrid}>
 
         <div style={{ ...styles.scoreCard, boxShadow: score ? getRiskGlow(score.risk_level) : 'none' }}>
           <p style={styles.cardLabel}>COGNISCORE</p>
@@ -676,7 +676,7 @@ const Dashboard = () => {
             )}
           </div>
 
-          <div style={styles.featureGrid}>
+<div className="feature-grid" style={styles.featureGrid}>
             {(() => {
               const cards = [
                 {
@@ -734,17 +734,26 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <style>{`
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes blobFloat { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -20px) scale(1.05); } }
-        .export-btn-hover:hover { background: #1a2a3a !important; border-color: #00d4aa88 !important; color: #00d4aa !important; }
-      `}</style>
+<style>{`
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes blobFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(30px, -20px) scale(1.05); }
+  }
+  @media (max-width: 640px) {
+    .feature-grid { grid-template-columns: 1fr !important; }
+    .main-grid { flex-direction: column !important; }
+  }
+`}</style>
     </div>
   );
 };
 
 const styles = {
-  page: { minHeight: '100vh', backgroundColor: '#080c14', padding: '2rem', position: 'relative', overflow: 'hidden', fontFamily: "'Segoe UI', sans-serif" },
+  page: { minHeight: '100vh', backgroundColor: '#080c14', padding: '1rem', position: 'relative', overflow: 'hidden', fontFamily: "'Segoe UI', sans-serif" },
   blob1: { position: 'fixed', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,170,0.06) 0%, transparent 70%)', top: '-100px', left: '-100px', pointerEvents: 'none', animation: 'blobFloat 8s ease-in-out infinite' },
   blob2: { position: 'fixed', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.06) 0%, transparent 70%)', bottom: '-100px', right: '-100px', pointerEvents: 'none', animation: 'blobFloat 10s ease-in-out infinite reverse' },
   loadingScreen: { minHeight: '100vh', backgroundColor: '#080c14', display: 'flex', alignItems: 'center', justifyContent: 'center' },
