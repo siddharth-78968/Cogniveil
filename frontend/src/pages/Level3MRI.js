@@ -33,7 +33,7 @@ const Level3MRI = () => {
     setTimeout(() => {
       // Simulated EfficientNet output
       // In production: runs mri_dementia_model.keras
-      const rand = (image.size % 100) / 100;
+      const rand = ((image.size % 97) + (image.name.length % 31)) / 100;
       let predicted, probs;
 
       if (rand < 0.35) {

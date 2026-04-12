@@ -39,7 +39,7 @@ const Register = () => {
 
       <div style={styles.wrapper}>
         {/* Left panel */}
-        <div style={styles.leftPanel}>
+        <div className="reg-left" style={styles.leftPanel}>
           <div style={styles.brandRow}>
             <span style={styles.brandIcon}>🧠</span>
             <span style={styles.brandName}>CogniVeil</span>
@@ -68,7 +68,7 @@ const Register = () => {
         </div>
 
         {/* Right panel */}
-        <div style={styles.formPanel}>
+        <div className="reg-right" style={styles.formPanel}>
           <p style={styles.formLabel}>GET STARTED</p>
           <h2 style={styles.formTitle}>Create account</h2>
           <p style={styles.formSub}>Free forever. No credit card required.</p>
@@ -166,21 +166,25 @@ const Register = () => {
         </div>
       </div>
 
-      <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes glow {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.7; }
-        }
-        input:focus {
-          outline: none !important;
-          border-color: #00d4aa55 !important;
-          box-shadow: 0 0 0 3px rgba(0,212,170,0.1) !important;
-        }
-      `}</style>
+<style>{`
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes glow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+  input:focus {
+    outline: none !important;
+    border-color: #a78bfa55 !important;
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.1) !important;
+  }
+  @media (max-width: 640px) {
+    .reg-left { display: none !important; }
+    .reg-right { width: 100% !important; min-width: unset !important; padding: 2rem 1.25rem !important; }
+  }
+`}</style>
     </div>
   );
 };
