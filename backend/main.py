@@ -164,8 +164,8 @@ def setup_demo(db: Session = Depends(get_db)):
         db.commit()
     
     p1 = make_user("Arjun Sharma", "arjun@demo.com", 68)
-    seed_scores(p1.id, 85, 0.2)
-    seed_tests(p1.id, 85)
+    seed_scores(p1.id, 88, 0.3)
+    seed_tests(p1.id, 92)
     seed_signals(p1.id, 95, 0.01)
     
     p2 = make_user("Meena Krishnan", "meena@demo.com", 72)
