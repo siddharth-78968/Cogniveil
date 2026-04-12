@@ -540,7 +540,14 @@ const ReactionTimeTest = ({ onComplete }) => {
 const Tests = () => {
   const navigate = useNavigate();
   const [activeTest, setActiveTest] = useState(null);
-  const [completed, setCompleted] = useState([]);
+const sessionKey = `testSession_${localStorage.getItem('userEmail') || 'default'}_${new Date().toDateString()}`;
+
+const [completed, setCompleted] = useState(() => {
+  try {
+    const saved = localStorage.getItem(sessionKey);
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+});
   const [allDone, setAllDone] = useState(false);
   const [alreadyDone, setAlreadyDone] = useState(false);
 

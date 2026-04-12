@@ -157,23 +157,23 @@ const inputStyle = {
       {fieldGroup('Country', 'Country', 'select', ['India', 'USA', 'UK', 'Canada', 'Australia', 'Other'])}
       <div style={styles.field}>
   <label style={styles.label}>BMI</label>
-  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-    <input
-      type="number"
-      style={{ ...inputStyle, flex: 1 }}
-      value={form['BMI']}
-      min={10} max={50}
-      onChange={e => update('BMI', parseFloat(e.target.value))}
-      placeholder="e.g. 22.5"
-    />
-    <button
-      type="button"
-      style={styles.calcBtn}
-      onClick={() => setShowBMICalc(true)}
-    >
-      Calculate →
-    </button>
-  </div>
+<div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+  <input
+    type="number"
+    style={{ ...inputStyle }}
+    value={form['BMI']}
+    min={10} max={50}
+    onChange={e => update('BMI', parseFloat(e.target.value))}
+    placeholder="e.g. 22.5"
+  />
+  <button
+    type="button"
+    style={styles.calcBtn}
+    onClick={() => setShowBMICalc(true)}
+  >
+    🧮 Calculate BMI →
+  </button>
+</div>
   <span style={styles.hint}>Body Mass Index. Click Calculate if you don't know it.</span>
 
   {showBMICalc && (
