@@ -540,11 +540,14 @@ const ReactionTimeTest = ({ onComplete }) => {
 const Tests = () => {
   const navigate = useNavigate();
   const [activeTest, setActiveTest] = useState(null);
-const sessionKey = `testSession_${localStorage.getItem('userEmail') || 'default'}_${new Date().toDateString()}`;
+const userEmail = localStorage.getItem('userEmail') || 'default';
+const today = new Date().toDateString();
+const sessionKey = `testSession_${userEmail}_${today}`;
 
 const [completed, setCompleted] = useState(() => {
   try {
-    const saved = localStorage.getItem(sessionKey);
+    const key = `testSession_${localStorage.getItem('userEmail') || 'default'}_${new Date().toDateString()}`;
+    const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   } catch { return []; }
 });
@@ -565,6 +568,7 @@ const [completed, setCompleted] = useState(() => {
     catch (err) { console.log('Could not save'); }
     const newCompleted = [...completed, testId];
     setCompleted(newCompleted);
+localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
     if (newCompleted.length === tests.length) {
       try { await calculateScore(); } catch (err) { }
       const userEmail = localStorage.getItem('userEmail') || 'default';
