@@ -388,7 +388,14 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     const userEmail = localStorage.getItem('userEmail') || 'default';
-    const testsDoneToday = localStorage.getItem(`lastTestDate_${userEmail}`) === new Date().toDateString();
+const sessionKey = `testSession_${userEmail}_${new Date().toDateString()}`;
+const completedTests = (() => {
+  try {
+    const saved = localStorage.getItem(sessionKey);
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+})();
+const testsDoneToday = completedTests.length === 5;
     if (testsDoneToday) updateStreak(userEmail);
     setStreak(getStreak(userEmail));
 
@@ -477,9 +484,16 @@ const Dashboard = () => {
     </div>
   );
 
-  const userEmail = localStorage.getItem('userEmail') || 'default';
-  const testsDoneToday = localStorage.getItem(`lastTestDate_${userEmail}`) === new Date().toDateString();
-  const interpretation = getInterpretation(score);
+const userEmail = localStorage.getItem('userEmail') || 'default';
+const sessionKey = `testSession_${userEmail}_${new Date().toDateString()}`;
+const completedTests = (() => {
+  try {
+    const saved = localStorage.getItem(sessionKey);
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+})();
+const testsDoneToday = completedTests.length === 5;
+const interpretation = getInterpretation(score);
 
   return (
     <div style={styles.page}>
@@ -681,7 +695,7 @@ const Dashboard = () => {
               const cards = [
                 {
                   icon: '🧪', label: 'Active Testing', color: '#00d4aa', path: '/tests',
-                  status: testsDoneToday ? '✅ Done today' : '0 / 5 complete',
+                  status: testsDoneToday ? '✅ Done today' : `${completedTests.length} / 5 complete`,
                   statusColor: testsDoneToday ? '#00d4aa' : '#ffffff40',
                   desc: testsDoneToday ? 'Come back tomorrow' : 'Tap to start daily tests',
                   badge: testsDoneToday ? null : 'DUE',
