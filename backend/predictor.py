@@ -1,6 +1,8 @@
 from catboost import CatBoostClassifier, Pool
 import joblib
 import pandas as pd
+import shap
+import numpy as np
 
 csv_model = CatBoostClassifier()
 csv_model.load_model("catboost_alzheimers_model.cbm")
@@ -19,9 +21,37 @@ MODEL_COLUMNS = [
 ]
 
 CAT_INDICES = [0, 2, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
-
 CAT_COLUMNS = [MODEL_COLUMNS[i] for i in CAT_INDICES]
 NUM_COLUMNS = [col for col in MODEL_COLUMNS if col not in CAT_COLUMNS]
+
+FRIENDLY_NAMES = {
+    'Country': 'Country',
+    'Age': 'Age',
+    'Gender': 'Gender',
+    'Education Level': 'Education Level',
+    'BMI': 'BMI',
+    'Physical Activity Level': 'Physical Activity',
+    'Smoking Status': 'Smoking Status',
+    'Alcohol Consumption': 'Alcohol Consumption',
+    'Diabetes': 'Diabetes',
+    'Hypertension': 'Hypertension',
+    'Cholesterol Level': 'Cholesterol Level',
+    "Family History of Alzheimer's": "Family History",
+    'Cognitive Test Score': 'Cognitive Score',
+    'Depression Level': 'Depression Level',
+    'Sleep Quality': 'Sleep Quality',
+    'Dietary Habits': 'Dietary Habits',
+    'Air Pollution Exposure': 'Air Pollution',
+    'Employment Status': 'Employment Status',
+    'Marital Status': 'Marital Status',
+    'Genetic Risk Factor (APOE-4 allele)': 'APOE-ε4 Gene',
+    'Social Engagement Level': 'Social Engagement',
+    'Income Level': 'Income Level',
+    'Stress Levels': 'Stress Levels',
+    'Urban vs Rural Living': 'Urban vs Rural',
+}
+
+explainer = shap.TreeExplainer(csv_model)
 
 def predict_level2(patient_dict):
     mapped = {
@@ -56,7 +86,6 @@ def predict_level2(patient_dict):
 
     for col in NUM_COLUMNS:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-
     for col in CAT_COLUMNS:
         df[col] = df[col].astype(str)
 
@@ -71,8 +100,27 @@ def predict_level2(patient_dict):
     else:
         risk = "High"
 
+    # SHAP explanation
+    shap_values = explainer.shap_values(df)
+    if isinstance(shap_values, list):
+        sv = shap_values[1][0]
+    else:
+        sv = shap_values[0]
+
+    feature_contributions = []
+    for i, col in enumerate(MODEL_COLUMNS):
+        feature_contributions.append({
+            "feature": FRIENDLY_NAMES.get(col, col),
+            "value": float(sv[i]),
+            "input": str(df[col].iloc[0])
+        })
+
+    feature_contributions.sort(key=lambda x: abs(x["value"]), reverse=True)
+    top_features = feature_contributions[:8]
+
     return {
         "probability": round(float(prob), 3),
         "prediction": pred,
-        "risk_level": risk
+        "risk_level": risk,
+        "shap_features": top_features
     }

@@ -351,8 +351,7 @@ const inputStyle = {
                 backgroundColor: getRiskColor(result.risk_level) + '20',
                 border: `1px solid ${getRiskColor(result.risk_level)}44`,
                 color: getRiskColor(result.risk_level),
-              }}
-              >
+              }}>
                 {result.risk_level === 'Low' ? '✓' : result.risk_level === 'Moderate' ? '⚡' : '⚠️'} {result.risk_level} Risk
               </div>
 
@@ -366,6 +365,51 @@ const inputStyle = {
               {result.risk_level === 'High' && (
                 <div style={styles.alertBox}>
                   <p style={styles.alertText}>⚠️ High risk detected. Consider generating a doctor report and scheduling a clinical consultation.</p>
+                </div>
+              )}
+
+              {/* SHAP Feature Importance Chart */}
+              {result.shap_features && result.shap_features.length > 0 && (
+                <div style={styles.shapCard}>
+                  <p style={styles.shapTitle}>🔍 What's driving your risk?</p>
+                  <p style={styles.shapSub}>Each bar shows how much a factor increased or decreased your risk score.</p>
+                  <div style={styles.shapList}>
+                    {result.shap_features.map((f, i) => {
+                      const isRisk = f.value > 0;
+                      const color = isRisk ? '#ef4444' : '#00d4aa';
+                      const maxVal = Math.max(...result.shap_features.map(x => Math.abs(x.value)));
+                      const barWidth = Math.round((Math.abs(f.value) / maxVal) * 100);
+                      return (
+                        <div key={i} style={styles.shapRow}>
+                          <div style={styles.shapFeatureName}>
+                            <span style={styles.shapFeatureLabel}>{f.feature}</span>
+                            <span style={styles.shapFeatureInput}>{f.input}</span>
+                          </div>
+                          <div style={styles.shapBarContainer}>
+                            <div style={{
+                              ...styles.shapBar,
+                              width: `${barWidth}%`,
+                              backgroundColor: color,
+                              boxShadow: `0 0 8px ${color}44`,
+                            }} />
+                          </div>
+                          <span style={{ ...styles.shapValue, color }}>
+                            {isRisk ? '+' : ''}{f.value.toFixed(3)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={styles.shapLegend}>
+                    <span style={styles.shapLegendItem}>
+                      <span style={{ ...styles.shapLegendDot, backgroundColor: '#ef4444' }} />
+                      Increases risk
+                    </span>
+                    <span style={styles.shapLegendItem}>
+                      <span style={{ ...styles.shapLegendDot, backgroundColor: '#00d4aa' }} />
+                      Reduces risk
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -389,7 +433,9 @@ const inputStyle = {
         input:focus, select:focus { outline: none !important; border-color: #a78bfa55 !important; }
       `}</style>
     </div>
+    
   );
+
 };
 
 const styles = {
@@ -553,6 +599,87 @@ bmiCloseBtn: {
   cursor: 'pointer',
   width: '100%',
 },
+shapCard: {
+    backgroundColor: '#ffffff05',
+    border: '1px solid #ffffff10',
+    borderRadius: '16px',
+    padding: '1.5rem',
+    width: '100%',
+  },
+  shapTitle: {
+    color: 'white',
+    fontSize: '1rem',
+    fontWeight: '700',
+    marginBottom: '0.25rem',
+  },
+  shapSub: {
+    color: '#ffffff35',
+    fontSize: '0.75rem',
+    marginBottom: '1.25rem',
+    lineHeight: 1.5,
+  },
+  shapList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+  },
+  shapRow: {
+    display: 'grid',
+    gridTemplateColumns: '140px 1fr 60px',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  shapFeatureName: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  shapFeatureLabel: {
+    color: '#ffffffaa',
+    fontSize: '0.78rem',
+    fontWeight: '600',
+  },
+  shapFeatureInput: {
+    color: '#ffffff30',
+    fontSize: '0.68rem',
+  },
+  shapBarContainer: {
+    height: '8px',
+    backgroundColor: '#ffffff08',
+    borderRadius: '4px',
+    overflow: 'hidden',
+  },
+  shapBar: {
+    height: '100%',
+    borderRadius: '4px',
+    transition: 'width 0.8s ease',
+  },
+  shapValue: {
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    textAlign: 'right',
+    fontFamily: 'monospace',
+  },
+  shapLegend: {
+    display: 'flex',
+    gap: '1.5rem',
+    marginTop: '1rem',
+    paddingTop: '0.75rem',
+    borderTop: '1px solid #ffffff08',
+  },
+  shapLegendItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    color: '#ffffff35',
+    fontSize: '0.72rem',
+  },
+  shapLegendDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+  },
+
 };
 
 export default Level2Assessment;
