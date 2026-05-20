@@ -179,3 +179,9 @@ def setup_demo(db: Session = Depends(get_db)):
     seed_signals(p3.id, 35, 0.25)
     
     return {"status": "Demo users seeded successfully!"}
+
+import os
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
