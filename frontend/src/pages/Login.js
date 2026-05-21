@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -10,6 +12,11 @@ const Login = () => {
   const [showPass, setShowPass] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  React.useEffect(() => {
+  // Pre-warm the Render backend
+  fetch('https://cogniveil-backend.onrender.com/')
+    .catch(() => {}); // silently ignore errors
+}, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -115,13 +122,18 @@ const Login = () => {
               </div>
             )}
 
-            <button type="submit" style={styles.submitBtn} disabled={loading}>
-              {loading ? (
-                <span>Signing in...</span>
-              ) : (
-                <span>Sign In →</span>
-              )}
-            </button>
+<button type="submit" style={styles.submitBtn} disabled={loading}>
+  {loading ? (
+    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+      <span>Signing in...</span>
+      <span style={{ fontSize: '0.72rem', fontWeight: '400', opacity: 0.7 }}>
+        Server waking up — please wait ~30s ☕
+      </span>
+    </span>
+  ) : (
+    <span>Sign In →</span>
+  )}
+</button>
           </form>
 
           <div style={styles.divider}>
