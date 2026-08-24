@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 class UserCreate(BaseModel):
     name: str
@@ -8,10 +8,16 @@ class UserCreate(BaseModel):
     password: str
     age: int
     is_caregiver: bool = False
+    apoe_e4_provenance: Optional[str] = "self_reported"
+    mri_provenance: Optional[str] = "self_reported"
+    consent_given: bool = False
 
 class UserLogin(BaseModel):
     email: str
     password: str
+
+class CaregiverInviteRequest(BaseModel):
+    patient_email: EmailStr
 
 class UserOut(BaseModel):
     id: int
@@ -19,6 +25,8 @@ class UserOut(BaseModel):
     email: str
     age: int
     is_caregiver: bool
+    apoe_e4_provenance: Optional[str] = "self_reported"
+    mri_provenance: Optional[str] = "self_reported"
     created_at: datetime
 
     class Config:
@@ -42,6 +50,10 @@ class CogniScoreOut(BaseModel):
     active_score: float
     passive_score: float
     risk_level: str
+    ewma_score: Optional[float] = 0.0
+    cusum_value: Optional[float] = 0.0
+    baseline_mean: Optional[float] = 0.0
+    is_deviating: Optional[bool] = False
     created_at: datetime
 
     class Config:
@@ -53,3 +65,48 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class LanguageDetectRequest(BaseModel):
+    text: Optional[str] = None
+    audio_sample_id: Optional[str] = None
+
+class LanguageDetectResponse(BaseModel):
+    detected_language: str
+    language_code: str
+    confidence: float
+    whisper_mode: str
+
+class ReferralRequest(BaseModel):
+    risk_level: str
+    is_deviating: bool = False
+    active_score: float = 50.0
+    shap_top_features: Optional[List[Dict[str, Any]]] = None
+
+class ReferralResponse(BaseModel):
+    action: str
+    urgency: str
+    timeframe: str
+    recommended_specialist: str
+    clinical_rationale: str
+
+class ClinicalReportRequest(BaseModel):
+    user_id: Optional[int] = None
+    patient_name: Optional[str] = "Patient"
+    age: Optional[int] = 65
+    cogni_score: float = 50.0
+    risk_level: str = "Moderate"
+    is_deviating: bool = False
+    shap_features: Optional[List[Dict[str, Any]]] = None
+    mri_result: Optional[Dict[str, Any]] = None
+
+class AuditLogOut(BaseModel):
+    id: int
+    user_id: Optional[int]
+    tool_name: str
+    input_summary: str
+    output_summary: str
+    guardrail_passed: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

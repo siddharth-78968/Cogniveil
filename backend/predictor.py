@@ -4,9 +4,15 @@ import pandas as pd
 import shap
 import numpy as np
 
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "catboost_alzheimers_model.cbm"
+METADATA_PATH = BASE_DIR / "catboost_metadata.pkl"
+
 csv_model = CatBoostClassifier()
-csv_model.load_model("catboost_alzheimers_model.cbm")
-metadata = joblib.load("catboost_metadata.pkl")
+csv_model.load_model(str(MODEL_PATH))
+metadata = joblib.load(str(METADATA_PATH))
 threshold = metadata["final_threshold"]
 
 MODEL_COLUMNS = [

@@ -1,0 +1,38 @@
+{
+  "model_version": "2026.1",
+  "algorithm": "median-imputed, scaled logistic regression",
+  "feature_columns": [
+    "speech_activity_ratio",
+    "pause_rate_per_minute",
+    "mean_rms",
+    "words_per_minute",
+    "vocabulary_richness"
+  ],
+  "operating_threshold": 0.9199999999999999,
+  "cross_validation": "5-fold stratified group CV by participant_id",
+  "validation": {
+    "roc_auc": 1.0,
+    "sensitivity": 0.875,
+    "specificity": 1.0
+  },
+  "dataset": {
+    "rows": 32,
+    "participants": 16,
+    "sources": [
+      "AIIMS-Acoustic-Cohort",
+      "DementiaBank-Pitt",
+      "Madrid-Acoustic-MCI",
+      "NIMHANS-Speech-Norms",
+      "South-India-CogniSpeech"
+    ],
+    "languages": [
+      "en",
+      "es",
+      "hi",
+      "ta",
+      "te"
+    ]
+  },
+  "trained_at": "2026-08-24T04:46:17.492378+00:00",
+  "limitations": "Screening support only. Metrics are out-of-fold estimates and must be externally validated before clinical use."
+}

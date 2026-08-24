@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { predictLevel2, generateReferral } from '../utils/api';
 
 const Level2Assessment = () => {
   const navigate = useNavigate();
-  const { token } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-const [showBMICalc, setShowBMICalc] = useState(false);
-const [bmiHeight, setBmiHeight] = useState('');
-const [bmiWeight, setBmiWeight] = useState('');
-const [form, setForm] = useState({
+  const [referral, setReferral] = useState(null);
+  const [showBMICalc, setShowBMICalc] = useState(false);
+  const [bmiHeight, setBmiHeight] = useState('');
+  const [bmiWeight, setBmiWeight] = useState('');
+  const [form, setForm] = useState({
     Country: 'India',
     Age: 65,
     Gender: 'Male',
@@ -33,47 +32,46 @@ const [form, setForm] = useState({
     EmploymentStatus: 'Retired',
     MaritalStatus: 'Married',
     APOE_e4: 'Negative',
+    apoe_e4_provenance: 'self_reported',
+    mri_provenance: 'self_reported',
     SocialEngagement: 'Moderate',
     IncomeLevel: 'Middle',
     StressLevels: 'Low',
     UrbanRural: 'Urban',
-});
+  });
 
   const update = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
 
-const handleSubmit = async () => {
-  setLoading(true);
-  
-  // Convert CogniScore (0-100) to MMSE scale (0-30) for the model
-  const modelForm = {
-    ...form,
-    CognitiveScore: Math.round((form.CognitiveScore / 100) * 30),
-  };
-  
-  let attempts = 0;
-  while (attempts < 3) {
+  const handleSubmit = async () => {
+    setLoading(true);
+    const modelForm = {
+      ...form,
+      CognitiveScore: Math.round((form.CognitiveScore / 100) * 30),
+    };
     try {
-      const res = await axios.post(
-        'https://cogniveil-backend.onrender.com/predict/level2',
-        modelForm,
-        { 
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          timeout: 30000
-        }
-      );
+      const res = await predictLevel2(modelForm);
       setResult(res.data);
-      setLoading(false);
-      return;
-    } catch (err) {
-      attempts++;
-      if (attempts < 3) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
+      localStorage.setItem('level2Prob', res.data.probability);
+      localStorage.setItem('level2Risk', res.data.risk_level);
+
+      // Call MCP Tool 8: generate_referral
+      try {
+        const refRes = await generateReferral({
+          risk_level: res.data.risk_level,
+          is_deviating: localStorage.getItem('latestScoreDeviation') === 'true',
+          active_score: form.CognitiveScore,
+          shap_top_features: res.data.shap_features,
+        });
+        setReferral(refRes.data);
+      } catch (err) {
+        console.error('Referral generation error:', err);
       }
+    } catch (err) {
+      alert('Prediction failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  }
-  setLoading(false);
-  alert('Prediction failed. Please try again in 30 seconds.');
-};
+  };
 
   const getRiskColor = (risk) => {
     if (risk === 'Low') return '#00d4aa';
@@ -362,9 +360,82 @@ const inputStyle = {
                 </p>
               </div>
 
-              {result.risk_level === 'High' && (
-                <div style={styles.alertBox}>
-                  <p style={styles.alertText}>⚠️ High risk detected. Consider generating a doctor report and scheduling a clinical consultation.</p>
+              {/* Explicit Clinical Referral Recommendation */}
+              {referral && (
+                <div style={{
+                  backgroundColor: '#0d1117',
+                  border: `1px solid ${getRiskColor(result.risk_level)}55`,
+                  borderRadius: '16px',
+                  padding: '1.2rem',
+                  marginTop: '1.5rem',
+                  textAlign: 'left'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ color: getRiskColor(result.risk_level), fontWeight: '700', fontSize: '0.95rem' }}>
+                      📋 ACTIONABLE CLINICAL REFERRAL RECOMMENDATION
+                    </span>
+                    <span style={{
+                      backgroundColor: getRiskColor(result.risk_level) + '22',
+                      color: getRiskColor(result.risk_level),
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontSize: '0.78rem',
+                      fontWeight: '700'
+                    }}>
+                      Urgency: {referral.urgency} ({referral.timeframe})
+                    </span>
+                  </div>
+                  <h4 style={{ color: 'white', margin: '4px 0 8px', fontSize: '1.1rem' }}>{referral.action}</h4>
+                  <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '8px' }}>
+                    <strong>Recommended Specialist:</strong> {referral.recommended_specialist}
+                  </p>
+                  <p style={{ color: '#cbd5e1', fontSize: '0.85rem', margin: 0, lineHeight: '1.5' }}>
+                    {referral.clinical_rationale}
+                  </p>
+                </div>
+              )}
+
+              {/* Conditional Tier 3 (MRI) Workup Prompt */}
+              {(result.risk_level === 'Moderate' || result.risk_level === 'High') && (
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(167,139,250,0.12) 0%, rgba(59,130,246,0.12) 100%)',
+                  border: '1px solid #a78bfa44',
+                  borderRadius: '16px',
+                  padding: '1.2rem',
+                  marginTop: '1.2rem',
+                  textAlign: 'left',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div>
+                    <span style={{ color: '#a78bfa', fontSize: '0.78rem', fontWeight: '700', letterSpacing: '0.5px' }}>
+                      CONDITIONAL WORKUP ACTIVATED
+                    </span>
+                    <h4 style={{ color: 'white', margin: '4px 0 4px', fontSize: '1.05rem' }}>
+                      🧠 Structural Neuroimaging (Level 3 MRI) Indicated
+                    </h4>
+                    <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0 }}>
+                      Based on your Moderate/High Tier 2 risk, run an MRI scan analysis as an independent confirmatory panel.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/level3')}
+                    style={{
+                      background: 'linear-gradient(135deg, #a78bfa 0%, #3b82f6 100%)',
+                      border: 'none',
+                      color: 'white',
+                      fontWeight: '700',
+                      padding: '0.75rem 1.2rem',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      fontSize: '0.88rem',
+                      whiteSpace: 'nowrap',
+                      marginLeft: '12px'
+                    }}
+                  >
+                    Proceed to MRI Panel →
+                  </button>
                 </div>
               )}
 

@@ -1,9 +1,222 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { pingBackend } from '../utils/api';
 
+/* ============================================================
+   Neural Network Canvas — brain hemisphere topology
+   ============================================================ */
+function useNeuralCanvas(canvasRef) {
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
+    // --- Config ---
+    const NODE_COUNT = 72;
+    const EDGE_DIST = 185;
+    const PULSE_INTERVAL = 1400; // ms between new pulses
+    const TEAL = { r: 0, g: 212, b: 170 };
+    const VIOLET = { r: 167, g: 139, b: 250 };
 
+    let width, height;
+    let animId;
+    let nodes = [];
+    let pulses = [];
+    let lastPulse = 0;
+    let mouse = { x: -9999, y: -9999 };
+
+    // --- Resize ---
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // --- Mouse ---
+    function onMouseMove(e) {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    }
+    window.addEventListener('mousemove', onMouseMove);
+
+    // --- Node factory ---
+    // Brain topology: two loose clusters (left/right hemispheres)
+    function makeNode(i) {
+      const hemisphere = Math.random() < 0.5 ? -1 : 1; // -1=left, 1=right
+      const cx = width / 2 + hemisphere * (width * 0.18);
+      const cy = height * 0.48;
+      const spread = Math.min(width, height) * 0.32;
+
+      const color = Math.random() < 0.6 ? TEAL : VIOLET;
+      return {
+        x: cx + (Math.random() - 0.5) * spread * 2,
+        y: cy + (Math.random() - 0.5) * spread * 1.3,
+        vx: (Math.random() - 0.5) * 0.28,
+        vy: (Math.random() - 0.5) * 0.28,
+        r: 2.2 + Math.random() * 2.6,
+        baseAlpha: 0.35 + Math.random() * 0.45,
+        alpha: 0,
+        pulseAlpha: 0,
+        color,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.008 + Math.random() * 0.012,
+      };
+    }
+
+    nodes = Array.from({ length: NODE_COUNT }, (_, i) => makeNode(i));
+
+    // --- Pulse factory ---
+    function spawnPulse(nodes) {
+      // Pick a random edge (pair of close nodes)
+      for (let attempt = 0; attempt < 40; attempt++) {
+        const ai = Math.floor(Math.random() * nodes.length);
+        const bi = Math.floor(Math.random() * nodes.length);
+        if (ai === bi) continue;
+        const a = nodes[ai], b = nodes[bi];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        if (Math.sqrt(dx * dx + dy * dy) < EDGE_DIST) {
+          pulses.push({ a, b, t: 0, speed: 0.006 + Math.random() * 0.007 });
+          return;
+        }
+      }
+    }
+
+    // --- Draw ---
+    function draw(now) {
+      ctx.clearRect(0, 0, width, height);
+
+      const t = now * 0.001;
+
+      // Spawn pulses
+      if (now - lastPulse > PULSE_INTERVAL) {
+        spawnPulse(nodes);
+        lastPulse = now;
+        if (Math.random() < 0.4) spawnPulse(nodes); // occasional double
+      }
+
+      // Update + draw edges
+      for (let i = 0; i < nodes.length; i++) {
+        const a = nodes[i];
+        for (let j = i + 1; j < nodes.length; j++) {
+          const b = nodes[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist >= EDGE_DIST) continue;
+
+          const edgeAlpha = (1 - dist / EDGE_DIST) * 0.18;
+          const ac = a.color, bc = b.color;
+          const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+          grad.addColorStop(0, `rgba(${ac.r},${ac.g},${ac.b},${edgeAlpha})`);
+          grad.addColorStop(1, `rgba(${bc.r},${bc.g},${bc.b},${edgeAlpha})`);
+
+          ctx.beginPath();
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 0.7;
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+
+      // Update + draw pulses
+      pulses = pulses.filter((p) => {
+        p.t += p.speed;
+        if (p.t > 1) {
+          // Flash at destination
+          p.b.pulseAlpha = 1;
+          return false;
+        }
+        const px = p.a.x + (p.b.x - p.a.x) * p.t;
+        const py = p.a.y + (p.b.y - p.a.y) * p.t;
+        const c = p.a.color;
+
+        // Glow dot
+        const glowR = ctx.createRadialGradient(px, py, 0, px, py, 9);
+        glowR.addColorStop(0, `rgba(${c.r},${c.g},${c.b},0.9)`);
+        glowR.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
+        ctx.beginPath();
+        ctx.fillStyle = glowR;
+        ctx.arc(px, py, 9, 0, Math.PI * 2);
+        ctx.fill();
+
+        return true;
+      });
+
+      // Update + draw nodes
+      for (const node of nodes) {
+        // Breathing alpha
+        node.alpha = node.baseAlpha + Math.sin(t * node.speed * 60 + node.phase) * 0.18;
+
+        // Pulse flash decay
+        if (node.pulseAlpha > 0) {
+          node.pulseAlpha = Math.max(0, node.pulseAlpha - 0.025);
+        }
+
+        // Mouse attraction/repulsion
+        const mdx = mouse.x - node.x;
+        const mdy = mouse.y - node.y;
+        const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+        const ATTRACT_R = 140;
+        if (mdist < ATTRACT_R && mdist > 1) {
+          const force = (ATTRACT_R - mdist) / ATTRACT_R * 0.12;
+          node.vx += (mdx / mdist) * force;
+          node.vy += (mdy / mdist) * force;
+        }
+
+        // Velocity damping
+        node.vx *= 0.985;
+        node.vy *= 0.985;
+
+        // Move
+        node.x += node.vx;
+        node.y += node.vy;
+
+        // Soft boundary wrap
+        if (node.x < -60) node.x = width + 60;
+        if (node.x > width + 60) node.x = -60;
+        if (node.y < -60) node.y = height + 60;
+        if (node.y > height + 60) node.y = -60;
+
+        // Draw node
+        const c = node.color;
+        const totalAlpha = Math.min(1, node.alpha + node.pulseAlpha * 0.6);
+
+        // Outer glow
+        const glowSize = node.r * 3.5 + node.pulseAlpha * 8;
+        const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowSize);
+        glow.addColorStop(0, `rgba(${c.r},${c.g},${c.b},${totalAlpha * 0.45})`);
+        glow.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
+        ctx.beginPath();
+        ctx.fillStyle = glow;
+        ctx.arc(node.x, node.y, glowSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Core dot
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${totalAlpha})`;
+        ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      animId = requestAnimationFrame(draw);
+    }
+
+    animId = requestAnimationFrame(draw);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', onMouseMove);
+    };
+  }, [canvasRef]);
+}
+
+/* ============================================================
+   Login Component
+   ============================================================ */
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,11 +225,15 @@ const Login = () => {
   const [showPass, setShowPass] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const canvasRef = useRef(null);
+
+  // Ping backend on mount
   React.useEffect(() => {
-  // Pre-warm the Render backend
-  fetch('https://cogniveil-backend.onrender.com/')
-    .catch(() => {}); // silently ignore errors
-}, []);
+    pingBackend().catch(() => {});
+  }, []);
+
+  // Neural network canvas
+  useNeuralCanvas(canvasRef);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +243,14 @@ const Login = () => {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError('Invalid email or password.');
+      if (err.code === 'ERR_NETWORK' || !err.response) {
+        setError('Cannot connect to backend server at http://localhost:8000. Please ensure the Python backend is running.');
+      } else if (err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+        setError(typeof detail === 'string' ? detail : 'Invalid email or password.');
+      } else {
+        setError('Invalid email or password.');
+      }
     } finally {
       setLoading(false);
     }
@@ -34,10 +258,15 @@ const Login = () => {
 
   return (
     <div style={styles.page}>
-      {/* Animated background */}
-      <div style={styles.bgGlow1} />
-      <div style={styles.bgGlow2} />
-      <div style={styles.bgGrid} />
+      {/* ── Neural Network Canvas ── */}
+      <canvas
+        ref={canvasRef}
+        style={styles.neuralCanvas}
+        aria-hidden="true"
+      />
+
+      {/* ── Subtle dark vignette over canvas ── */}
+      <div style={styles.vignette} />
 
       <div style={styles.wrapper}>
         {/* Left panel */}
@@ -48,7 +277,7 @@ const Login = () => {
           </div>
           <h1 style={styles.tagline}>Early detection<br/>saves lives.</h1>
           <p style={styles.taglineSub}>
-            AI-powered passive + active cognitive monitoring. 
+            AI-powered passive + active cognitive monitoring.{' '}
             Catch dementia signals months before clinical symptoms appear.
           </p>
           <div style={styles.statsRow}>
@@ -122,18 +351,18 @@ const Login = () => {
               </div>
             )}
 
-<button type="submit" style={styles.submitBtn} disabled={loading}>
-  {loading ? (
-    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-      <span>Signing in...</span>
-      <span style={{ fontSize: '0.72rem', fontWeight: '400', opacity: 0.7 }}>
-        Server waking up — please wait ~30s ☕
-      </span>
-    </span>
-  ) : (
-    <span>Sign In →</span>
-  )}
-</button>
+            <button type="submit" style={styles.submitBtn} disabled={loading}>
+              {loading ? (
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <span>Signing in...</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: '400', opacity: 0.7 }}>
+                    Server waking up — please wait ~30s ☕
+                  </span>
+                </span>
+              ) : (
+                <span>Sign In →</span>
+              )}
+            </button>
           </form>
 
           <div style={styles.divider}>
@@ -166,24 +395,23 @@ const Login = () => {
         </div>
       </div>
 
-
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes glow {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.7; }
+        @keyframes neuralPulse {
+          0%, 100% { opacity: 0.85; }
+          50%       { opacity: 1; }
         }
-input:focus {
+        input:focus {
           outline: none !important;
           border-color: #00d4aa55 !important;
           box-shadow: 0 0 0 3px rgba(0,212,170,0.1) !important;
         }
         @media (max-width: 640px) {
-          .left-panel { display: none !important; }
-          .form-panel { width: 100% !important; }
+          .left-panel  { display: none !important; }
+          .form-panel  { width: 100% !important; }
         }
       `}</style>
     </div>
@@ -202,36 +430,23 @@ const styles = {
     overflow: 'hidden',
     fontFamily: "'Segoe UI', sans-serif",
   },
-  bgGlow1: {
-    position: 'fixed',
-    width: '600px',
-    height: '600px',
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(0,212,170,0.07) 0%, transparent 70%)',
-    top: '-200px',
-    left: '-100px',
-    pointerEvents: 'none',
-    animation: 'glow 6s ease-in-out infinite',
-  },
-  bgGlow2: {
-    position: 'fixed',
-    width: '500px',
-    height: '500px',
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(167,139,250,0.06) 0%, transparent 70%)',
-    bottom: '-150px',
-    right: '-100px',
-    pointerEvents: 'none',
-    animation: 'glow 8s ease-in-out infinite reverse',
-  },
-  bgGrid: {
+  neuralCanvas: {
     position: 'fixed',
     inset: 0,
-    backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
-    backgroundSize: '40px 40px',
+    width: '100%',
+    height: '100%',
     pointerEvents: 'none',
+    zIndex: 0,
   },
- wrapper: {
+  vignette: {
+    position: 'fixed',
+    inset: 0,
+    background:
+      'radial-gradient(ellipse at center, transparent 30%, rgba(8,12,20,0.72) 100%)',
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+  wrapper: {
     display: 'flex',
     width: '100%',
     maxWidth: '1000px',
@@ -240,14 +455,16 @@ const styles = {
     overflow: 'hidden',
     border: '1px solid #ffffff10',
     position: 'relative',
-    zIndex: 1,
+    zIndex: 2,
     animation: 'fadeUp 0.6s ease',
     flexWrap: 'wrap',
+    backdropFilter: 'blur(2px)',
+    WebkitBackdropFilter: 'blur(2px)',
   },
-leftPanel: {
+  leftPanel: {
     flex: 1,
     minWidth: '280px',
-    backgroundColor: '#0d1117',
+    backgroundColor: 'rgba(13,17,23,0.82)',
     padding: '2rem',
     display: 'flex',
     flexDirection: 'column',
@@ -324,9 +541,9 @@ leftPanel: {
     alignItems: 'center',
     gap: '0.5rem',
   },
-formPanel: {
+  formPanel: {
     width: '380px',
-    backgroundColor: '#080c14',
+    backgroundColor: 'rgba(8,12,20,0.88)',
     padding: '2rem',
     display: 'flex',
     flexDirection: 'column',
@@ -370,7 +587,7 @@ formPanel: {
     letterSpacing: '0.03em',
   },
   input: {
-    backgroundColor: '#0d1117',
+    backgroundColor: 'rgba(13,17,23,0.9)',
     border: '1px solid #ffffff12',
     borderRadius: '10px',
     padding: '0.75rem 1rem',

@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { classifyMRI } from '../utils/api';
 
 const Level3MRI = () => {
   const navigate = useNavigate();
   const fileRef = useRef();
-  const [image, setImage] = useState(null);
   const [imageURL, setImageURL] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [analysing, setAnalysing] = useState(false);
   const [result, setResult] = useState(null);
   const [step, setStep] = useState('upload');
@@ -20,76 +21,40 @@ const Level3MRI = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setImage(file);
+    setSelectedFile(file);
     setImageURL(URL.createObjectURL(file));
     setResult(null);
     setStep('preview');
   };
 
-  const handleAnalyse = () => {
+  const handleAnalyse = async () => {
     setAnalysing(true);
     setStep('analysing');
-
-    setTimeout(() => {
-      // Simulated EfficientNet output
-      // In production: runs mri_dementia_model.keras
-      const rand = ((image.size % 97) + (image.name.length % 31)) / 100;
-      let predicted, probs;
-
-      if (rand < 0.35) {
-        predicted = 'Non Demented';
-        probs = { 'Non Demented': 0.78, 'Very Mild Dementia': 0.14, 'Mild Dementia': 0.06, 'Moderate Dementia': 0.02 };
-      } else if (rand < 0.6) {
-        predicted = 'Very Mild Dementia';
-        probs = { 'Non Demented': 0.12, 'Very Mild Dementia': 0.71, 'Mild Dementia': 0.13, 'Moderate Dementia': 0.04 };
-      } else if (rand < 0.85) {
-        predicted = 'Mild Dementia';
-        probs = { 'Non Demented': 0.05, 'Very Mild Dementia': 0.18, 'Mild Dementia': 0.64, 'Moderate Dementia': 0.13 };
-      } else {
-        predicted = 'Moderate Dementia';
-        probs = { 'Non Demented': 0.03, 'Very Mild Dementia': 0.08, 'Mild Dementia': 0.21, 'Moderate Dementia': 0.68 };
+    try {
+      const formData = new FormData();
+      if (selectedFile) {
+        formData.append('file', selectedFile);
       }
-
-      const severity = classInfo[predicted].severity;
-      const mriScore = (1 - severity) * 100;
-
-      // Fusion formula: 0.2 * L1 + 0.3 * L2 + 0.5 * L3
-      const l1 = parseFloat(localStorage.getItem('cogniScore') || '50') / 100;
-      const l2 = parseFloat(localStorage.getItem('level2Prob') || '0.3');
-      const l3 = severity;
-      const fusionRaw = (0.2 * (1 - l1)) + (0.3 * l2) + (0.5 * l3);
-      const fusionScore = Math.round(fusionRaw * 100);
-
-      let finalRisk;
-      if (fusionRaw < 0.35) finalRisk = 'Low';
-      else if (fusionRaw < 0.65) finalRisk = 'Moderate';
-      else finalRisk = 'High';
-
-      setResult({
-        predicted,
-        probs,
-        mriScore: Math.round(mriScore),
-        severity,
-        fusionScore,
-        finalRisk,
-        l1Score: Math.round(l1 * 100),
-        l2Score: Math.round(l2 * 100),
-        l3Score: Math.round(severity * 100),
-      });
-
+      const response = await classifyMRI(formData);
+      setResult(response.data);
+      setTimeout(() => {
+        setAnalysing(false);
+        setStep('result');
+      }, 1500);
+    } catch (err) {
+      console.error('MRI Analysis error:', err);
       setAnalysing(false);
+      setResult({
+        status: 'unavailable',
+        is_confirmatory_panel: true,
+        note: 'MRI output is intentionally unavailable in this screening release. Clinical neuroimaging requires an independently evaluated CNN checkpoint and is never algebraically fused with CogniScore.'
+      });
       setStep('result');
-    }, 3500);
-  };
-
-  const getFusionColor = (risk) => {
-    if (risk === 'Low') return '#00d4aa';
-    if (risk === 'Moderate') return '#f59e0b';
-    return '#ef4444';
+    }
   };
 
   return (
-  <div style={styles.page} data-analysing={analysing}>
+    <div style={styles.page}>
       <div style={styles.bgGlow1} />
       <div style={styles.bgGrid} />
 
@@ -99,11 +64,10 @@ const Level3MRI = () => {
         <div style={styles.headerRow}>
           <div style={styles.levelBadge}>LEVEL 3</div>
           <div>
-            <p style={styles.pageLabel}>MRI-BASED DEEP LEARNING</p>
+            <p style={styles.pageLabel}>OPTIONAL CONFIRMATORY MODULE</p>
             <h1 style={styles.pageTitle}>Brain Scan Analysis</h1>
             <p style={styles.pageSub}>
-              EfficientNet CNN classifies MRI scans into dementia severity levels.
-              Used only for high-risk validation. Results fused with Level 1 + Level 2.
+              MRI is never fused with CogniVeil's screening score. This module is an independent confirmatory panel designed to accompany specialist referral.
             </p>
           </div>
         </div>
@@ -111,7 +75,7 @@ const Level3MRI = () => {
         {/* Warning banner */}
         <div style={styles.warningBanner}>
           <span>⚠️</span>
-          <span>This analysis is for screening purposes only. Always consult a neurologist for clinical diagnosis.</span>
+          <span>This confirmatory module is strictly decoupled from Tier 1 screening scores. Always consult a neurologist for clinical diagnosis.</span>
         </div>
 
         {/* Upload step */}
@@ -124,7 +88,7 @@ const Level3MRI = () => {
               <span style={styles.uploadIcon}>🧠</span>
               <p style={styles.uploadTitle}>Upload MRI Brain Scan</p>
               <p style={styles.uploadSub}>Click to browse or drag and drop</p>
-              <p style={styles.uploadHint}>Supports JPG, PNG — axial or coronal view</p>
+              <p style={styles.uploadHint}>Supports JPG, PNG, DICOM — axial or coronal view</p>
               <button style={styles.browseBtn}>Browse Files</button>
             </div>
             <input
@@ -137,9 +101,8 @@ const Level3MRI = () => {
 
             <div style={styles.sampleNote}>
               <p style={styles.sampleNoteText}>
-                📌 In production, this runs <strong style={{ color: '#ef4444' }}>mri_dementia_model.keras</strong> (EfficientNet-based CNN)
-                trained to classify MRI into Non Demented, Very Mild, Mild, and Moderate Dementia.
-                TensorFlow 2.x required for live inference.
+                📌 <strong>Confirmatory Architecture:</strong> CogniVeil evaluates structural neuroimaging independently of active tests.
+                In production deployments, this hooks to an EfficientNet CNN checkpoint without altering daily digital screening baselines.
               </p>
             </div>
           </div>
@@ -153,9 +116,9 @@ const Level3MRI = () => {
               <img src={imageURL} alt="MRI scan" style={styles.mriImage} />
               <div style={styles.imageScanLine} />
             </div>
-            <p style={styles.previewHint}>Scan loaded successfully. Ready for EfficientNet analysis.</p>
+            <p style={styles.previewHint}>Scan loaded successfully. Ready for confirmatory evaluation.</p>
             <div style={styles.previewActions}>
-              <button style={styles.reuploadBtn} onClick={() => { setStep('upload'); setImage(null); setImageURL(null); }}>
+              <button style={styles.reuploadBtn} onClick={() => { setStep('upload'); setImageURL(null); }}>
                 ↩ Change Image
               </button>
               <button style={styles.analyseBtn} onClick={handleAnalyse}>
@@ -169,16 +132,16 @@ const Level3MRI = () => {
         {step === 'analysing' && (
           <div style={styles.analysingCard}>
             <div style={styles.analysingBrain}>🧠</div>
-            <h2 style={styles.analysingTitle}>Analysing Brain Scan</h2>
+            <h2 style={styles.analysingTitle}>Evaluating Neuroimaging Evidence</h2>
             <div style={styles.analysingSteps}>
               {[
-                'Loading EfficientNet model weights...',
-                'Preprocessing MRI image (224×224)...',
-                'Running CNN forward pass...',
-                'Extracting structural features...',
-                'Classifying dementia severity...',
+                'Verifying clinical image headers...',
+                'Preprocessing scan dimensions (224×224)...',
+                'Checking structural model verification...',
+                'Running decoupled confirmatory assessment...',
+                'Preparing non-fused referral documentation...',
               ].map((s, i) => (
-                <div key={i} style={{ ...styles.analysingStep, animationDelay: `${i * 0.5}s` }}>
+                <div key={i} style={{ ...styles.analysingStep, animationDelay: `${i * 0.3}s` }}>
                   <div style={styles.analysingDot} />
                   <span>{s}</span>
                 </div>
@@ -190,115 +153,54 @@ const Level3MRI = () => {
         {/* Result step */}
         {step === 'result' && result && (
           <div style={styles.resultSection}>
-
-            {/* MRI Classification */}
+            {/* Confirmatory Neuroimaging Panel */}
             <div style={{
-              ...styles.mriResultCard,
-              borderColor: classInfo[result.predicted].color + '44',
-              boxShadow: `0 0 40px ${classInfo[result.predicted].color}15`,
+              ...styles.fusionCard,
+              borderColor: '#a78bfa44',
+              boxShadow: '0 0 40px rgba(167,139,250,0.15)',
             }}>
-              <p style={styles.cardLabel}>EFFICIENTNET CLASSIFICATION</p>
-
-              <div style={styles.classResult}>
-                <span style={{ fontSize: '2.5rem' }}>{classInfo[result.predicted].icon}</span>
-                <div>
-                  <p style={{ ...styles.className, color: classInfo[result.predicted].color }}>
-                    {result.predicted}
-                  </p>
-                  <p style={styles.classSubtext}>Primary classification</p>
-                </div>
-              </div>
-
-              {/* Confidence bars */}
-              <div style={styles.confidenceBars}>
-                <p style={styles.confidenceTitle}>Class Probabilities</p>
-                {Object.entries(result.probs).map(([cls, prob]) => (
-                  <div key={cls} style={styles.confBar}>
-                    <div style={styles.confBarLabelRow}>
-                      <span style={{ ...styles.confBarLabel, color: cls === result.predicted ? classInfo[cls].color : '#ffffff50' }}>
-                        {cls}
-                      </span>
-                      <span style={{ ...styles.confBarPct, color: cls === result.predicted ? classInfo[cls].color : '#ffffff40' }}>
-                        {Math.round(prob * 100)}%
-                      </span>
-                    </div>
-                    <div style={styles.confBarTrack}>
-                      <div style={{
-                        ...styles.confBarFill,
-                        width: `${prob * 100}%`,
-                        backgroundColor: cls === result.predicted ? classInfo[cls].color : '#ffffff15',
-                      }} />
-                    </div>
-                  </div>
-                ))}
+              <p style={styles.cardLabel}>INDEPENDENT CONFIRMATORY PANEL</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <span style={{ backgroundColor: '#a78bfa22', color: '#a78bfa', padding: '4px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '700' }}>
+                  CONDITIONAL LEVEL 3 MRI SCAN
+                </span>
+                <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>• Decoupled from digital screening score</span>
               </div>
 
               {imageURL && (
                 <div style={styles.thumbnailRow}>
                   <img src={imageURL} alt="scan" style={styles.thumbnail} />
-                  <p style={styles.thumbnailCaption}>Analysed scan</p>
+                  <div>
+                    <p style={{ color: 'white', fontSize: '0.9rem', fontWeight: '600', margin: '0 0 4px 0' }}>
+                      {selectedFile ? selectedFile.name : 'Uploaded Brain Scan'}
+                    </p>
+                    <p style={styles.thumbnailCaption}>Confirmatory scan registered to audit trail</p>
+                  </div>
                 </div>
               )}
-            </div>
-
-            {/* Fusion Score */}
-            <div style={{
-              ...styles.fusionCard,
-              borderColor: getFusionColor(result.finalRisk) + '44',
-              boxShadow: `0 0 40px ${getFusionColor(result.finalRisk)}15`,
-            }}>
-              <p style={styles.cardLabel}>FINAL FUSION SCORE</p>
-              <p style={styles.fusionFormula}>0.2 × Level 1 + 0.3 × Level 2 + 0.5 × Level 3</p>
-
-              <div style={styles.fusionBreakdown}>
-                {[
-                  { label: 'Level 1', sublabel: 'Behavioral', value: result.l1Score, color: '#00d4aa', weight: '20%' },
-                  { label: 'Level 2', sublabel: 'CatBoost', value: result.l2Score, color: '#a78bfa', weight: '30%' },
-                  { label: 'Level 3', sublabel: 'MRI CNN', value: result.l3Score, color: '#ef4444', weight: '50%' },
-                ].map((l, i) => (
-                  <div key={i} style={styles.fusionLevel}>
-                    <div style={styles.fusionLevelTop}>
-                      <span style={{ color: l.color, fontSize: '0.75rem', fontWeight: '700' }}>{l.label}</span>
-                      <span style={{ color: '#ffffff25', fontSize: '0.7rem' }}>{l.weight}</span>
-                    </div>
-                    <div style={styles.fusionLevelBar}>
-                      <div style={{
-                        ...styles.fusionLevelFill,
-                        width: `${l.value}%`,
-                        backgroundColor: l.color,
-                      }} />
-                    </div>
-                    <span style={{ color: l.color, fontSize: '0.85rem', fontWeight: '700' }}>{l.value}</span>
-                    <span style={{ color: '#ffffff30', fontSize: '0.7rem' }}>{l.sublabel}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div style={styles.fusionFinalScore}>
-                <span style={{ ...styles.fusionScoreNum, color: getFusionColor(result.finalRisk) }}>
-                  {result.fusionScore}
-                </span>
-                <span style={styles.fusionScoreLabel}>Final Fusion Score</span>
-              </div>
 
               <div style={{
-                ...styles.finalRiskPill,
-                backgroundColor: getFusionColor(result.finalRisk) + '20',
-                border: `1px solid ${getFusionColor(result.finalRisk)}44`,
-                color: getFusionColor(result.finalRisk),
+                backgroundColor: '#0d1117',
+                border: '1px solid #ffffff12',
+                borderRadius: '12px',
+                padding: '1.2rem',
+                margin: '1rem 0',
+                width: '100%'
               }}>
-                {result.finalRisk === 'Low' ? '✓' : result.finalRisk === 'Moderate' ? '⚡' : '⚠️'} {result.finalRisk} Overall Risk
+                <h4 style={{ color: '#00d4aa', fontSize: '1.1rem', margin: '0 0 6px 0' }}>
+                  ✓ Screening-Decoupled Confirmatory Gate Active
+                </h4>
+                <p style={{ color: '#cbd5e1', fontSize: '0.85rem', lineHeight: '1.6', margin: 0 }}>
+                  {result.note || 'No validated MRI model is bundled with this deployment. MRI output is intentionally unavailable rather than simulated.'}
+                </p>
               </div>
 
-              {result.finalRisk === 'High' && (
-                <div style={styles.referralBox}>
-                  <p style={styles.referralTitle}>🏥 Clinical Referral Recommended</p>
-                  <p style={styles.referralText}>
-                    Based on multimodal AI analysis across all 3 levels, this patient shows high dementia risk.
-                    We recommend scheduling a consultation with a neurologist and considering formal cognitive assessment.
-                  </p>
-                </div>
-              )}
+              <div style={styles.referralBox}>
+                <p style={styles.referralTitle}>🏥 Clinical Specialist Integration</p>
+                <p style={styles.referralText}>
+                  CogniVeil maintains strict clinical separation between primary digital screening (Tier 1 tests & passive EWMA drift) and secondary neuroimaging. Download your comprehensive PDF Clinical Report from the Dashboard to share this confirmatory scan alongside your CatBoost Tier 2 SHAP risk factors with your healthcare provider.
+                </p>
+              </div>
             </div>
 
             <div style={styles.actionRow}>
@@ -424,49 +326,19 @@ const styles = {
   },
   analysingDot: { width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', flexShrink: 0 },
   resultSection: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
-  mriResultCard: {
-    backgroundColor: '#0d1117', border: '1px solid',
-    borderRadius: '20px', padding: '2rem',
-    display: 'flex', flexDirection: 'column', gap: '1.5rem',
-  },
-  classResult: { display: 'flex', alignItems: 'center', gap: '1rem' },
-  className: { fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.02em' },
-  classSubtext: { color: '#ffffff30', fontSize: '0.78rem' },
-  confidenceBars: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-  confidenceTitle: { color: '#ffffff30', fontSize: '0.75rem', fontWeight: '600', letterSpacing: '0.05em', marginBottom: '0.25rem' },
-  confBar: { display: 'flex', flexDirection: 'column', gap: '0.3rem' },
-  confBarLabelRow: { display: 'flex', justifyContent: 'space-between' },
-  confBarLabel: { fontSize: '0.82rem', fontWeight: '500' },
-  confBarPct: { fontSize: '0.82rem', fontWeight: '700' },
-  confBarTrack: { height: '6px', backgroundColor: '#ffffff08', borderRadius: '3px', overflow: 'hidden' },
-  confBarFill: { height: '100%', borderRadius: '3px', transition: 'width 0.8s ease' },
-  thumbnailRow: { display: 'flex', alignItems: 'center', gap: '1rem' },
+  thumbnailRow: { display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' },
   thumbnail: { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', filter: 'grayscale(20%)' },
   thumbnailCaption: { color: '#ffffff25', fontSize: '0.75rem' },
   fusionCard: {
     backgroundColor: '#0d1117', border: '1px solid',
     borderRadius: '20px', padding: '2rem',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
+    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem',
   },
-  fusionFormula: { color: '#ffffff30', fontSize: '0.82rem', fontFamily: 'monospace', letterSpacing: '0.05em' },
-  fusionBreakdown: { display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center' },
-  fusionLevel: {
-    flex: 1, display: 'flex', flexDirection: 'column',
-    alignItems: 'center', gap: '0.4rem',
-    backgroundColor: '#ffffff05', borderRadius: '12px', padding: '1rem 0.75rem',
-  },
-  fusionLevelTop: { display: 'flex', justifyContent: 'space-between', width: '100%' },
-  fusionLevelBar: { width: '100%', height: '4px', backgroundColor: '#ffffff08', borderRadius: '2px', overflow: 'hidden' },
-  fusionLevelFill: { height: '100%', borderRadius: '2px', transition: 'width 1s ease' },
-  fusionFinalScore: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' },
-  fusionScoreNum: { fontSize: '3.5rem', fontWeight: '800', lineHeight: 1 },
-  fusionScoreLabel: { color: '#ffffff30', fontSize: '0.85rem' },
-  finalRiskPill: { padding: '0.5rem 1.5rem', borderRadius: '20px', fontSize: '0.95rem', fontWeight: '700' },
   referralBox: {
-    backgroundColor: '#ef444410', border: '1px solid #ef444430',
+    backgroundColor: '#a78bfa10', border: '1px solid #a78bfa30',
     borderRadius: '12px', padding: '1.25rem', width: '100%',
   },
-  referralTitle: { color: '#ef4444', fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.5rem' },
+  referralTitle: { color: '#a78bfa', fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.5rem' },
   referralText: { color: '#ffffff50', fontSize: '0.82rem', lineHeight: 1.6 },
   actionRow: { display: 'flex', gap: '1rem' },
   retryBtn: {
@@ -475,7 +347,7 @@ const styles = {
     padding: '0.85rem', fontSize: '0.9rem', cursor: 'pointer',
   },
   dashBtn: {
-    flex: 1, backgroundColor: '#ef4444', color: 'white',
+    flex: 1, backgroundColor: '#00d4aa', color: '#080c14',
     border: 'none', borderRadius: '10px',
     padding: '0.85rem', fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer',
   },

@@ -10,18 +10,48 @@ const Register = () => {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [isCaregiver, setIsCaregiver] = useState(false);
+  const { register, login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
+    const parsedAge = parseInt(age, 10);
+    if (!parsedAge || isNaN(parsedAge)) {
+      setError('Please enter a valid age (e.g. 65).');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await register(name, email, password, parseInt(age));
-      navigate('/login');
+      if (!consentGiven) {
+        setError('Please provide consent before creating an account.');
+        setLoading(false);
+        return;
+      }
+      await register(name, email, password, parsedAge, consentGiven, isCaregiver);
+      // Auto-login after registration for seamless UX
+      try {
+        await login(email, password);
+        navigate('/dashboard');
+      } catch (loginErr) {
+        navigate('/login');
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed. Try again.');
+      let errMsg = 'Registration failed. Please check your inputs and try again.';
+      if (err.response && err.response.data && err.response.data.detail) {
+        const detail = err.response.data.detail;
+        if (typeof detail === 'string') {
+          errMsg = detail;
+        } else if (Array.isArray(detail)) {
+          errMsg = detail.map(d => d.msg || d.detail).join(', ');
+        }
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -85,6 +115,16 @@ const Register = () => {
                 required
               />
             </div>
+
+            <label style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', color: '#ffffff70', fontSize: '0.82rem', cursor: 'pointer' }}>
+              <input type="checkbox" checked={isCaregiver} onChange={e => setIsCaregiver(e.target.checked)} />
+              I am registering as a caregiver.
+            </label>
+
+            <label style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', color: '#ffffff70', fontSize: '0.78rem', lineHeight: 1.5, cursor: 'pointer' }}>
+              <input type="checkbox" checked={consentGiven} onChange={e => setConsentGiven(e.target.checked)} style={{ marginTop: '3px' }} />
+              <span>I consent to CogniVeil collecting my cognitive-task, voice-derived, and interaction data for screening. I understand it is not a medical diagnosis.</span>
+            </label>
 
             <div style={styles.field}>
               <label style={styles.label}>Email address</label>

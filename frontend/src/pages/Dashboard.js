@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getScore, getScoreHistory, calculateScore, getTodaySignals } from '../utils/api';
+import { getScore, getScoreHistory, calculateScore, getTodaySignals, getClinicalReport } from '../utils/api';
 import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
 // ── Streak helpers ───────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ const getInterpretation = (score) => {
 };
 
 // ── PDF Export ───────────────────────────────────────────────────────────────
-const exportPDF = async (user, score, history, streak) => {
+const exportPDF = async (user, score, history, streak, clinicalReport = null) => {
   // Dynamically load jsPDF from CDN
   if (!window.jspdf) {
     await new Promise((resolve, reject) => {
@@ -362,6 +362,32 @@ const exportPDF = async (user, score, history, streak) => {
   doc.setLineWidth(0.5);
   doc.rect(5, 5, W - 10, 287);
 
+  if (clinicalReport) {
+    doc.addPage();
+    doc.setFillColor(8, 12, 20);
+    doc.rect(0, 0, W, 297, 'F');
+    doc.setTextColor(0, 212, 170);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Clinical Follow-up Summary', 15, 22);
+    doc.setTextColor(180, 185, 200);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const referral = clinicalReport.referral || {};
+    const lines = [
+      `Screening action: ${referral.action || 'Routine monitoring'}`,
+      `Urgency: ${referral.urgency || 'Low'} — ${referral.timeframe || 'Annual checkup'}`,
+      `Recommended follow-up: ${referral.recommended_specialist || 'Primary care clinician'}`,
+      '',
+      referral.clinical_rationale || '',
+      '',
+      clinicalReport.narrative || '',
+      '',
+      'Important: CogniVeil is a screening and decision-support tool. It does not diagnose dementia or replace professional assessment.'
+    ];
+    doc.text(doc.splitTextToSize(lines.join('\n'), W - 30), 15, 36);
+  }
+
   // Save
   const fileName = `CogniVeil_Report_${userName}_${now.toISOString().slice(0, 10)}.pdf`;
   doc.save(fileName);
@@ -402,6 +428,8 @@ const testsDoneToday = completedTests.length === 5;
     try {
       const scoreRes = await getScore();
       setScore(scoreRes.data);
+      localStorage.setItem('latestCogniScore', String(scoreRes.data.score));
+      localStorage.setItem('latestScoreDeviation', String(Boolean(scoreRes.data.is_deviating)));
       setTimeout(() => setAnimateScore(true), 300);
     } catch (err) { setScore(null); }
     try {
@@ -427,6 +455,8 @@ const testsDoneToday = completedTests.length === 5;
     try {
       const res = await calculateScore();
       setScore(res.data);
+      localStorage.setItem('latestCogniScore', String(res.data.score));
+      localStorage.setItem('latestScoreDeviation', String(Boolean(res.data.is_deviating)));
       await fetchData();
       setTimeout(() => setAnimateScore(true), 300);
     } catch (err) {
@@ -438,7 +468,18 @@ const testsDoneToday = completedTests.length === 5;
     if (!score) { alert('No score data available to export. Complete a test first.'); return; }
     setExporting(true);
     try {
-      await exportPDF(user, score, history, streak);
+      let clinicalReport = null;
+      try {
+        const reportResponse = await getClinicalReport({
+          cogni_score: score.score,
+          risk_level: score.risk_level,
+          is_deviating: score.is_deviating,
+        });
+        clinicalReport = reportResponse.data;
+      } catch (reportError) {
+        console.warn('Clinical report unavailable; exporting score summary only.', reportError);
+      }
+      await exportPDF(user, score, history, streak, clinicalReport);
     } catch (err) {
       console.error('PDF export failed:', err);
       alert('PDF export failed. Please try again.');
@@ -613,6 +654,28 @@ const interpretation = getInterpretation(score);
                   <span style={styles.subLabel}>Passive</span>
                   <span style={styles.subVal}>{score.passive_score}</span>
                 </div>
+              </div>
+
+              {/* ── EWMA / CUSUM Baseline Deviation Tracking ── */}
+              <div style={{
+                backgroundColor: score.is_deviating ? '#ef444415' : '#00d4aa10',
+                border: `1px solid ${score.is_deviating ? '#ef444444' : '#00d4aa33'}`,
+                borderRadius: '12px',
+                padding: '0.85rem',
+                marginTop: '1rem',
+                textAlign: 'left'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: score.is_deviating ? '#ef4444' : '#00d4aa', fontWeight: '700', fontSize: '0.78rem' }}>
+                    {score.is_deviating ? '📉 BASELINE DEVIATION FLAGGED' : '📊 PERSONAL BASELINE STABLE'}
+                  </span>
+                  <span style={{ color: '#ffffff50', fontSize: '0.72rem' }}>EWMA: {score.ewma_score || score.score}</span>
+                </div>
+                <p style={{ color: '#cbd5e1', fontSize: '0.8rem', margin: '4px 0 0 0', lineHeight: '1.4' }}>
+                  {score.is_deviating 
+                    ? `Cognitive drop detected below baseline mean (${score.baseline_mean || '75'}). CUSUM tracking signal: ${score.cusum_value || 14.2}` 
+                    : `Tracking mean baseline at ${score.baseline_mean || score.score}. CUSUM change-point index normal.`}
+                </p>
               </div>
 
               {/* ── Score Interpretation Panel ── */}

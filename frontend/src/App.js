@@ -11,6 +11,7 @@ import Landing from './pages/Landing';
 import Level2Assessment from './pages/Level2Assessment';
 import Level3MRI from './pages/Level3MRI';
 import VoiceJournal from './pages/VoiceJournal';
+import CareCircle from './pages/CareCircle';
 import { pingBackend } from './utils/api';
 
 const ProtectedRoute = ({ children }) => {
@@ -48,6 +49,9 @@ const AppContent = () => {
         } />
         <Route path="/level3" element={
           <ProtectedRoute><Level3MRI /></ProtectedRoute>
+        } />
+        <Route path="/care-circle" element={
+          <ProtectedRoute><CareCircle /></ProtectedRoute>
         } />
       </Routes>
     </>

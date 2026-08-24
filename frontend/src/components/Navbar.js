@@ -20,6 +20,7 @@ const Navbar = () => {
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/tests', label: 'Daily Tests', icon: '🧪' },
     { path: '/voice', label: 'Voice Journal', icon: '🎙️' },
+    { path: '/care-circle', label: 'Care Circle', icon: '🤝' },
     { path: '/level2', label: 'Level 2', icon: '🔬' },
     { path: '/level3', label: 'Level 3 MRI', icon: '🧠' },
   ];

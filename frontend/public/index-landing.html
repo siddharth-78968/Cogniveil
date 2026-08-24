@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="CogniVeil — AI intelligence designed to reason, adapt and collaborate. Build production-grade modular AI applications." />
+  <title>Intelligence Designed To Evolve</title>
+
+  <!-- ── Preconnects ─────────────────────────────────── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://db.onlinewebfonts.com" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+
+  <!-- ① Inter — UI font (weights 400, 500, 600) -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- ② BubbledotICG-FinePos — retro dot-matrix display font -->
+  <link
+    href="https://db.onlinewebfonts.com/c/8cb707a9b8a73f8a7403336b861c3074?family=BubbledotICG-FinePos"
+    rel="stylesheet"
+  />
+
+  <!-- ③ Font Awesome 6.5.2 — enterprise brand icons -->
+  <!--
+    NOTE: The integrity hash in the brief is malformed (truncated sha512).
+    Loading without integrity so the stylesheet isn't rejected by the browser.
+    For production pin the correct hash from https://cdnjs.com/libraries/font-awesome
+  -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+
+  <!-- ── Main stylesheet (Inter + Geist Pixel Circle @font-face + all layout) -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════════
+       BACKGROUND VIDEO LAYER
+  ══════════════════════════════════════════════════════ -->
+  <div class="bg">
+    <video class="bg-video" autoplay muted loop playsinline>
+      <source
+        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_012548_ef22562c-c0ae-4816-ad9d-f8922af4e6a7.mp4"
+        type="video/mp4"
+      />
+    </video>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       PAGE SHELL — 3 vertical regions
+  ══════════════════════════════════════════════════════ -->
+  <main class="page">
+
+    <!-- ── 1) HEADER ───────────────────────────────────── -->
+    <header class="header" role="banner">
+
+      <!-- Logo — white circle, 72% icon inside -->
+      <button class="logo-btn" aria-label="CogniVeil home">
+        <img src="assets/logo.webp" alt="" width="52" height="52" />
+      </button>
+
+      <!-- Desktop nav pill -->
+      <nav aria-label="Primary navigation">
+        <ul class="nav-pill" role="list">
+          <li><a href="#" class="active" aria-current="page">Home</a></li>
+          <li><a href="#">Product</a></li>
+          <li><a href="#">Case Studies</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </nav>
+
+      <!-- Desktop Sign In -->
+      <button class="sign-in-btn" type="button">Sign in</button>
+
+      <!-- Mobile hamburger -->
+      <button
+        id="burger-btn"
+        class="burger-btn"
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+    </header>
+
+    <!-- ── 2) HERO ──────────────────────────────────────── -->
+    <section class="hero" aria-label="Hero">
+
+      <!-- Trust row -->
+      <div
+        class="trust-row anim"
+        style="--d: 0.05s;"
+        aria-label="Trusted by 2000+ enterprises"
+      >
+        <!-- Avatar 1 — Microsoft -->
+        <div class="avatar-ring" role="img" aria-label="Microsoft">
+          <div class="inner">
+            <i class="fa-brands fa-microsoft" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <!-- Avatar 2 — Amazon -->
+        <div class="avatar-ring" role="img" aria-label="Amazon">
+          <div class="inner">
+            <i class="fa-brands fa-amazon" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <!-- Avatar 3 — Google -->
+        <div class="avatar-ring" role="img" aria-label="Google">
+          <div class="inner">
+            <i class="fa-brands fa-google" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <!-- Trust pill — overlaps avatar 3 -->
+        <div class="trust-pill">
+          <span>Trusted by 2000+ Enterprises</span>
+        </div>
+      </div>
+
+      <!-- Headline — BubbledotICG-FinePos, solid white, per-line fade -->
+      <h1 class="headline">
+        <span>Intelligence</span>
+        <span>Designed To Evolve</span>
+      </h1>
+
+      <!-- Subhead -->
+      <p class="subhead anim" style="--d: 0.28s;">
+        Build applications that reason, adapt and collaborate using a modular<br />
+        AI platform designed for production.
+      </p>
+
+      <!-- CTA -->
+      <button class="cta-btn" type="button" id="cta-get-started">
+        Get Started
+      </button>
+
+    </section>
+
+    <!-- ── 3) STATS FOOTER ──────────────────────────────── -->
+    <footer class="stats" aria-label="Platform statistics">
+
+      <!-- < · Inference Time -->
+      <div
+        class="stat-item anim"
+        style="--d: 0.5s;"
+        data-target="120"
+        data-decimals="0"
+        data-suffix="ms"
+        data-delay="480"
+        data-duration="1500"
+      >
+        <div class="stat-icon" aria-hidden="true">&lt;</div>
+        <div class="stat-value" aria-live="polite">120ms</div>
+        <div class="stat-label">Inference Time</div>
+      </div>
+
+      <!-- % · Platform Uptime -->
+      <div
+        class="stat-item anim"
+        style="--d: 0.58s;"
+        data-target="99.99"
+        data-decimals="2"
+        data-suffix="%"
+        data-delay="570"
+        data-duration="1580"
+      >
+        <div class="stat-icon" aria-hidden="true">%</div>
+        <div class="stat-value" aria-live="polite">99.99%</div>
+        <div class="stat-label">Platform Uptime</div>
+      </div>
+
+      <!-- * · Autonomous Runtime -->
+      <div
+        class="stat-item anim"
+        style="--d: 0.66s;"
+        data-target="24"
+        data-decimals="0"
+        data-suffix="/7"
+        data-delay="660"
+        data-duration="1660"
+      >
+        <div class="stat-icon" aria-hidden="true">*</div>
+        <div class="stat-value" aria-live="polite">24/7</div>
+        <div class="stat-label">Autonomous Runtime</div>
+      </div>
+
+      <!-- # · Context Windows -->
+      <div
+        class="stat-item anim"
+        style="--d: 0.74s;"
+        data-target="2.4"
+        data-decimals="1"
+        data-suffix="M"
+        data-delay="750"
+        data-duration="1740"
+      >
+        <div class="stat-icon" aria-hidden="true">#</div>
+        <div class="stat-value" aria-live="polite">2.4M</div>
+        <div class="stat-label">Context Windows</div>
+      </div>
+
+    </footer>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════
+       MOBILE MENU  (hidden by default)
+  ══════════════════════════════════════════════════════ -->
+  <div
+    id="menu-overlay"
+    class="menu-overlay"
+    aria-hidden="true"
+    hidden
+  ></div>
+
+  <nav
+    id="mobile-menu"
+    class="mobile-menu"
+    aria-label="Mobile navigation"
+    hidden
+  >
+    <a href="#" class="active" aria-current="page">Home</a>
+    <a href="#">Product</a>
+    <a href="#">Case Studies</a>
+    <a href="#">Contact</a>
+    <button class="mobile-sign-in" type="button">Sign in</button>
+  </nav>
+
+  <!-- ── Scripts ──────────────────────────────────────── -->
+  <script src="main.js"></script>
+
+</body>
+</html>

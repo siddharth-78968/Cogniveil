@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { saveTestResult } from '../utils/api';
+import { analyseVoice, calculateScore } from '../utils/api';
 
 const VoiceJournal = () => {
   const navigate = useNavigate();
@@ -11,10 +11,19 @@ const VoiceJournal = () => {
   const [timer, setTimer] = useState(0);
   const [prompt, setPrompt] = useState('');
   const [ripple, setRipple] = useState(false);
+  const [selectedLang, setSelectedLang] = useState('en');
+  const [langInfo, setLangInfo] = useState(null);
+  const [transcript, setTranscript] = useState('');
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
   const timerInterval = useRef(null);
   const timerRef = useRef(0);
+  const speechRecognition = useRef(null);
+  const transcriptRef = useRef('');
+  const analyser = useRef(null);
+  const audioContext = useRef(null);
+  const meterInterval = useRef(null);
+  const rmsSamples = useRef([]);
 
 const prompts = useMemo(() => [
   "Describe what you did this morning in as much detail as you can.",
@@ -31,15 +40,49 @@ const prompts = useMemo(() => [
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder.current = new MediaRecorder(stream);
+      const preferredMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : undefined;
+      mediaRecorder.current = new MediaRecorder(stream, preferredMime ? { mimeType: preferredMime } : undefined);
       audioChunks.current = [];
+      rmsSamples.current = [];
+      transcriptRef.current = '';
+      setTranscript('');
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        audioContext.current = new AudioContextClass();
+        const source = audioContext.current.createMediaStreamSource(stream);
+        analyser.current = audioContext.current.createAnalyser();
+        analyser.current.fftSize = 2048;
+        source.connect(analyser.current);
+        const samples = new Uint8Array(analyser.current.fftSize);
+        meterInterval.current = setInterval(() => {
+          analyser.current.getByteTimeDomainData(samples);
+          const rms = Math.sqrt(samples.reduce((sum, value) => sum + Math.pow((value - 128) / 128, 2), 0) / samples.length);
+          rmsSamples.current.push(rms);
+        }, 100);
+      }
       mediaRecorder.current.ondataavailable = (e) => { audioChunks.current.push(e.data); };
       mediaRecorder.current.onstop = () => {
-        const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
+        const audioBlob = new Blob(audioChunks.current, { type: mediaRecorder.current.mimeType || 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
-        analyseAudio();
+        analyseAudio(audioBlob);
       };
+      const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (Recognition) {
+        speechRecognition.current = new Recognition();
+        speechRecognition.current.continuous = true;
+        speechRecognition.current.interimResults = false;
+        speechRecognition.current.lang = { en: 'en-IN', hi: 'hi-IN', ta: 'ta-IN', te: 'te-IN', mr: 'mr-IN', bn: 'bn-IN', es: 'es-ES' }[selectedLang] || 'en-IN';
+        speechRecognition.current.onresult = (event) => {
+          let text = transcriptRef.current;
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            if (event.results[i].isFinal) text += `${event.results[i][0].transcript} `;
+          }
+          transcriptRef.current = text.trim();
+          setTranscript(transcriptRef.current);
+        };
+        speechRecognition.current.start();
+      }
       mediaRecorder.current.start();
       setRecording(true);
       setRipple(true);
@@ -58,39 +101,66 @@ const prompts = useMemo(() => [
     if (mediaRecorder.current && recording) {
       mediaRecorder.current.stop();
       mediaRecorder.current.stream.getTracks().forEach(t => t.stop());
+      if (speechRecognition.current) speechRecognition.current.stop();
+      if (meterInterval.current) clearInterval(meterInterval.current);
+      if (audioContext.current) audioContext.current.close();
       setRecording(false);
       setRipple(false);
       clearInterval(timerInterval.current);
     }
   };
 
-  const analyseAudio = () => {
+  const analyseAudio = async (audioBlob) => {
     setAnalysing(true);
-    setTimeout(() => {
+    try {
       const duration = timerRef.current || 10;
-      const wordsPerMinute = Math.floor(Math.random() * 60) + 90;
-      const pauseScore = Math.random();
-      const fluencyScore = Math.random();
-      const wpmScore = Math.min(100, Math.max(0, ((wordsPerMinute - 60) / 90) * 100));
-      const pausePenalty = pauseScore < 0.3 ? 20 : pauseScore < 0.6 ? 10 : 0;
-      const fluencyBonus = fluencyScore > 0.7 ? 10 : 0;
-      const voiceScore = Math.min(100, Math.max(0, wpmScore - pausePenalty + fluencyBonus));
-
-      const analysis = {
-        duration,
-        wordsPerMinute,
-        pauseFrequency: pauseScore < 0.3 ? 'High' : pauseScore < 0.6 ? 'Moderate' : 'Low',
-        fluency: fluencyScore > 0.7 ? 'Good' : fluencyScore > 0.4 ? 'Fair' : 'Poor',
-        vocabularyRichness: fluencyScore > 0.6 ? 'Rich' : 'Limited',
-        voiceScore: Math.round(voiceScore),
-        risk: voiceScore >= 70 ? 'Low' : voiceScore >= 45 ? 'Moderate' : 'High',
+      const samples = rmsSamples.current;
+      const activityThreshold = Math.max(0.012, (samples.reduce((sum, value) => sum + value, 0) / Math.max(samples.length, 1)) * 0.55);
+      const active = samples.map(value => value >= activityThreshold);
+      let pauseCount = 0;
+      let silenceFrames = 0;
+      active.forEach(isActive => {
+        if (isActive) silenceFrames = 0;
+        else {
+          silenceFrames += 1;
+          if (silenceFrames === 5) pauseCount += 1; // 0.5 seconds at 100 ms sampling
+        }
+      });
+      const features = {
+        duration_seconds: duration,
+        speech_activity_ratio: active.filter(Boolean).length / Math.max(active.length, 1),
+        pause_count: pauseCount,
+        mean_rms: samples.reduce((sum, value) => sum + value, 0) / Math.max(samples.length, 1),
       };
-
-      setResult(analysis);
+      const formData = new FormData();
+      formData.append('audio', audioBlob, `voice-journal-${Date.now()}.webm`);
+      formData.append('features_json', JSON.stringify(features));
+      formData.append('transcript', transcriptRef.current);
+      formData.append('language_hint', selectedLang);
+      const response = await analyseVoice(formData);
+      const analysis = response.data;
+      if (analysis.transcript) setTranscript(analysis.transcript);
+      setLangInfo({ detected_language: analysis.detected_language, whisper_mode: analysis.analysis_method });
+      setResult({
+        duration: analysis.duration_seconds,
+        wordsPerMinute: analysis.words_per_minute ?? 'Unavailable',
+        pauseFrequency: `${analysis.pause_rate_per_minute} / min`,
+        fluency: `${Math.round(analysis.speech_activity_ratio * 100)}% active speech`,
+        vocabularyRichness: analysis.vocabulary_richness === null ? 'Unavailable' : `${Math.round(analysis.vocabulary_richness * 100)}% unique`,
+        voiceScore: analysis.voice_score,
+        risk: analysis.risk_level,
+        transcriptAvailable: analysis.transcript_available,
+        transcriptionEngine: analysis.transcription?.engine || 'browser-speech-recognition',
+      });
+      // Refresh today's single session score so the voice task contributes to
+      // the same longitudinal baseline record as today's cognitive tasks.
+      await calculateScore().catch(() => {});
       setAnalysing(false);
-      saveTestResult({ test_type: 'voice_journal', score: analysis.voiceScore, duration_seconds: duration })
-        .catch(() => {});
-    }, 2500);
+    } catch (e) {
+      console.error('Voice analysis error:', e);
+      setAnalysing(false);
+      alert('Voice analysis could not be completed. Please check the backend connection and try again.');
+    }
   };
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -113,7 +183,36 @@ const prompts = useMemo(() => [
           <div>
             <p style={styles.pageLabel}>SPEECH BIOMARKER ANALYSIS</p>
             <h1 style={styles.pageTitle}>Voice Journal</h1>
-            <p style={styles.pageSub}>Speak naturally for 30–60 seconds. AI analyses pause frequency, fluency, and vocabulary richness.</p>
+            <p style={styles.pageSub}>Speak naturally in your preferred language. AI automatically routes to multilingual Whisper model.</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+            <label style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: '700' }}>SELECT LANGUAGE</label>
+            <select
+              value={selectedLang}
+              onChange={(e) => setSelectedLang(e.target.value)}
+              style={{
+                backgroundColor: '#0d1117',
+                border: '1px solid #ffffff22',
+                borderRadius: '10px',
+                color: '#00d4aa',
+                padding: '0.5rem 0.8rem',
+                fontSize: '0.85rem',
+                fontWeight: '700'
+              }}
+            >
+              <option value="en">English (en)</option>
+              <option value="hi">Hindi (hi)</option>
+              <option value="ta">Tamil (ta)</option>
+              <option value="te">Telugu (te)</option>
+              <option value="es">Spanish (es)</option>
+              <option value="mr">Marathi (mr)</option>
+              <option value="bn">Bengali (bn)</option>
+            </select>
+            {langInfo && (
+              <span style={{ color: '#a78bfa', fontSize: '0.72rem', fontWeight: '600' }}>
+                🌐 Routed to: {langInfo.whisper_mode}
+              </span>
+            )}
           </div>
         </div>
 
@@ -267,6 +366,11 @@ const prompts = useMemo(() => [
                 <div style={styles.audioCard}>
                   <p style={styles.cardLabel}>YOUR RECORDING</p>
                   <audio controls src={audioURL} style={styles.audio} />
+                  <p style={{ color: '#ffffff45', fontSize: '0.76rem', lineHeight: 1.5, marginTop: '0.75rem' }}>
+                    {result.transcriptAvailable
+                      ? `Transcript captured (${transcript.split(/\s+/).filter(Boolean).length} words) via ${result.transcriptionEngine}.`
+                      : 'No browser transcript was available; the score uses measured speech activity and pauses only.'}
+                  </p>
                 </div>
               )}
 

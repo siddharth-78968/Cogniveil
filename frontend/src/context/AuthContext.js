@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { loginUser, registerUser } from '../utils/api';
+import { loginUser, registerUser, getProfile } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -21,8 +21,9 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const res = await loginUser({ email, password });
     const accessToken = res.data.access_token;
-    const userData = { email };
     localStorage.setItem('token', accessToken);
+    let userData = { email, is_caregiver: false };
+    try { userData = (await getProfile()).data; } catch (_) { /* dashboard remains usable if profile fetch is unavailable */ }
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('userEmail', email);
     setToken(accessToken);
@@ -30,8 +31,8 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
-  const register = async (name, email, password, age) => {
-    const res = await registerUser({ name, email, password, age, is_caregiver: false });
+  const register = async (name, email, password, age, consentGiven, isCaregiver = false) => {
+    const res = await registerUser({ name, email, password, age, is_caregiver: isCaregiver, consent_given: consentGiven });
     return res;
   };
 
