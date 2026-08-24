@@ -51,6 +51,10 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     token = auth.create_access_token(data={"sub": db_user.email}, expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES))
     return {"access_token": token, "token_type": "bearer"}
 
+@app.get("/auth/me", response_model=schemas.UserOut)
+def read_current_user(current_user: models.User = Depends(auth.get_current_user)):
+    return current_user
+
 @app.post("/signals")
 def save_signal(signal: schemas.PassiveSignalCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     new_signal = models.PassiveSignal(user_id=current_user.id, typing_speed=signal.typing_speed, backspace_rate=signal.backspace_rate, scroll_hesitation=signal.scroll_hesitation, session_duration=signal.session_duration)
