@@ -7,14 +7,17 @@ class UserCreate(BaseModel):
     email: str
     password: str
     age: int
+    gender: Optional[str] = "Not specified"
     is_caregiver: bool = False
     apoe_e4_provenance: Optional[str] = "self_reported"
     mri_provenance: Optional[str] = "self_reported"
-    consent_given: bool = False
 
 class UserLogin(BaseModel):
     email: str
     password: str
+
+class ConsentRequest(BaseModel):
+    consent_granted: bool = True
 
 class CaregiverInviteRequest(BaseModel):
     patient_email: EmailStr
@@ -24,7 +27,13 @@ class UserOut(BaseModel):
     name: str
     email: str
     age: int
+    gender: Optional[str] = "Not specified"
     is_caregiver: bool
+    consent_granted: bool = False
+    consent_granted_at: Optional[datetime] = None
+    baseline_status: str = "collecting"
+    level2_status: str = "not_collected"
+    combined_risk_score: Optional[float] = None
     apoe_e4_provenance: Optional[str] = "self_reported"
     mri_provenance: Optional[str] = "self_reported"
     created_at: datetime
@@ -54,6 +63,10 @@ class CogniScoreOut(BaseModel):
     cusum_value: Optional[float] = 0.0
     baseline_mean: Optional[float] = 0.0
     is_deviating: Optional[bool] = False
+    combined_risk_score: Optional[float] = None
+    baseline_status: Optional[str] = "collecting"
+    level2_status: Optional[str] = "not_collected"
+    trigger_level2: Optional[bool] = False
     created_at: datetime
 
     class Config:
@@ -96,16 +109,18 @@ class ClinicalReportRequest(BaseModel):
     cogni_score: float = 50.0
     risk_level: str = "Moderate"
     is_deviating: bool = False
+    combined_risk_score: Optional[float] = None
     shap_features: Optional[List[Dict[str, Any]]] = None
     mri_result: Optional[Dict[str, Any]] = None
 
 class AuditLogOut(BaseModel):
     id: int
-    user_id: Optional[int]
+    user_id: Optional[int] = None
     tool_name: str
-    input_summary: str
-    output_summary: str
-    guardrail_passed: bool
+    input_summary: Optional[str] = None
+    output_summary: Optional[str] = None
+    pipeline_state: Optional[str] = None
+    guardrail_passed: bool = True
     created_at: datetime
 
     class Config:

@@ -33,6 +33,6 @@
       "te"
     ]
   },
-  "trained_at": "2026-08-24T04:46:17.492378+00:00",
+  "trained_at": "2026-08-24T13:18:25.313834+00:00",
   "limitations": "Screening support only. Metrics are out-of-fold estimates and must be externally validated before clinical use."
 }

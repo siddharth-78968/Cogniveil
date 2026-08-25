@@ -5,14 +5,15 @@ print("--------------------------------------------------")
 print("CogniVeil — MedGemma & MCP Tool API Health Check")
 print("--------------------------------------------------\n")
 
-# 1. Login to get JWT Token
+# 1. Seed demo if needed and Login to get JWT Token
+requests.get("http://localhost:8000/setup-demo")
 login_res = requests.post(
     "http://localhost:8000/login",
     json={"email": "rajan@demo.com", "password": "demo1234"}
 )
 
 if login_res.status_code != 200:
-    print("❌ Login failed. Ensure backend server is running on http://localhost:8000")
+    print("[ERROR] Login failed. Ensure backend server is running on http://localhost:8000")
     exit(1)
 
 token = login_res.json()["access_token"]

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveTestResult, calculateScore } from '../utils/api';
+import VoiceGuideBar from '../components/VoiceGuideBar';
+import DoctorLayout from '../components/DoctorLayout';
 
 const tests = [
   { id: 'pattern_recall', name: 'Pattern Recall', icon: '🔲', description: 'Memorise a grid pattern then reproduce it from memory', duration: '~2 min', color: '#00d4aa' },
@@ -580,59 +582,56 @@ localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
   };
 
   if (alreadyDone) return (
-    <div style={styles.page}>
-      <div style={styles.bgGlow1} />
-      <div style={styles.bgGrid} />
-      <div style={styles.doneScreen}>
-        <span style={{ fontSize: '3rem' }}>✅</span>
-        <h2 style={styles.doneTitle}>Tests Already Completed Today</h2>
+    <DoctorLayout activeTitle="Daily Tests">
+      <div style={styles.doneCard}>
+        <span style={{ fontSize: '3rem' }}>✓</span>
+        <h2 style={styles.doneTitle}>Today's Tests Completed</h2>
         <p style={styles.doneSub}>You have already taken your daily tests. Come back tomorrow for a new session.</p>
-        <p style={{ color: '#ffffff25', fontSize: '0.82rem' }}>
+        <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
           Next available: Tomorrow ({new Date(Date.now() + 86400000).toLocaleDateString()})
         </p>
         <button style={styles.primaryBtn} onClick={() => navigate('/dashboard')}>
           View Dashboard →
         </button>
       </div>
-    </div>
+    </DoctorLayout>
   );
 
   if (allDone) return (
-    <div style={styles.page}>
-      <div style={styles.bgGlow1} />
-      <div style={styles.bgGrid} />
-      <div style={styles.doneScreen}>
-        <span style={{ fontSize: '4rem' }}>🎉</span>
+    <DoctorLayout activeTitle="Daily Tests">
+      <div style={styles.doneCard}>
+        <span style={{ fontSize: '3.5rem' }}>🎉</span>
         <h2 style={styles.doneTitle}>All Tests Complete!</h2>
         <p style={styles.doneSub}>Your CogniScore has been recalculated with today's results.</p>
-        <button style={styles.primaryBtn} onClick={() => navigate('/dashboard')}>View Dashboard →</button>
-        <button style={styles.secondaryBtn} onClick={() => navigate('/voice')}>Take Voice Journal →</button>
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button style={styles.primaryBtn} onClick={() => navigate('/dashboard')}>View Dashboard →</button>
+          <button style={styles.secondaryBtn} onClick={() => navigate('/voice')}>Take Voice Journal →</button>
+        </div>
       </div>
-    </div>
+    </DoctorLayout>
   );
 
   return (
-    <div style={styles.page}>
-      <div style={styles.bgGlow1} />
-      <div style={styles.bgGrid} />
-
+    <DoctorLayout activeTitle="Daily Tests">
       {!activeTest ? (
         <div style={styles.container}>
           <div style={styles.headerRow}>
             <div>
               <p style={styles.pageLabel}>DAILY ASSESSMENT</p>
               <h1 style={styles.pageTitle}>Cognitive Tests</h1>
-              <p style={styles.pageSub}>Complete all 5 tests to update your CogniScore</p>
+              <p style={styles.pageSub}>Complete all 5 tests to update your longitudinal CogniScore</p>
             </div>
             <div style={styles.progressCircle}>
               <span style={styles.progressNum}>{completed.length}</span>
-              <span style={styles.progressDen}>/{tests.length}</span>
+              <span style={styles.progressDen}>/{tests.length} Done</span>
             </div>
           </div>
 
           <div style={styles.progressBarOuter}>
             <div style={{ ...styles.progressBarInner, width: `${(completed.length / tests.length) * 100}%` }} />
           </div>
+
+          <VoiceGuideBar scriptKey="active_tests_intro" defaultLang="en" />
 
           <div className="test-grid" style={styles.testGrid}>
             {tests.map((test, i) => {
@@ -642,28 +641,27 @@ localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
                   key={test.id}
                   style={{
                     ...styles.testCard,
-                    borderColor: isDone ? test.color + '44' : '#ffffff08',
-                    opacity: isDone ? 0.7 : 1,
-                    animationDelay: `${i * 0.1}s`,
+                    borderColor: isDone ? '#4338CA40' : '#eef2f6',
+                    backgroundColor: isDone ? '#fafafa' : '#ffffff',
                     cursor: isDone ? 'default' : 'pointer',
                   }}
                   onClick={() => !isDone && setActiveTest(test.id)}
                 >
-                  <div style={{ ...styles.testIconBox, backgroundColor: test.color + '15', border: `1px solid ${test.color}22` }}>
-                    <span style={{ fontSize: '1.8rem' }}>{test.icon}</span>
+                  <div style={{ ...styles.testIconBox, backgroundColor: isDone ? '#4338CA12' : '#f8fafc' }}>
+                    <span style={{ fontSize: '1.6rem' }}>{test.icon}</span>
                   </div>
                   <div style={styles.testInfo}>
-                    <p style={{ ...styles.testName, color: isDone ? test.color : 'white' }}>{test.name}</p>
+                    <p style={{ ...styles.testName, color: isDone ? '#4338CA' : '#1e293b' }}>{test.name}</p>
                     <p style={styles.testDesc}>{test.description}</p>
-                    <p style={{ ...styles.testDuration, color: test.color }}>{test.duration}</p>
+                    <p style={{ ...styles.testDuration, color: '#4338CA' }}>{test.duration}</p>
                   </div>
                   <div style={{
                     ...styles.testStatus,
-                    backgroundColor: isDone ? test.color + '20' : '#ffffff08',
-                    color: isDone ? test.color : '#ffffff40',
-                    border: `1px solid ${isDone ? test.color + '33' : '#ffffff10'}`,
+                    backgroundColor: isDone ? '#4338CA15' : '#f1f5f9',
+                    color: isDone ? '#4338CA' : '#64748b',
+                    border: `1px solid ${isDone ? '#4338CA33' : '#e2e8f0'}`,
                   }}>
-                    {isDone ? '✓ Done' : 'Start →'}
+                    {isDone ? '✓ Completed' : 'Start Test →'}
                   </div>
                 </div>
               );
@@ -672,11 +670,11 @@ localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
         </div>
       ) : (
         <div style={styles.container}>
-          <button style={styles.backBtn} onClick={() => setActiveTest(null)}>← Back to Tests</button>
+          <button style={styles.backBtn} onClick={() => setActiveTest(null)}>← Back to All Tests</button>
           <div style={styles.activeHeader}>
             <span style={{ fontSize: '2rem' }}>{tests.find(t => t.id === activeTest)?.icon}</span>
             <div>
-              <p style={styles.pageLabel}>NOW TESTING</p>
+              <p style={styles.pageLabel}>ACTIVE TEST IN PROGRESS</p>
               <h2 style={styles.activeTitle}>{tests.find(t => t.id === activeTest)?.name}</h2>
             </div>
           </div>
@@ -687,120 +685,91 @@ localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
           {activeTest === 'reaction_time' && <ReactionTimeTest onComplete={(s, d) => handleComplete('reaction_time', s, d)} />}
         </div>
       )}
-
-<style>{`
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes glow { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
-  input:focus { outline: none !important; border-color: #00d4aa55 !important; box-shadow: 0 0 0 3px rgba(0,212,170,0.1) !important; }
-  @media (max-width: 640px) {
-    .test-grid { grid-template-columns: 1fr !important; }
-    .test-box { padding: 1.5rem 1rem !important; }
-    .cell-grid { grid-template-columns: repeat(4, 52px) !important; gap: 6px !important; }
-    .digit-row { gap: 0.5rem !important; }
-    .digit-item { font-size: 2rem !important; min-width: 45px !important; padding: 0.4rem 0.6rem !important; }
-    .action-btn { padding: 0.75rem 1.5rem !important; }
-    .done-screen { padding: 1rem !important; }
-  }
-`}</style>
-    </div>
+    </DoctorLayout>
   );
 };
 
 const styles = {
-  page: {
-    minHeight: '100vh', backgroundColor: '#080c14',
-    padding: '2rem', position: 'relative', overflow: 'hidden',
-    fontFamily: "'Segoe UI', sans-serif",
-  },
-  bgGlow1: {
-    position: 'fixed', width: '600px', height: '600px', borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(0,212,170,0.05) 0%, transparent 70%)',
-    top: '-150px', right: '-100px', pointerEvents: 'none', animation: 'glow 7s ease-in-out infinite',
-  },
-  bgGrid: {
-    position: 'fixed', inset: 0,
-    backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)',
-    backgroundSize: '40px 40px', pointerEvents: 'none',
-  },
-  container: { maxWidth: '780px', margin: '0 auto', animation: 'fadeUp 0.5s ease' },
-  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' },
-  pageLabel: { color: '#ffffff25', fontSize: '0.68rem', fontWeight: '700', letterSpacing: '0.15em', marginBottom: '0.25rem' },
-  pageTitle: { color: 'white', fontSize: '2rem', fontWeight: '800', letterSpacing: '-0.02em', marginBottom: '0.25rem' },
-  pageSub: { color: '#ffffff40', fontSize: '0.9rem' },
+  container: { maxWidth: '850px', margin: '0 auto' },
+  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' },
+  pageLabel: { color: '#4338CA', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.1em', marginBottom: '0.25rem' },
+  pageTitle: { color: '#1e293b', fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.02em', margin: '0 0 0.25rem 0' },
+  pageSub: { color: '#64748b', fontSize: '0.88rem', margin: 0 },
   progressCircle: {
-    backgroundColor: '#0d1117', border: '1px solid #ffffff10',
-    borderRadius: '14px', padding: '0.75rem 1.25rem',
-    display: 'flex', alignItems: 'baseline', gap: '2px',
+    backgroundColor: '#ffffff', border: '1px solid #e2e8f0',
+    borderRadius: '12px', padding: '0.6rem 1rem',
+    display: 'flex', alignItems: 'baseline', gap: '4px',
+    boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
   },
-  progressNum: { color: '#00d4aa', fontSize: '1.8rem', fontWeight: '800' },
-  progressDen: { color: '#ffffff30', fontSize: '1rem' },
-  progressBarOuter: { height: '4px', backgroundColor: '#ffffff08', borderRadius: '4px', marginBottom: '2rem', overflow: 'hidden' },
-  progressBarInner: { height: '100%', backgroundColor: '#00d4aa', borderRadius: '4px', transition: 'width 0.5s ease' },
+  progressNum: { color: '#4338CA', fontSize: '1.5rem', fontWeight: '800' },
+  progressDen: { color: '#94a3b8', fontSize: '0.85rem', fontWeight: '600' },
+  progressBarOuter: { height: '6px', backgroundColor: '#e2e8f0', borderRadius: '6px', marginBottom: '1.5rem', overflow: 'hidden' },
+  progressBarInner: { height: '100%', backgroundColor: '#4338CA', borderRadius: '6px', transition: 'width 0.5s ease' },
   testGrid: { display: 'flex', flexDirection: 'column', gap: '1rem' },
   testCard: {
-    backgroundColor: '#0d1117', border: '1px solid',
-    borderRadius: '16px', padding: '1.5rem',
+    borderRadius: '16px', padding: '1.25rem 1.5rem',
+    border: '1px solid',
     display: 'flex', alignItems: 'center', gap: '1.25rem',
-    transition: 'transform 0.15s, border-color 0.2s',
-    animation: 'fadeUp 0.5s ease both',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
   },
-  testIconBox: { width: '56px', height: '56px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  testIconBox: { width: '52px', height: '52px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   testInfo: { flex: 1 },
-  testName: { fontSize: '1.05rem', fontWeight: '700', marginBottom: '0.25rem' },
-  testDesc: { color: '#ffffff40', fontSize: '0.82rem', lineHeight: 1.5, marginBottom: '0.25rem' },
-  testDuration: { fontSize: '0.75rem', fontWeight: '600' },
-  testStatus: { padding: '0.4rem 0.9rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '600', whiteSpace: 'nowrap' },
-  backBtn: { background: 'none', border: 'none', color: '#ffffff40', fontSize: '0.9rem', cursor: 'pointer', marginBottom: '1.5rem', padding: 0 },
+  testName: { fontSize: '1rem', fontWeight: '700', margin: '0 0 0.2rem 0' },
+  testDesc: { color: '#64748b', fontSize: '0.8rem', lineHeight: '1.4', margin: '0 0 0.25rem 0' },
+  testDuration: { fontSize: '0.74rem', fontWeight: '700', margin: 0 },
+  testStatus: { padding: '0.45rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', whiteSpace: 'nowrap' },
+  backBtn: { background: 'none', border: 'none', color: '#4338CA', fontSize: '0.88rem', fontWeight: '700', cursor: 'pointer', marginBottom: '1.25rem', padding: 0 },
   activeHeader: { display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' },
-  activeTitle: { color: 'white', fontSize: '1.5rem', fontWeight: '800' },
-  doneScreen: {
+  activeTitle: { color: '#1e293b', fontSize: '1.5rem', fontWeight: '800', margin: 0 },
+  doneCard: {
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
+    borderRadius: '20px', padding: '3rem 2rem',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    minHeight: '80vh', gap: '1rem', textAlign: 'center', maxWidth: '500px', margin: '0 auto',
+    textAlign: 'center', maxWidth: '550px', margin: '3rem auto',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
   },
-  doneTitle: { color: 'white', fontSize: '2rem', fontWeight: '800' },
-  doneSub: { color: '#ffffff50', fontSize: '1rem', marginBottom: '0.5rem' },
-  primaryBtn: { backgroundColor: '#00d4aa', color: '#080c14', border: 'none', borderRadius: '10px', padding: '0.85rem 2rem', fontSize: '1rem', fontWeight: '700', cursor: 'pointer', width: '100%', maxWidth: '300px' },
-  secondaryBtn: { backgroundColor: 'transparent', color: '#a78bfa', border: '1px solid #a78bfa44', borderRadius: '10px', padding: '0.75rem 2rem', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', width: '100%', maxWidth: '300px' },
+  doneTitle: { color: '#1e293b', fontSize: '1.6rem', fontWeight: '800', margin: '0.5rem 0' },
+  doneSub: { color: '#64748b', fontSize: '0.9rem', marginBottom: '1rem' },
+  primaryBtn: { backgroundColor: '#4338CA', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '0.75rem 1.75rem', fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)' },
+  secondaryBtn: { backgroundColor: '#ffffff', color: '#4338CA', border: '1.5px solid #4338CA', borderRadius: '10px', padding: '0.75rem 1.75rem', fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer' },
 };
 
 const ts = {
   testBox: {
-    backgroundColor: '#0d1117', border: '1px solid #ffffff08',
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
     borderRadius: '20px', padding: '2.5rem',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
   },
-  instruction: { color: 'white', fontSize: '1.1rem', fontWeight: '600', textAlign: 'center' },
+  instruction: { color: '#1e293b', fontSize: '1.1rem', fontWeight: '700', textAlign: 'center' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 64px)', gap: '10px' },
   cell: { width: '64px', height: '64px', borderRadius: '10px', transition: 'all 0.2s' },
-  actionBtn: { border: 'none', borderRadius: '12px', padding: '0.85rem 2.5rem', fontSize: '1rem', fontWeight: '700', cursor: 'pointer', letterSpacing: '0.02em' },
+  actionBtn: { backgroundColor: '#4338CA', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '0.85rem 2.5rem', fontSize: '0.95rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)' },
   progressRow: { display: 'flex', gap: '8px' },
   progressDot: { width: '32px', height: '4px', borderRadius: '2px', transition: 'background 0.3s' },
   digitRow: { display: 'flex', gap: '0.75rem' },
   digit: {
-    fontSize: '2.5rem', color: '#a78bfa', fontWeight: '800',
-    backgroundColor: '#1a2540', border: '1px solid #a78bfa33',
+    fontSize: '2.2rem', color: '#4338CA', fontWeight: '800',
+    backgroundColor: '#f5f3ff', border: '1.5px solid #c7d2fe',
     padding: '0.5rem 1rem', borderRadius: '12px', minWidth: '60px', textAlign: 'center',
-    boxShadow: '0 0 20px rgba(167,139,250,0.15)',
   },
   textInput: {
-    backgroundColor: '#1a2540', border: '1px solid #ffffff20',
+    backgroundColor: '#f8fafc', border: '1.5px solid #cbd5e1',
     borderRadius: '12px', padding: '0.85rem 1rem',
-    color: 'white', fontSize: '1.2rem', width: '100%',
+    color: '#1e293b', fontSize: '1.2rem', width: '100%',
     outline: 'none', textAlign: 'center', boxSizing: 'border-box',
   },
   wordList: { display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' },
   wordChip: {
-    backgroundColor: '#f59e0b15', color: '#f59e0b',
-    border: '1px solid #f59e0b33',
+    backgroundColor: '#f5f3ff', color: '#4338CA',
+    border: '1px solid #c7d2fe',
     padding: '0.5rem 1.25rem', borderRadius: '20px',
-    fontSize: '1.05rem', fontWeight: '600',
+    fontSize: '1rem', fontWeight: '700',
   },
   resultBox: { textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' },
-  resultScore: { fontSize: '2.5rem', fontWeight: '800' },
-  resultDetail: { color: '#ffffff40', fontSize: '0.95rem' },
+  resultScore: { fontSize: '2.5rem', fontWeight: '800', color: '#4338CA' },
+  resultDetail: { color: '#64748b', fontSize: '0.9rem' },
 };
 
 export default Tests;

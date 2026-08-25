@@ -1,12 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { saveSignal } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 const PassiveTracker = () => {
+  const { user } = useAuth();
   const typingData = useRef({ keyTimes: [], backspaces: 0, totalKeys: 0 });
   const scrollData = useRef({ hesitations: 0, lastScrollTime: 0 });
   const sessionStart = useRef(Date.now());
 
   useEffect(() => {
+    if (!user || !user.consent_granted) {
+      return;
+    }
     const handleKeyDown = (e) => {
       const now = Date.now();
       typingData.current.keyTimes.push(now);
@@ -67,7 +72,7 @@ const PassiveTracker = () => {
       window.removeEventListener('scroll', handleScroll);
       clearInterval(interval);
     };
-  }, []);
+  }, [user]);
 
   return null;
 };

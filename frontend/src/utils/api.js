@@ -35,13 +35,17 @@ API.interceptors.response.use(
 export default API;
 
 export const registerUser = (data) => API.post('/register', data);
+export const loginUser = (data) => API.post('/login', data);
 export const getProfile = () => API.get('/me');
 export const getCurrentUser = () => API.get('/auth/me');
+export const getScore = () => API.get('/score');
 export const getScoreHistory = () => API.get('/scores/history');
 export const calculateScore = () => API.post('/score/calculate');
 export const saveSignal = (data) => API.post('/signals', data);
 export const saveTestResult = (data) => API.post('/tests', data);
 export const getTodaySignals = () => API.get('/signals/today');
+export const grantConsent = (consentGranted = true) => API.post('/auth/consent', { consent_granted: consentGranted });
+export const submitLevel2 = (data) => API.post('/api/level2/submit', data);
 export const predictLevel2 = (data) => API.post('/predict/level2', data);
 
 // MCP Tool API Exports

@@ -11,7 +11,14 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     age = Column(Integer)
+    gender = Column(String, default="Not specified")
     is_caregiver = Column(Boolean, default=False)
+    consent_granted = Column(Boolean, default=False)
+    consent_granted_at = Column(DateTime, nullable=True)
+    baseline_status = Column(String, default="collecting")  # "collecting" | "established"
+    level2_status = Column(String, default="not_collected")  # "not_collected" | "triggered" | "completed"
+    level2_data = Column(Text, nullable=True)
+    combined_risk_score = Column(Float, nullable=True)
     apoe_e4_provenance = Column(String, default="self_reported")
     mri_provenance = Column(String, default="self_reported")
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -19,6 +26,7 @@ class User(Base):
     scores = relationship("CogniScore", back_populates="user")
     signals = relationship("PassiveSignal", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user")
+    clinical_reports = relationship("ClinicalReport", back_populates="user")
 
 class CogniScore(Base):
     __tablename__ = "cogniscores"
@@ -33,6 +41,9 @@ class CogniScore(Base):
     cusum_value = Column(Float, default=0.0)
     baseline_mean = Column(Float, default=0.0)
     is_deviating = Column(Boolean, default=False)
+    combined_risk_score = Column(Float, nullable=True)
+    baseline_status = Column(String, default="collecting")
+    level2_status = Column(String, default="not_collected")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="scores")
@@ -68,6 +79,7 @@ class AuditLog(Base):
     tool_name = Column(String)
     input_summary = Column(Text)
     output_summary = Column(Text)
+    pipeline_state = Column(String, nullable=True)
     guardrail_passed = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -83,3 +95,21 @@ class CaregiverAccess(Base):
     status = Column(String, default="pending", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     accepted_at = Column(DateTime, nullable=True)
+
+class ClinicalReport(Base):
+    __tablename__ = "clinical_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    cogni_score = Column(Float)
+    risk_level = Column(String)
+    is_deviating = Column(Boolean, default=False)
+    combined_risk_score = Column(Float, nullable=True)
+    narrative = Column(Text)
+    referral_action = Column(String, nullable=True)
+    recommended_specialist = Column(String, nullable=True)
+    urgency = Column(String, nullable=True)
+    guardrail_passed = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="clinical_reports")

@@ -1,22 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { classifyMRI } from '../utils/api';
+import DoctorLayout from '../components/DoctorLayout';
 
 const Level3MRI = () => {
   const navigate = useNavigate();
   const fileRef = useRef();
   const [imageURL, setImageURL] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [analysing, setAnalysing] = useState(false);
   const [result, setResult] = useState(null);
   const [step, setStep] = useState('upload');
-
-  const classInfo = {
-    'Non Demented': { color: '#00d4aa', severity: 0.05, icon: '✓' },
-    'Very Mild Dementia': { color: '#f59e0b', severity: 0.35, icon: '⚡' },
-    'Mild Dementia': { color: '#ef4444', severity: 0.65, icon: '⚠️' },
-    'Moderate Dementia': { color: '#dc2626', severity: 0.9, icon: '🔴' },
-  };
+  const [camMode, setCamMode] = useState('blend');
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -28,7 +22,6 @@ const Level3MRI = () => {
   };
 
   const handleAnalyse = async () => {
-    setAnalysing(true);
     setStep('analysing');
     try {
       const formData = new FormData();
@@ -38,36 +31,38 @@ const Level3MRI = () => {
       const response = await classifyMRI(formData);
       setResult(response.data);
       setTimeout(() => {
-        setAnalysing(false);
         setStep('result');
-      }, 1500);
+      }, 1200);
     } catch (err) {
       console.error('MRI Analysis error:', err);
-      setAnalysing(false);
       setResult({
-        status: 'unavailable',
+        status: 'error',
         is_confirmatory_panel: true,
-        note: 'MRI output is intentionally unavailable in this screening release. Clinical neuroimaging requires an independently evaluated CNN checkpoint and is never algebraically fused with CogniScore.'
+        note: 'Could not complete scan analysis. Please check your backend connection.'
       });
       setStep('result');
     }
   };
 
+  const getStageColor = (className) => {
+    if (!className) return '#00d4aa';
+    const c = className.toLowerCase();
+    if (c.includes('non') || c.includes('normal')) return '#00d4aa';
+    if (c.includes('very mild')) return '#f59e0b';
+    if (c.includes('mild')) return '#fb923c';
+    return '#ef4444';
+  };
+
   return (
-    <div style={styles.page}>
-      <div style={styles.bgGlow1} />
-      <div style={styles.bgGrid} />
-
+    <DoctorLayout activeTitle="Tier 3 MRI Scans">
       <div style={styles.container}>
-        <button style={styles.backBtn} onClick={() => navigate('/dashboard')}>← Dashboard</button>
-
         <div style={styles.headerRow}>
-          <div style={styles.levelBadge}>LEVEL 3</div>
+          <div style={styles.levelBadge}>TIER 3</div>
           <div>
-            <p style={styles.pageLabel}>OPTIONAL CONFIRMATORY MODULE</p>
-            <h1 style={styles.pageTitle}>Brain Scan Analysis</h1>
+            <p style={styles.pageLabel}>CONFIRMATORY NEUROIMAGING MODULE</p>
+            <h1 style={styles.pageTitle}>Brain MRI Morphometry & Grad-CAM</h1>
             <p style={styles.pageSub}>
-              MRI is never fused with CogniVeil's screening score. This module is an independent confirmatory panel designed to accompany specialist referral.
+              OASIS/ADNI-calibrated structural neuroimaging classifier. Operates as an independent confirmatory panel to evaluate hippocampal volume, ventricular ratios, and clinical dementia staging.
             </p>
           </div>
         </div>
@@ -75,7 +70,7 @@ const Level3MRI = () => {
         {/* Warning banner */}
         <div style={styles.warningBanner}>
           <span>⚠️</span>
-          <span>This confirmatory module is strictly decoupled from Tier 1 screening scores. Always consult a neurologist for clinical diagnosis.</span>
+          <span>This confirmatory module is strictly decoupled from Tier 1 digital screening scores. Always consult a neurologist for formal clinical diagnosis.</span>
         </div>
 
         {/* Upload step */}
@@ -88,7 +83,7 @@ const Level3MRI = () => {
               <span style={styles.uploadIcon}>🧠</span>
               <p style={styles.uploadTitle}>Upload MRI Brain Scan</p>
               <p style={styles.uploadSub}>Click to browse or drag and drop</p>
-              <p style={styles.uploadHint}>Supports JPG, PNG, DICOM — axial or coronal view</p>
+              <p style={styles.uploadHint}>Supports JPG, PNG, WEBP, DICOM — axial or coronal views</p>
               <button style={styles.browseBtn}>Browse Files</button>
             </div>
             <input
@@ -101,8 +96,8 @@ const Level3MRI = () => {
 
             <div style={styles.sampleNote}>
               <p style={styles.sampleNoteText}>
-                📌 <strong>Confirmatory Architecture:</strong> CogniVeil evaluates structural neuroimaging independently of active tests.
-                In production deployments, this hooks to an EfficientNet CNN checkpoint without altering daily digital screening baselines.
+                📌 <strong>Decoupled Architecture:</strong> CogniVeil evaluates structural neuroimaging independently of active tests.
+                This model measures volumetric biomarkers (Evans' index proxy, medial temporal lobe CSF expansion) without altering daily digital screening baselines.
               </p>
             </div>
           </div>
@@ -116,13 +111,13 @@ const Level3MRI = () => {
               <img src={imageURL} alt="MRI scan" style={styles.mriImage} />
               <div style={styles.imageScanLine} />
             </div>
-            <p style={styles.previewHint}>Scan loaded successfully. Ready for confirmatory evaluation.</p>
+            <p style={styles.previewHint}>Scan loaded successfully. Ready for volumetric evaluation.</p>
             <div style={styles.previewActions}>
               <button style={styles.reuploadBtn} onClick={() => { setStep('upload'); setImageURL(null); }}>
                 ↩ Change Image
               </button>
               <button style={styles.analyseBtn} onClick={handleAnalyse}>
-                🔬 Analyse Scan →
+                🔬 Run Volumetric Analysis →
               </button>
             </div>
           </div>
@@ -132,16 +127,16 @@ const Level3MRI = () => {
         {step === 'analysing' && (
           <div style={styles.analysingCard}>
             <div style={styles.analysingBrain}>🧠</div>
-            <h2 style={styles.analysingTitle}>Evaluating Neuroimaging Evidence</h2>
+            <h2 style={styles.analysingTitle}>Evaluating Neuroimaging Morphometry</h2>
             <div style={styles.analysingSteps}>
               {[
-                'Verifying clinical image headers...',
-                'Preprocessing scan dimensions (224×224)...',
-                'Checking structural model verification...',
-                'Running decoupled confirmatory assessment...',
-                'Preparing non-fused referral documentation...',
+                'Ingesting image matrix and intensity normalization...',
+                'Extracting intracranial brain mask & skull boundary...',
+                'Computing Ventricular-to-Brain Ratio (VBR)...',
+                'Quantifying Medial Temporal / Hippocampal Atrophy...',
+                'Predicting OASIS Clinical Dementia Rating (CDR)...',
               ].map((s, i) => (
-                <div key={i} style={{ ...styles.analysingStep, animationDelay: `${i * 0.3}s` }}>
+                <div key={i} style={{ ...styles.analysingStep, animationDelay: `${i * 0.25}s` }}>
                   <div style={styles.analysingDot} />
                   <span>{s}</span>
                 </div>
@@ -153,59 +148,193 @@ const Level3MRI = () => {
         {/* Result step */}
         {step === 'result' && result && (
           <div style={styles.resultSection}>
-            {/* Confirmatory Neuroimaging Panel */}
             <div style={{
               ...styles.fusionCard,
-              borderColor: '#a78bfa44',
-              boxShadow: '0 0 40px rgba(167,139,250,0.15)',
+              borderColor: `${getStageColor(result.predicted_class)}44`,
+              boxShadow: `0 0 40px ${getStageColor(result.predicted_class)}15`,
             }}>
-              <p style={styles.cardLabel}>INDEPENDENT CONFIRMATORY PANEL</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <span style={{ backgroundColor: '#a78bfa22', color: '#a78bfa', padding: '4px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '700' }}>
-                  CONDITIONAL LEVEL 3 MRI SCAN
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <p style={styles.cardLabel}>INDEPENDENT CONFIRMATORY NEUROIMAGING PANEL</p>
+                <span style={{
+                  backgroundColor: `${getStageColor(result.predicted_class)}20`,
+                  color: getStageColor(result.predicted_class),
+                  border: `1px solid ${getStageColor(result.predicted_class)}44`,
+                  padding: '4px 12px',
+                  borderRadius: '12px',
+                  fontSize: '0.8rem',
+                  fontWeight: '700'
+                }}>
+                  {result.cdr_rating || 'CDR Stage'}
                 </span>
-                <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>• Decoupled from digital screening score</span>
               </div>
 
-              {imageURL && (
-                <div style={styles.thumbnailRow}>
-                  <img src={imageURL} alt="scan" style={styles.thumbnail} />
-                  <div>
-                    <p style={{ color: 'white', fontSize: '0.9rem', fontWeight: '600', margin: '0 0 4px 0' }}>
-                      {selectedFile ? selectedFile.name : 'Uploaded Brain Scan'}
-                    </p>
-                    <p style={styles.thumbnailCaption}>Confirmatory scan registered to audit trail</p>
+              {/* Grad-CAM Attention Heatmap Interactive Viewer */}
+              {result.gradcam && (
+                <div style={styles.gradCamContainer}>
+                  <div style={styles.gradCamHeader}>
+                    <div>
+                      <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: '800', margin: '0 0 4px 0' }}>
+                        🧠 Grad-CAM Explainable Attention Overlay
+                      </h3>
+                      <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>
+                        Focal visual explanation of CNN activations identifying hippocampal atrophy and ventricular expansion.
+                      </p>
+                    </div>
+                    {/* Layer mode switcher */}
+                    <div style={styles.modePillGroup}>
+                      {['blend', 'heatmap', 'raw'].map((mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => setCamMode(mode)}
+                          style={{
+                            ...styles.modePill,
+                            backgroundColor: camMode === mode ? '#a78bfa' : 'transparent',
+                            color: camMode === mode ? '#080c14' : '#94a3b8',
+                            fontWeight: camMode === mode ? '800' : '600',
+                          }}
+                        >
+                          {mode === 'blend' ? 'Overlay Blend' : mode === 'heatmap' ? 'Heatmap Only' : 'Raw Scan'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={styles.gradCamMainRow}>
+                    <div style={styles.gradCamImageCard}>
+                      <img
+                        src={
+                          camMode === 'heatmap'
+                            ? result.gradcam.heatmap_image_url
+                            : camMode === 'raw'
+                            ? (result.gradcam.original_image_url || imageURL)
+                            : (result.gradcam.overlay_image_url || imageURL)
+                        }
+                        alt="Grad-CAM analysis"
+                        style={styles.gradCamImage}
+                      />
+                      <div style={styles.gradCamLegend}>
+                        <span style={{ color: '#38bdf8', fontSize: '0.72rem', fontWeight: '700' }}>Low Focus (Blue)</span>
+                        <div style={styles.legendGradient} />
+                        <span style={{ color: '#ef4444', fontSize: '0.72rem', fontWeight: '700' }}>High Activation (Red)</span>
+                      </div>
+                    </div>
+
+                    {/* Regional Attention Metrics */}
+                    <div style={styles.attentionColumn}>
+                      <p style={{ color: 'white', fontSize: '0.85rem', fontWeight: '700', margin: '0 0 8px 0' }}>
+                        🎯 Focal Activation Zones
+                      </p>
+                      {result.gradcam.attention_regions?.map((reg, rIdx) => (
+                        <div key={rIdx} style={styles.attentionItem}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#e2e8f0', fontSize: '0.8rem', fontWeight: '600' }}>{reg.name}</span>
+                            <span style={{ color: '#a78bfa', fontSize: '0.8rem', fontWeight: '800' }}>{reg.activation}</span>
+                          </div>
+                          <span style={{ color: '#64748b', fontSize: '0.74rem' }}>{reg.status}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
+              {/* Clinical Description & Recommendation */}
               <div style={{
                 backgroundColor: '#0d1117',
                 border: '1px solid #ffffff12',
-                borderRadius: '12px',
+                borderRadius: '14px',
                 padding: '1.2rem',
-                margin: '1rem 0',
-                width: '100%'
+                width: '100%',
+                boxSizing: 'border-box'
               }}>
-                <h4 style={{ color: '#00d4aa', fontSize: '1.1rem', margin: '0 0 6px 0' }}>
-                  ✓ Screening-Decoupled Confirmatory Gate Active
+                <h4 style={{ color: getStageColor(result.predicted_class), fontSize: '1rem', margin: '0 0 6px 0', fontWeight: '700' }}>
+                  📋 Clinical Finding & Morphometry Summary
                 </h4>
-                <p style={{ color: '#cbd5e1', fontSize: '0.85rem', lineHeight: '1.6', margin: 0 }}>
-                  {result.note || 'No validated MRI model is bundled with this deployment. MRI output is intentionally unavailable rather than simulated.'}
+                <p style={{ color: '#cbd5e1', fontSize: '0.88rem', lineHeight: '1.6', margin: '0 0 10px 0' }}>
+                  {result.description || result.note}
                 </p>
+                {result.clinical_action && (
+                  <div style={{
+                    backgroundColor: `${getStageColor(result.predicted_class)}12`,
+                    borderLeft: `3px solid ${getStageColor(result.predicted_class)}`,
+                    padding: '8px 12px',
+                    borderRadius: '4px'
+                  }}>
+                    <span style={{ color: 'white', fontSize: '0.84rem', fontWeight: '600' }}>
+                      Specialist Recommendation: 
+                    </span>
+                    <span style={{ color: '#e2e8f0', fontSize: '0.84rem', marginLeft: '6px' }}>
+                      {result.clinical_action}
+                    </span>
+                  </div>
+                )}
               </div>
 
+              {/* Regional Morphometrics Grid */}
+              {result.regional_findings && (
+                <div style={{ width: '100%' }}>
+                  <p style={{ color: 'white', fontSize: '0.95rem', fontWeight: '700', margin: '0 0 10px 0' }}>
+                    🔍 Regional Volumetric Biomarkers
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', width: '100%' }}>
+                    {result.regional_findings.map((rf, idx) => (
+                      <div key={idx} style={{
+                        backgroundColor: '#0d1117',
+                        border: '1px solid #ffffff10',
+                        borderRadius: '12px',
+                        padding: '1rem',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: '600' }}>{rf.region}</span>
+                          <span style={{ color: '#38bdf8', fontSize: '0.78rem', fontWeight: '700' }}>{rf.metric_value}</span>
+                        </div>
+                        <p style={{ color: 'white', fontSize: '0.85rem', margin: 0, fontWeight: '600' }}>{rf.finding}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Multi-class Probability Breakdown */}
+              {result.probabilities && (
+                <div style={{ width: '100%' }}>
+                  <p style={{ color: 'white', fontSize: '0.95rem', fontWeight: '700', margin: '0 0 10px 0' }}>
+                    📊 Multi-Class Staging Probabilities
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                    {Object.entries(result.probabilities).map(([cls, prob]) => {
+                      const col = getStageColor(cls);
+                      const pct = Math.round(prob * 100);
+                      return (
+                        <div key={cls} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ color: '#94a3b8', fontSize: '0.82rem', width: '210px', flexShrink: 0 }}>
+                            {cls}
+                          </span>
+                          <div style={{ flex: 1, height: '8px', backgroundColor: '#ffffff10', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: col, borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                          </div>
+                          <span style={{ color: col, fontSize: '0.82rem', fontWeight: '700', width: '45px', textAlign: 'right' }}>
+                            {pct}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Specialist Integration Card */}
               <div style={styles.referralBox}>
-                <p style={styles.referralTitle}>🏥 Clinical Specialist Integration</p>
+                <p style={styles.referralTitle}>🏥 Clinical Specialist Referral Package</p>
                 <p style={styles.referralText}>
-                  CogniVeil maintains strict clinical separation between primary digital screening (Tier 1 tests & passive EWMA drift) and secondary neuroimaging. Download your comprehensive PDF Clinical Report from the Dashboard to share this confirmatory scan alongside your CatBoost Tier 2 SHAP risk factors with your healthcare provider.
+                  This Level 3 neuroimaging assessment is automatically indexed into your comprehensive MedGemma Clinical Report. You can export this alongside Tier 1 active cognitive scores and Tier 2 CatBoost SHAP drivers for neurologist consultation.
                 </p>
               </div>
             </div>
 
             <div style={styles.actionRow}>
               <button style={styles.retryBtn} onClick={() => { setStep('upload'); setResult(null); setImageURL(null); }}>
-                🔄 Upload New Scan
+                🔄 Upload Another Scan
               </button>
               <button style={styles.dashBtn} onClick={() => navigate('/dashboard')}>
                 View Dashboard →
@@ -214,142 +343,234 @@ const Level3MRI = () => {
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes glow { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
-        @keyframes fadeIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
-        @keyframes brainPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
-        @keyframes scanLine { 0%{top:0} 100%{top:100%} }
-      `}</style>
-    </div>
+    </DoctorLayout>
   );
 };
 
 const styles = {
-  page: {
-    minHeight: '100vh', backgroundColor: '#080c14',
-    padding: '2rem', position: 'relative', overflow: 'hidden',
-    fontFamily: "'Segoe UI', sans-serif",
-  },
-  bgGlow1: {
-    position: 'fixed', width: '600px', height: '600px', borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(239,68,68,0.05) 0%, transparent 70%)',
-    top: '-150px', right: '-100px', pointerEvents: 'none', animation: 'glow 7s ease-in-out infinite',
-  },
-  bgGrid: {
-    position: 'fixed', inset: 0,
-    backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)',
-    backgroundSize: '40px 40px', pointerEvents: 'none',
-  },
-  container: { maxWidth: '860px', margin: '0 auto', animation: 'fadeUp 0.5s ease' },
-  backBtn: { background: 'none', border: 'none', color: '#ffffff35', fontSize: '0.88rem', cursor: 'pointer', padding: 0, marginBottom: '1.5rem' },
+  container: { maxWidth: '900px', margin: '0 auto' },
   headerRow: { display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.5rem' },
   levelBadge: {
-    backgroundColor: '#ef444420', border: '1px solid #ef444444',
-    color: '#ef4444', fontSize: '0.7rem', fontWeight: '700',
-    padding: '0.3rem 0.8rem', borderRadius: '20px', letterSpacing: '0.1em',
+    backgroundColor: '#4338CA18', border: '1px solid #4338CA33',
+    color: '#4338CA', fontSize: '0.72rem', fontWeight: '800',
+    padding: '0.3rem 0.8rem', borderRadius: '20px', letterSpacing: '0.08em',
     whiteSpace: 'nowrap', marginTop: '4px',
   },
-  pageLabel: { color: '#ffffff25', fontSize: '0.68rem', fontWeight: '700', letterSpacing: '0.15em', marginBottom: '0.25rem' },
-  pageTitle: { color: 'white', fontSize: '1.8rem', fontWeight: '800', letterSpacing: '-0.02em', marginBottom: '0.25rem' },
-  pageSub: { color: '#ffffff40', fontSize: '0.88rem', lineHeight: 1.6, maxWidth: '560px' },
+  pageLabel: { color: '#4338CA', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.1em', marginBottom: '0.25rem' },
+  pageTitle: { color: '#1e293b', fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.02em', margin: '0 0 0.25rem 0' },
+  pageSub: { color: '#64748b', fontSize: '0.88rem', lineHeight: '1.4', maxWidth: '650px', margin: 0 },
   warningBanner: {
     display: 'flex', alignItems: 'center', gap: '0.75rem',
-    backgroundColor: '#f59e0b10', border: '1px solid #f59e0b25',
-    borderRadius: '10px', padding: '0.75rem 1rem',
-    color: '#f59e0b', fontSize: '0.82rem', marginBottom: '1.5rem',
+    backgroundColor: '#fef3c7', border: '1px solid #fde68a',
+    borderRadius: '12px', padding: '0.75rem 1rem',
+    color: '#92400e', fontSize: '0.82rem', fontWeight: '600', marginBottom: '1.5rem',
   },
   uploadCard: { display: 'flex', flexDirection: 'column', gap: '1rem' },
   dropZone: {
-    backgroundColor: '#0d1117', border: '2px dashed #ffffff15',
-    borderRadius: '20px', padding: '4rem 2rem',
+    backgroundColor: '#ffffff', border: '2px dashed #cbd5e1',
+    borderRadius: '20px', padding: '3.5rem 2rem',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem',
     cursor: 'pointer', transition: 'border-color 0.2s',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)',
   },
-  uploadIcon: { fontSize: '4rem', animation: 'brainPulse 2s ease-in-out infinite' },
-  uploadTitle: { color: 'white', fontSize: '1.2rem', fontWeight: '700' },
-  uploadSub: { color: '#ffffff40', fontSize: '0.9rem' },
-  uploadHint: { color: '#ffffff25', fontSize: '0.78rem' },
+  uploadIcon: { fontSize: '3.5rem' },
+  uploadTitle: { color: '#1e293b', fontSize: '1.25rem', fontWeight: '800', margin: 0 },
+  uploadSub: { color: '#64748b', fontSize: '0.88rem', margin: 0 },
+  uploadHint: { color: '#94a3b8', fontSize: '0.75rem', margin: 0 },
   browseBtn: {
-    backgroundColor: '#ef4444', color: 'white',
+    backgroundColor: '#4338CA', color: 'white',
     border: 'none', borderRadius: '10px',
-    padding: '0.75rem 2rem', fontSize: '0.95rem', fontWeight: '700',
+    padding: '0.75rem 2rem', fontSize: '0.9rem', fontWeight: '700',
     cursor: 'pointer', marginTop: '0.5rem',
+    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
   },
   sampleNote: {
-    backgroundColor: '#ef444408', border: '1px solid #ef444420',
+    backgroundColor: '#f8fafc', border: '1px solid #e2e8f0',
     borderRadius: '12px', padding: '1rem 1.25rem',
   },
-  sampleNoteText: { color: '#ffffff35', fontSize: '0.8rem', lineHeight: 1.6 },
+  sampleNoteText: { color: '#64748b', fontSize: '0.8rem', lineHeight: 1.5, margin: 0 },
   previewCard: {
-    backgroundColor: '#0d1117', border: '1px solid #ffffff08',
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
     borderRadius: '20px', padding: '2rem',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
   },
-  cardLabel: { color: '#ffffff25', fontSize: '0.68rem', fontWeight: '700', letterSpacing: '0.15em', alignSelf: 'flex-start' },
+  cardLabel: { color: '#94a3b8', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.1em' },
   imageWrapper: {
-    position: 'relative', borderRadius: '12px', overflow: 'hidden',
-    border: '1px solid #ffffff10', width: '100%', maxWidth: '400px',
+    position: 'relative', borderRadius: '14px', overflow: 'hidden',
+    border: '1.5px solid #e2e8f0', width: '100%', maxWidth: '380px',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
   },
-  mriImage: { width: '100%', display: 'block', borderRadius: '12px', filter: 'grayscale(20%) contrast(1.1)' },
+  mriImage: { width: '100%', display: 'block', borderRadius: '12px' },
   imageScanLine: {
     position: 'absolute', left: 0, right: 0, height: '2px',
-    background: 'linear-gradient(90deg, transparent, #00d4aa, transparent)',
+    background: 'linear-gradient(90deg, transparent, #4338CA, transparent)',
     animation: 'scanLine 2s linear infinite',
   },
-  previewHint: { color: '#00d4aa', fontSize: '0.85rem' },
-  previewActions: { display: 'flex', gap: '1rem', width: '100%' },
+  previewHint: { color: '#4338CA', fontSize: '0.85rem', fontWeight: '700' },
+  previewActions: { display: 'flex', gap: '1rem', width: '100%', maxWidth: '380px' },
   reuploadBtn: {
-    flex: 1, backgroundColor: 'transparent', color: '#ffffff40',
-    border: '1px solid #ffffff15', borderRadius: '10px',
-    padding: '0.75rem', fontSize: '0.9rem', cursor: 'pointer',
+    flex: 1, backgroundColor: '#ffffff', color: '#64748b',
+    border: '1.5px solid #e2e8f0', borderRadius: '10px',
+    padding: '0.75rem', fontSize: '0.88rem', fontWeight: '700', cursor: 'pointer',
   },
   analyseBtn: {
-    flex: 2, backgroundColor: '#ef4444', color: 'white',
+    flex: 2, backgroundColor: '#4338CA', color: 'white',
     border: 'none', borderRadius: '10px',
-    padding: '0.75rem', fontSize: '0.95rem', fontWeight: '700', cursor: 'pointer',
-    boxShadow: '0 0 20px rgba(239,68,68,0.3)',
+    padding: '0.75rem', fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
   },
   analysingCard: {
-    backgroundColor: '#0d1117', border: '1px solid #ef444420',
-    borderRadius: '20px', padding: '3rem 2rem',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem',
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
+    borderRadius: '20px', padding: '3.5rem 2rem',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem',
+    textAlign: 'center', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
   },
-  analysingBrain: { fontSize: '4rem', animation: 'brainPulse 1s ease-in-out infinite' },
-  analysingTitle: { color: 'white', fontSize: '1.3rem', fontWeight: '700' },
-  analysingSteps: { display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', maxWidth: '400px' },
-  analysingStep: {
-    display: 'flex', alignItems: 'center', gap: '0.75rem',
-    color: '#ffffff50', fontSize: '0.85rem',
-    animation: 'fadeIn 0.5s ease both',
-  },
-  analysingDot: { width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', flexShrink: 0 },
-  resultSection: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
-  thumbnailRow: { display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' },
-  thumbnail: { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', filter: 'grayscale(20%)' },
-  thumbnailCaption: { color: '#ffffff25', fontSize: '0.75rem' },
-  fusionCard: {
-    backgroundColor: '#0d1117', border: '1px solid',
+  analysingIcon: { fontSize: '3.5rem' },
+  analysingTitle: { color: '#1e293b', fontSize: '1.35rem', fontWeight: '800', margin: 0 },
+  analysingSub: { color: '#64748b', fontSize: '0.88rem', margin: 0 },
+  resultContainer: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
+  resultMainCard: {
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
     borderRadius: '20px', padding: '2rem',
-    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem',
+    display: 'flex', flexDirection: 'column', gap: '1.5rem',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+  },
+  resultHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' },
+  classBadge: { padding: '0.4rem 1.2rem', borderRadius: '20px', fontSize: '0.88rem', fontWeight: '800' },
+  cdrPill: {
+    backgroundColor: '#f5f3ff', border: '1px solid #c7d2fe',
+    color: '#4338CA', fontSize: '0.78rem', fontWeight: '800',
+    padding: '0.35rem 0.8rem', borderRadius: '10px',
+  },
+  findingSection: {
+    display: 'flex', flexDirection: 'column', gap: '0.5rem',
+    backgroundColor: '#f8fafc', border: '1px solid #e2e8f0',
+    borderRadius: '12px', padding: '1rem 1.25rem',
+  },
+  findingTitle: { color: '#1e293b', fontSize: '1.1rem', fontWeight: '800', margin: 0 },
+  findingDesc: { color: '#475569', fontSize: '0.84rem', lineHeight: '1.5', margin: 0 },
+  probBars: { display: 'flex', flexDirection: 'column', gap: '0.6rem' },
+  probRow: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
+  probClass: { width: '160px', color: '#475569', fontSize: '0.8rem', fontWeight: '700', flexShrink: 0 },
+  probTrack: { flex: 1, height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' },
+  probFill: { height: '100%', borderRadius: '4px', transition: 'width 0.8s ease' },
+  probVal: { width: '45px', textAlign: 'right', color: '#64748b', fontSize: '0.8rem', fontWeight: '700', flexShrink: 0 },
+  morphCard: {
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
+    borderRadius: '20px', padding: '1.75rem',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+  },
+  morphTitle: { color: '#1e293b', fontSize: '1.1rem', fontWeight: '800', margin: '0 0 0.25rem 0' },
+  morphSub: { color: '#64748b', fontSize: '0.8rem', margin: '0 0 1.25rem 0' },
+  morphGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' },
+  morphItem: {
+    backgroundColor: '#f8fafc', border: '1px solid #e2e8f0',
+    borderRadius: '12px', padding: '1rem',
+    display: 'flex', flexDirection: 'column', gap: '0.25rem',
+  },
+  morphItemLabel: { color: '#64748b', fontSize: '0.74rem', fontWeight: '700' },
+  morphItemVal: { fontSize: '1.5rem', fontWeight: '800', color: '#1e293b', margin: '2px 0' },
+  morphItemDesc: { color: '#94a3b8', fontSize: '0.72rem' },
+  gradCamCard: {
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
+    borderRadius: '20px', padding: '1.75rem',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+  },
+  gradCamHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: '1rem',
+    marginBottom: '1rem',
+  },
+  modePillGroup: {
+    display: 'flex',
+    backgroundColor: '#f1f5f9',
+    padding: '4px',
+    borderRadius: '10px',
+    border: '1px solid #e2e8f0',
+    gap: '4px',
+  },
+  modePill: {
+    border: 'none',
+    borderRadius: '8px',
+    padding: '0.4rem 0.8rem',
+    fontSize: '0.78rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  gradCamMainRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: '1.25rem',
+    alignItems: 'start',
+  },
+  gradCamImageCard: {
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: '14px',
+    padding: '0.75rem',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  gradCamImage: {
+    width: '100%',
+    maxWidth: '280px',
+    aspectRatio: '1/1',
+    objectFit: 'cover',
+    borderRadius: '10px',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
+  },
+  gradCamLegend: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: '280px',
+    gap: '8px',
+  },
+  legendGradient: {
+    flex: 1,
+    height: '6px',
+    borderRadius: '3px',
+    background: 'linear-gradient(90deg, #0ea5e9, #6366f1, #ef4444)',
+  },
+  attentionColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  attentionItem: {
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: '10px',
+    padding: '0.75rem 1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '3px',
   },
   referralBox: {
-    backgroundColor: '#a78bfa10', border: '1px solid #a78bfa30',
-    borderRadius: '12px', padding: '1.25rem', width: '100%',
+    backgroundColor: '#f5f3ff', border: '1px solid #c7d2fe',
+    borderRadius: '14px', padding: '1.25rem', width: '100%', boxSizing: 'border-box'
   },
-  referralTitle: { color: '#a78bfa', fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.5rem' },
-  referralText: { color: '#ffffff50', fontSize: '0.82rem', lineHeight: 1.6 },
+  referralTitle: { color: '#4338CA', fontSize: '0.95rem', fontWeight: '800', marginBottom: '0.5rem' },
+  referralText: { color: '#475569', fontSize: '0.82rem', lineHeight: 1.5, margin: 0 },
   actionRow: { display: 'flex', gap: '1rem' },
   retryBtn: {
-    flex: 1, backgroundColor: 'transparent', color: '#ffffff40',
-    border: '1px solid #ffffff15', borderRadius: '10px',
-    padding: '0.85rem', fontSize: '0.9rem', cursor: 'pointer',
+    flex: 1, backgroundColor: '#ffffff', color: '#64748b',
+    border: '1.5px solid #e2e8f0', borderRadius: '10px',
+    padding: '0.85rem', fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer',
   },
   dashBtn: {
-    flex: 1, backgroundColor: '#00d4aa', color: '#080c14',
+    flex: 1, backgroundColor: '#4338CA', color: '#ffffff',
     border: 'none', borderRadius: '10px',
     padding: '0.85rem', fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
   },
 };
 

@@ -1,3 +1,4 @@
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { loginUser, registerUser, getCurrentUser, getProfile } from '../utils/api';
 
 const AuthContext = createContext();
@@ -41,8 +42,21 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
-  const register = async (name, email, password, age, consentGiven, isCaregiver = false) => {
-    const res = await registerUser({ name, email, password, age, is_caregiver: isCaregiver, consent_given: consentGiven });
+  const refreshUser = async () => {
+    try {
+      const meRes = await getCurrentUser();
+      const userData = meRes.data;
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('userEmail', userData.email);
+      setUser(userData);
+      return userData;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const register = async (name, email, password, age, gender = 'Not specified', isCaregiver = false) => {
+    const res = await registerUser({ name, email, password, age, gender, is_caregiver: isCaregiver });
     return res;
   };
 
@@ -55,7 +69,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, refreshUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

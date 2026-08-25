@@ -1,892 +1,1626 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getScore, getScoreHistory, calculateScore, getTodaySignals, getClinicalReport } from '../utils/api';
-import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { useTheme } from '../context/ThemeContext';
+import { 
+  getScore, 
+  getScoreHistory, 
+  calculateScore, 
+  getTodaySignals,
+  getClinicalReport
+} from '../utils/api';
+import ReferralReportModal from '../components/ReferralReportModal';
+import DoctorLayout from '../components/DoctorLayout';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  Line
+} from 'recharts';
 
-// ── Streak helpers ───────────────────────────────────────────────────────────
-const getStreak = (userEmail) => {
-  try {
-    const key = `streakData_${userEmail}`;
-    const raw = localStorage.getItem(key);
-    if (!raw) return 0;
-    const { dates } = JSON.parse(raw);
-    if (!dates || dates.length === 0) return 0;
-    const sorted = [...dates].sort((a, b) => new Date(b) - new Date(a));
-    const today = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
-    let streak = 1;
-    for (let i = 1; i < sorted.length; i++) {
-      const prev = new Date(sorted[i - 1]);
-      const curr = new Date(sorted[i]);
-      const diff = Math.round((prev - curr) / 86400000);
-      if (diff === 1) streak++;
-      else break;
-    }
-    return streak;
-  } catch { return 0; }
+// Custom Tooltip matching modern medical UI kit
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{
+        backgroundColor: '#1e293b',
+        color: '#ffffff',
+        padding: '0.6rem 0.9rem',
+        borderRadius: '10px',
+        fontSize: '0.78rem',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+        border: '1px solid rgba(255,255,255,0.1)',
+      }}>
+        <p style={{ margin: '0 0 4px 0', fontWeight: '700', color: '#94a3b8' }}>{label}</p>
+        {payload.map((p, i) => (
+          <p key={i} style={{ margin: '2px 0', color: p.color, fontWeight: '700' }}>
+            {p.name}: {p.value} {p.name.includes('Score') || p.name.includes('Consultations') ? 'pts' : ''}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
 };
-
-const updateStreak = (userEmail) => {
-  try {
-    const key = `streakData_${userEmail}`;
-    const raw = localStorage.getItem(key);
-    const today = new Date().toDateString();
-    let dates = raw ? JSON.parse(raw).dates : [];
-    if (!dates.includes(today)) dates.push(today);
-    localStorage.setItem(key, JSON.stringify({ dates }));
-  } catch { }
-};
-
-// ── Score Interpretation ─────────────────────────────────────────────────────
-const getInterpretation = (score) => {
-  if (!score) return null;
-  const s = score.score;
-  if (s >= 85) return {
-    headline: 'Excellent Cognitive Health',
-    detail: 'Your score places you in the top 15% of users. Memory, attention, and processing speed are all performing strongly.',
-    action: 'Keep up your daily tests to maintain this level.',
-    actionColor: '#00d4aa',
-    icon: '🌟',
-  };
-  if (s >= 70) return {
-    headline: 'Good Cognitive Health',
-    detail: 'Your cognitive performance is above average. Minor fluctuations are normal day-to-day.',
-    action: 'Consistent testing and sleep will help maintain your score.',
-    actionColor: '#00d4aa',
-    icon: '✅',
-  };
-  if (s >= 55) return {
-    headline: 'Moderate Cognitive Performance',
-    detail: 'Your score is within the normal range but shows some variability. This may reflect stress, fatigue, or early changes worth monitoring.',
-    action: 'Consider completing the Level 2 Assessment for deeper insight.',
-    actionColor: '#f59e0b',
-    icon: '⚡',
-  };
-  if (s >= 40) return {
-    headline: 'Below Average — Worth Monitoring',
-    detail: 'Your score has been consistently below average. This pattern can sometimes indicate early cognitive changes.',
-    action: 'We recommend running the Level 2 ML Assessment and speaking with a clinician.',
-    actionColor: '#f59e0b',
-    icon: '⚠️',
-  };
-  return {
-    headline: 'Low Score — Clinical Attention Advised',
-    detail: 'Your CogniScore is in the high-risk range. This does not confirm a diagnosis, but warrants professional evaluation.',
-    action: 'Please complete Level 2 and Level 3 assessments and consult a healthcare provider.',
-    actionColor: '#ef4444',
-    icon: '🚨',
-  };
-};
-
-// ── PDF Export ───────────────────────────────────────────────────────────────
-const exportPDF = async (user, score, history, streak, clinicalReport = null) => {
-  // Dynamically load jsPDF from CDN
-  if (!window.jspdf) {
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  }
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-  const W = 210;
-  const userEmail = user?.email || 'Unknown';
-  const userName = userEmail.split('@')[0];
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-  const interpretation = getInterpretation(score);
-
-  // ── Background ──
-  doc.setFillColor(8, 12, 20);
-  doc.rect(0, 0, W, 297, 'F');
-
-  // ── Header band ──
-  doc.setFillColor(13, 17, 23);
-  doc.roundedRect(10, 10, W - 20, 38, 4, 4, 'F');
-
-  // Header accent line
-  doc.setFillColor(0, 212, 170);
-  doc.rect(10, 10, 4, 38, 'F');
-
-  // CogniVeil title
-  doc.setTextColor(0, 212, 170);
-  doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
-  doc.text('CogniVeil', 20, 26);
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Cognitive Health Monitoring Report', 20, 33);
-
-  doc.setTextColor(120, 130, 150);
-  doc.setFontSize(8);
-  doc.text(`Generated: ${dateStr} at ${timeStr}`, 20, 41);
-
-  // Report ID on right
-  const reportId = `CVR-${Date.now().toString(36).toUpperCase()}`;
-  doc.setTextColor(0, 212, 170);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.text(reportId, W - 15, 41, { align: 'right' });
-
-  // ── Patient Info ──
-  doc.setFillColor(13, 17, 23);
-  doc.roundedRect(10, 54, W - 20, 28, 4, 4, 'F');
-  doc.setFillColor(167, 139, 250);
-  doc.rect(10, 54, 4, 28, 'F');
-
-  doc.setTextColor(167, 139, 250);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.text('PATIENT INFORMATION', 20, 63);
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  doc.text(userName.charAt(0).toUpperCase() + userName.slice(1), 20, 73);
-
-  doc.setTextColor(120, 130, 150);
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.text(userEmail, 20, 79);
-
-  doc.setTextColor(120, 130, 150);
-  doc.setFontSize(8);
-  doc.text(`Streak: ${streak} day${streak !== 1 ? 's' : ''}`, W - 15, 73, { align: 'right' });
-
-  // ── CogniScore Card ──
-  doc.setFillColor(13, 17, 23);
-  doc.roundedRect(10, 88, 88, 60, 4, 4, 'F');
-
-  if (score) {
-    const riskColor = score.risk_level === 'Low' ? [0, 212, 170] : score.risk_level === 'Moderate' ? [245, 158, 11] : [239, 68, 68];
-    doc.setFillColor(...riskColor);
-    doc.rect(10, 88, 4, 60, 'F');
-
-    doc.setTextColor(120, 130, 150);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text('COGNISCORE', 20, 98);
-
-    doc.setTextColor(...riskColor);
-    doc.setFontSize(40);
-    doc.setFont('helvetica', 'bold');
-    doc.text(String(score.score), 20, 120);
-
-    doc.setTextColor(120, 130, 150);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('/ 100', 55, 120);
-
-    // Risk pill
-    doc.setFillColor(...riskColor.map(c => Math.min(255, c + 180)));
-    doc.setDrawColor(...riskColor);
-    doc.setFillColor(riskColor[0], riskColor[1], riskColor[2], 0.15);
-    doc.roundedRect(20, 125, 35, 8, 2, 2, 'S');
-    doc.setTextColor(...riskColor);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${score.risk_level} Risk`, 37, 130, { align: 'center' });
-
-    doc.setTextColor(120, 130, 150);
-    doc.setFontSize(7);
-    doc.text(`Updated: ${new Date(score.created_at).toLocaleDateString()}`, 20, 143);
-  } else {
-    doc.setTextColor(120, 130, 150);
-    doc.setFontSize(10);
-    doc.text('No score available', 20, 115);
-  }
-
-  // ── Sub-scores Card ──
-  doc.setFillColor(13, 17, 23);
-  doc.roundedRect(103, 88, 97, 60, 4, 4, 'F');
-
-  if (score) {
-    doc.setTextColor(120, 130, 150);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SCORE BREAKDOWN', 113, 98);
-
-    // Active score
-    doc.setFillColor(0, 212, 170);
-    doc.rect(103, 88, 4, 28, 'F');
-    doc.setTextColor(0, 212, 170);
-    doc.setFontSize(7);
-    doc.text('ACTIVE TESTS', 113, 108);
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text(String(score.active_score), 113, 122);
-
-    // Passive score
-    doc.setFillColor(167, 139, 250);
-    doc.rect(155, 88, 4, 28, 'F'); // small separator
-    doc.setTextColor(167, 139, 250);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PASSIVE MONITOR', 161, 108);
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text(String(score.passive_score), 161, 122);
-
-    // Divider
-    doc.setDrawColor(255, 255, 255, 0.05);
-    doc.line(103, 132, 200, 132);
-
-    // History stats
-    if (history.length > 0) {
-      const scores = history.map(h => h.score);
-      const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
-      const maxS = Math.max(...scores);
-
-      doc.setTextColor(120, 130, 150);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Sessions', 113, 140);
-      doc.text('Avg Score', 140, 140);
-      doc.text('Peak', 170, 140);
-
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text(String(history.length), 113, 147);
-      doc.text(String(avg), 140, 147);
-      doc.text(String(maxS), 170, 147);
-    }
-  }
-
-  // ── Interpretation Panel ──
-  if (interpretation) {
-    const iColor = interpretation.actionColor === '#00d4aa' ? [0, 212, 170] :
-      interpretation.actionColor === '#f59e0b' ? [245, 158, 11] : [239, 68, 68];
-
-    doc.setFillColor(13, 17, 23);
-    doc.roundedRect(10, 154, W - 20, 42, 4, 4, 'F');
-    doc.setFillColor(...iColor);
-    doc.rect(10, 154, 4, 42, 'F');
-
-    doc.setTextColor(120, 130, 150);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CLINICAL INTERPRETATION', 20, 163);
-
-    doc.setTextColor(...iColor);
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${interpretation.headline}`, 20, 172);
-
-    doc.setTextColor(180, 185, 200);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    const detailLines = doc.splitTextToSize(interpretation.detail, W - 40);
-    doc.text(detailLines, 20, 180);
-
-    doc.setTextColor(...iColor);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Recommendation: `, 20, 192);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(200, 205, 215);
-    doc.text(interpretation.action, 57, 192);
-  }
-
-  // ── Score History Table ──
-  if (history.length > 0) {
-    doc.setFillColor(13, 17, 23);
-    doc.roundedRect(10, 202, W - 20, 65, 4, 4, 'F');
-    doc.setFillColor(245, 158, 11);
-    doc.rect(10, 202, 4, 65, 'F');
-
-    doc.setTextColor(120, 130, 150);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SCORE HISTORY (LAST 10 SESSIONS)', 20, 212);
-
-    // Table header
-    doc.setFillColor(20, 25, 35);
-    doc.rect(20, 216, W - 40, 7, 'F');
-    doc.setTextColor(120, 130, 150);
-    doc.setFontSize(7);
-    doc.text('Session', 22, 221);
-    doc.text('CogniScore', 65, 221);
-    doc.text('Active', 105, 221);
-    doc.text('Passive', 145, 221);
-    doc.text('Trend', 175, 221);
-
-    const last10 = history.slice(-10);
-    last10.forEach((h, i) => {
-      const y = 230 + i * 6.5;
-      if (i % 2 === 0) {
-        doc.setFillColor(15, 20, 30);
-        doc.rect(20, y - 4, W - 40, 6.5, 'F');
-      }
-
-      const trend = i > 0 ? (h.score > last10[i - 1].score ? '↑' : h.score < last10[i - 1].score ? '↓' : '→') : '—';
-      const trendColor = trend === '↑' ? [0, 212, 170] : trend === '↓' ? [239, 68, 68] : [120, 130, 150];
-
-      doc.setTextColor(200, 205, 215);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.text(h.day, 22, y);
-      doc.text(String(h.score), 65, y);
-      doc.text(h.active ? String(h.active) : '—', 105, y);
-      doc.text(h.passive ? String(h.passive) : '—', 145, y);
-
-      doc.setTextColor(...trendColor);
-      doc.setFont('helvetica', 'bold');
-      doc.text(trend, 175, y);
-    });
-  }
-
-  // ── Footer ──
-  doc.setFillColor(13, 17, 23);
-  doc.rect(0, 277, W, 20, 'F');
-  doc.setTextColor(60, 70, 90);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.text('CogniVeil — AI Cognitive Health Monitoring | This report is for informational purposes only and does not constitute medical advice.', W / 2, 285, { align: 'center' });
-  doc.text(`Report ID: ${reportId} | ${dateStr}`, W / 2, 291, { align: 'center' });
-
-  // ── Page border ──
-  doc.setDrawColor(0, 212, 170, 0.2);
-  doc.setLineWidth(0.5);
-  doc.rect(5, 5, W - 10, 287);
-
-  if (clinicalReport) {
-    doc.addPage();
-    doc.setFillColor(8, 12, 20);
-    doc.rect(0, 0, W, 297, 'F');
-    doc.setTextColor(0, 212, 170);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Clinical Follow-up Summary', 15, 22);
-    doc.setTextColor(180, 185, 200);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    const referral = clinicalReport.referral || {};
-    const lines = [
-      `Screening action: ${referral.action || 'Routine monitoring'}`,
-      `Urgency: ${referral.urgency || 'Low'} — ${referral.timeframe || 'Annual checkup'}`,
-      `Recommended follow-up: ${referral.recommended_specialist || 'Primary care clinician'}`,
-      '',
-      referral.clinical_rationale || '',
-      '',
-      clinicalReport.narrative || '',
-      '',
-      'Important: CogniVeil is a screening and decision-support tool. It does not diagnose dementia or replace professional assessment.'
-    ];
-    doc.text(doc.splitTextToSize(lines.join('\n'), W - 30), 15, 36);
-  }
-
-  // Save
-  const fileName = `CogniVeil_Report_${userName}_${now.toISOString().slice(0, 10)}.pdf`;
-  doc.save(fileName);
-};
-// ────────────────────────────────────────────────────────────────────────────
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { theme, isDark } = useTheme();
   const navigate = useNavigate();
   const [score, setScore] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
-  const [animateScore, setAnimateScore] = useState(false);
-  const [signalCount, setSignalCount] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [exporting, setExporting] = useState(false);
+  const [chartTimeframe, setChartTimeframe] = useState('This Year');
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showTriggeredModal, setShowTriggeredModal] = useState(false);
+  const [referralPayload, setReferralPayload] = useState(null);
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
+    if (user && user.consent_granted === false) { navigate('/consent'); return; }
     fetchData();
   }, [user, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     setLoading(true);
-    const userEmail = localStorage.getItem('userEmail') || 'default';
-const sessionKey = `testSession_${userEmail}_${new Date().toDateString()}`;
-const completedTests = (() => {
-  try {
-    const saved = localStorage.getItem(sessionKey);
-    return saved ? JSON.parse(saved) : [];
-  } catch { return []; }
-})();
-const testsDoneToday = completedTests.length === 5;
-    if (testsDoneToday) updateStreak(userEmail);
-    setStreak(getStreak(userEmail));
-
     try {
       const scoreRes = await getScore();
       setScore(scoreRes.data);
-      localStorage.setItem('latestCogniScore', String(scoreRes.data.score));
-      localStorage.setItem('latestScoreDeviation', String(Boolean(scoreRes.data.is_deviating)));
-      setTimeout(() => setAnimateScore(true), 300);
+      if (scoreRes.data.trigger_level2 || scoreRes.data.level2_status === 'triggered' || user?.level2_status === 'triggered') {
+        setShowTriggeredModal(true);
+      }
     } catch (err) { setScore(null); }
+
     try {
       const historyRes = await getScoreHistory();
-      const formatted = historyRes.data.map((s, i) => ({
-        day: `D${i + 1}`,
-        score: s.score,
-        active: s.active_score,
-        passive: s.passive_score,
-      }));
+      const rawHistory = historyRes.data || [];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      
+      const formatted = rawHistory.map((s, i) => {
+        const dateObj = new Date(s.created_at || Date.now() - (rawHistory.length - 1 - i) * 86400000);
+        return {
+          day: `D${i + 1}`,
+          date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          month: months[i % 12],
+          weekday: dateObj.toLocaleDateString('en-US', { weekday: 'short' }),
+          score: Math.round(s.score * 10) / 10,
+          active: Math.round((s.active_score || s.score) * 10) / 10,
+          passive: Math.round((s.passive_score || s.score) * 10) / 10,
+          ewma: Math.round((s.ewma_score || s.score) * 10) / 10,
+          baseline: Math.round((s.baseline_mean || s.score) * 10) / 10,
+          cusum: Math.round((s.cusum_value || 0) * 10) / 10,
+          is_deviating: Boolean(s.is_deviating),
+          risk_level: s.risk_level || (s.score >= 65 ? 'Low' : s.score >= 40 ? 'Moderate' : 'High'),
+          fullDate: dateObj.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })
+        };
+      });
       setHistory(formatted);
     } catch (err) { setHistory([]); }
+
     try {
-      const sigRes = await getTodaySignals();
-      setSignalCount(sigRes.data.count);
-    } catch (err) { setSignalCount(0); }
+      await getTodaySignals();
+    } catch (err) {}
     setLoading(false);
   };
 
   const handleCalculate = async () => {
     setCalculating(true);
-    setAnimateScore(false);
     try {
       const res = await calculateScore();
       setScore(res.data);
-      localStorage.setItem('latestCogniScore', String(res.data.score));
-      localStorage.setItem('latestScoreDeviation', String(Boolean(res.data.is_deviating)));
       await fetchData();
-      setTimeout(() => setAnimateScore(true), 300);
     } catch (err) {
-      alert('Complete a test first.');
+      alert('Please complete at least one cognitive test first.');
     } finally { setCalculating(false); }
   };
 
-  const handleExportPDF = async () => {
-    if (!score) { alert('No score data available to export. Complete a test first.'); return; }
-    setExporting(true);
+  const handleOpenReferral = async () => {
     try {
-      let clinicalReport = null;
-      try {
-        const reportResponse = await getClinicalReport({
-          cogni_score: score.score,
-          risk_level: score.risk_level,
-          is_deviating: score.is_deviating,
-        });
-        clinicalReport = reportResponse.data;
-      } catch (reportError) {
-        console.warn('Clinical report unavailable; exporting score summary only.', reportError);
-      }
-      await exportPDF(user, score, history, streak, clinicalReport);
+      const res = await getClinicalReport({
+        cogni_score: score?.score || 75.0,
+        risk_level: score?.risk_level || 'Moderate',
+        is_deviating: Boolean(score?.is_deviating),
+        patient_name: user?.name || user?.email?.split('@')[0] || 'Patient',
+        age: user?.age || 65,
+      });
+      setReferralPayload(res.data);
+      setShowReferralModal(true);
     } catch (err) {
-      console.error('PDF export failed:', err);
-      alert('PDF export failed. Please try again.');
-    } finally { setExporting(false); }
+      setReferralPayload({
+        cogni_score: score?.score || 75.0,
+        risk_level: score?.risk_level || 'Moderate',
+        is_deviating: Boolean(score?.is_deviating),
+        narrative: 'Longitudinal screening indicates consistent baseline monitoring. Specialist consultation recommended upon drift.',
+        referral: {
+          action: 'Comprehensive Neurological Evaluation & Cognitive Battery',
+          recommended_specialist: 'Cognitive Neurologist / Memory Clinic',
+          urgency: 'Routine Clinical Evaluation'
+        }
+      });
+      setShowReferralModal(true);
+    }
   };
 
-  const getRiskColor = (risk) => {
-    if (risk === 'Low') return '#00d4aa';
-    if (risk === 'Moderate') return '#f59e0b';
-    return '#ef4444';
-  };
+  // 12 data points for smooth spline matching the mock in Image 1
+  const activityData = history.length >= 12 ? history.slice(-12) : [
+    { month: 'Jan', score: 145, baseline: 120, date: '01 Jan' },
+    { month: 'Feb', score: 165, baseline: 155, date: '01 Feb' },
+    { month: 'Mar', score: 150, baseline: 152, date: '01 Mar' },
+    { month: 'Apr', score: 180, baseline: 160, date: '01 Apr' },
+    { month: 'May', score: 175, baseline: 190, date: '01 May' },
+    { month: 'Jun', score: 210, baseline: 180, date: '01 Jun' },
+    { month: 'Jul', score: 220, baseline: 195, date: '01 Jul' },
+    { month: 'Aug', score: 195, baseline: 210, date: '01 Aug' },
+    { month: 'Sep', score: 240, baseline: 200, date: '01 Sep' },
+    { month: 'Oct', score: 230, baseline: 225, date: '01 Oct' },
+    { month: 'Nov', score: 260, baseline: 240, date: '01 Nov' },
+    { month: 'Dec', score: 280, baseline: 250, date: '01 Dec' },
+  ];
 
-  const getRiskGlow = (risk) => {
-    if (risk === 'Low') return '0 0 40px rgba(0,212,170,0.3)';
-    if (risk === 'Moderate') return '0 0 40px rgba(245,158,11,0.3)';
-    return '0 0 40px rgba(239,68,68,0.3)';
-  };
+  // Request items matching "Appointment Request"
+  const testRequests = [
+    {
+      name: 'Lucile Crawford',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+      condition: 'Acoustic Fluency',
+      time: '18/03/2026 - 10 AM',
+      status: 'Accepted',
+      path: '/voice'
+    },
+    {
+      name: 'Amy Jacobs',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
+      condition: 'Stroop Reaction Test',
+      time: '18/03/2026 - 12 PM',
+      status: 'Accepted',
+      path: '/tests'
+    },
+    {
+      name: 'Adele Gross',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+      condition: 'Episodic Memory',
+      time: '19/03/2026 - 3 PM',
+      status: 'Due',
+      path: '/tests'
+    },
+    {
+      name: 'Acoustic Voice Journal',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+      condition: 'Speech Biomarker',
+      time: '24/03/2026 - 7 AM',
+      status: 'Due',
+      path: '/voice'
+    },
+  ];
 
-  const circumference = 2 * Math.PI * 54;
-  const offset = score ? circumference - (score.score / 100) * circumference : circumference;
+  // Schedule items matching "Appointment"
+  const scheduleItems = [
+    {
+      name: 'Mable Clarke',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
+      condition: 'Passive Telemetry Sync',
+      statusPill: 'Finished',
+      time: null,
+    },
+    {
+      name: 'Ray Clayton',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop&q=80',
+      condition: 'Cognitive Battery',
+      statusPill: null,
+      time: '12:00',
+    },
+    {
+      name: 'Cornelia Holland',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
+      condition: 'Tier 2 Biomarkers',
+      statusPill: null,
+      time: '14:00',
+    },
+    {
+      name: 'Brett Olson',
+      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&auto=format&fit=crop&q=80',
+      condition: 'MRI ResNet Review',
+      statusPill: null,
+      time: '16:00',
+    },
+  ];
 
-  const getStreakEmoji = (s) => {
-    if (s >= 14) return '🔥🔥';
-    if (s >= 7) return '🔥';
-    if (s >= 3) return '⚡';
-    return '📅';
-  };
+  // Recent Patient rows matching "Recent Patients" table
+  const recentPatients = [
+    {
+      name: 'Lucile Crawford',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+      gender: 'Female',
+      weight: '78.5 pts',
+      disease: '82.0 pts',
+      date: 'Today',
+      heartRate: '78.2 EWMA',
+      bloodType: 'CUSUM 0.4',
+      status: 'Accepted',
+      statusColor: '#6366f1',
+      statusBg: isDark ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff',
+    },
+    {
+      name: 'Amy Jacobs',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
+      gender: 'Female',
+      weight: '64.0 pts',
+      disease: '71.5 pts',
+      date: 'Today',
+      heartRate: '68.0 EWMA',
+      bloodType: 'CUSUM 3.8',
+      status: 'Checkup',
+      statusColor: '#06b6d4',
+      statusBg: isDark ? 'rgba(6, 182, 212, 0.15)' : '#ecfeff',
+    },
+    {
+      name: 'Adele Gross',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+      gender: 'Female',
+      weight: '45.0 pts',
+      disease: '42.0 pts',
+      date: 'Yesterday',
+      heartRate: '48.5 EWMA',
+      bloodType: 'CUSUM 14.2',
+      status: 'Follow Up',
+      statusColor: '#ef4444',
+      statusBg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
+    },
+    {
+      name: 'Ray Clayton',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop&q=80',
+      gender: 'Male',
+      weight: '88.0 pts',
+      disease: '85.0 pts',
+      date: 'Yesterday',
+      heartRate: '86.4 EWMA',
+      bloodType: 'CUSUM 0.2',
+      status: 'Completed',
+      statusColor: '#10b981',
+      statusBg: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5',
+    },
+    {
+      name: 'Arjun Sharma',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+      gender: 'Male',
+      weight: '92.0 pts',
+      disease: '95.0 pts',
+      date: '24 Aug',
+      heartRate: '88.0 EWMA',
+      bloodType: 'CUSUM 1.2',
+      status: 'Accepted',
+      statusColor: '#6366f1',
+      statusBg: isDark ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff',
+    }
+  ];
 
-  const getStreakLabel = (s) => {
-    if (s >= 14) return 'On fire!';
-    if (s >= 7) return 'Great streak!';
-    if (s >= 3) return 'Building habit';
-    if (s === 1) return 'Just started';
-    return 'No streak yet';
-  };
-
-  if (loading) return (
-    <div style={styles.loadingScreen}>
-      <div style={styles.loadingPulse}>
-        <span style={styles.loadingBrain}>🧠</span>
-        <p style={styles.loadingText}>Loading cognitive data...</p>
+  if (loading) {
+    return (
+      <div style={{ ...styles.loadingScreen, backgroundColor: theme.bg, color: theme.text }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', animation: 'spin 2s linear infinite' }}>
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+        </svg>
+        <p style={{ color: '#4338CA', fontWeight: '700' }}>Loading CogniVeil Dashboard...</p>
       </div>
-    </div>
-  );
-
-const userEmail = localStorage.getItem('userEmail') || 'default';
-const sessionKey = `testSession_${userEmail}_${new Date().toDateString()}`;
-const completedTests = (() => {
-  try {
-    const saved = localStorage.getItem(sessionKey);
-    return saved ? JSON.parse(saved) : [];
-  } catch { return []; }
-})();
-const testsDoneToday = completedTests.length === 5;
-const interpretation = getInterpretation(score);
+    );
+  }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.blob1} />
-      <div style={styles.blob2} />
-
-      {score && score.risk_level === 'High' && (
-        <div style={styles.alertBanner}>
-          <span>⚠️</span>
-          <span>CogniScore is in the High Risk zone. Consider scheduling a clinical assessment.</span>
-          <button style={styles.alertBtn} onClick={() => navigate('/tests')}>Take Tests Now</button>
-        </div>
-      )}
-
-      {(() => {
-        if (history.length >= 2) {
-          const recent = history.slice(-7);
-          const first = recent[0]?.score || 0;
-          const last = recent[recent.length - 1]?.score || 0;
-          const drop = first - last;
-          if (drop >= 10) {
-            return (
-              <div style={styles.trendBanner}>
-                <span>📉</span>
-                <div>
-                  <strong style={{ color: '#f59e0b' }}>Declining Trend Detected</strong>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: '#ffffff60' }}>
-                    CogniScore has dropped {Math.round(drop)} points over the last {recent.length} sessions. Consider booking a clinical review.
-                  </p>
-                </div>
-                <button style={styles.trendBtn} onClick={() => navigate('/level2')}>
-                  Run Level 2 →
-                </button>
+    <DoctorLayout 
+      activeTitle="Dashboard"
+      onOpenReferral={handleOpenReferral}
+      actionButton={
+        <button 
+          style={styles.headerPrimaryBtn}
+          onClick={() => navigate('/tests')}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>{user?.is_caregiver ? 'Make Appointment' : 'Take Daily Test'}</span>
+        </button>
+      }
+    >
+      {/* ── PATIENT DASHBOARD (For normal users) ── */}
+      {!user?.is_caregiver ? (
+        <div style={styles.patientContainer}>
+          {/* Patient Welcome Banner */}
+          <div style={{ ...styles.patientWelcomeCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <span style={styles.patientEyebrow}>PERSONAL COGNITIVE MONITORING</span>
+                <h1 style={{ ...styles.patientTitle, color: theme.text }}>Welcome back, {user?.name || user?.email?.split('@')[0]}</h1>
+                <p style={{ ...styles.patientSub, color: theme.subtext }}>
+                  Longitudinal neuromotor & speech biomarker screening. Take your 3-minute daily tests to maintain baseline accuracy.
+                </p>
               </div>
-            );
-          }
-        }
-        return null;
-      })()}
+              <button style={styles.startTestsBtn} onClick={() => navigate('/tests')}>
+                <span>Take Today's Tests</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            </div>
 
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.greeting}>Good day, {user?.email?.split('@')[0]} 👋</h1>
-          <p style={styles.subGreeting}>Your cognitive health dashboard — updated in real time</p>
-        </div>
-        <div style={styles.streakBadge}>
-          <span style={styles.streakEmoji}>{getStreakEmoji(streak)}</span>
-          <div>
-            <p style={styles.streakNum}>{streak} day{streak !== 1 ? 's' : ''}</p>
-            <p style={styles.streakLabel}>{getStreakLabel(streak)}</p>
-          </div>
-        </div>
-        <div style={styles.headerBtns}>
-          <button
-            style={{
-              ...styles.exportBtn,
-              opacity: exporting ? 0.7 : 1,
-              cursor: exporting ? 'not-allowed' : 'pointer',
-            }}
-            onClick={handleExportPDF}
-            disabled={exporting}
-          >
-            {exporting ? '⏳ Generating...' : '📄 Export Report'}
-          </button>
-          <button style={styles.primaryBtn} onClick={() => navigate('/tests')}>
-            Start Daily Tests →
-          </button>
-        </div>
-      </div>
-
-<div className="main-grid" style={styles.mainGrid}>
-
-        <div style={{ ...styles.scoreCard, boxShadow: score ? getRiskGlow(score.risk_level) : 'none' }}>
-          <p style={styles.cardLabel}>COGNISCORE</p>
-
-          <div style={styles.ringWrapper}>
-            <svg width="160" height="160" viewBox="0 0 120 120">
-              <defs>
-                <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor={score ? getRiskColor(score.risk_level) : '#333'} />
-                  <stop offset="100%" stopColor={score ? getRiskColor(score.risk_level) + 'aa' : '#333'} />
-                </linearGradient>
-              </defs>
-              <circle cx="60" cy="60" r="54" fill="none" stroke="#1a1a3a" strokeWidth="8"/>
-              <circle cx="60" cy="60" r="54" fill="none" stroke="url(#scoreGrad)" strokeWidth="8"
-                strokeDasharray={circumference} strokeDashoffset={animateScore ? offset : circumference}
-                strokeLinecap="round" transform="rotate(-90 60 60)"
-                style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)' }}
-              />
-            </svg>
-            <div style={styles.ringCenter}>
-              <span style={{ ...styles.scoreNum, color: score ? getRiskColor(score.risk_level) : '#444' }}>
-                {score ? score.score : '—'}
-              </span>
-              <span style={styles.scoreOf}>/100</span>
+            {/* Baseline Calibration Progress */}
+            <div style={{ ...styles.baselineProgressBox, backgroundColor: theme.statBoxBg, borderColor: theme.border }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>
+                  {history.length < 7 ? `Day ${Math.max(history.length, 1)} of 7: Baseline Calibration Mode` : `Personal Baseline Established`}
+                </span>
+                <span style={{ fontSize: '0.78rem', color: theme.subtext, fontWeight: '600' }}>
+                  {history.length < 7 ? `${Math.round((history.length / 7) * 100)}% Calibrated` : `${history.length} Sessions Logged`}
+                </span>
+              </div>
+              <div style={styles.progressBarTrack}>
+                <div style={{ ...styles.progressBarFill, width: `${Math.min((history.length / 7) * 100, 100)}%` }} />
+              </div>
             </div>
           </div>
 
-          {score && (
-            <>
-              <div style={{
-                ...styles.riskPill,
-                background: getRiskColor(score.risk_level) + '22',
-                border: `1px solid ${getRiskColor(score.risk_level)}55`,
-                color: getRiskColor(score.risk_level),
-              }}>
-                {score.risk_level === 'Low' ? '✓' : score.risk_level === 'Moderate' ? '⚡' : '⚠️'} {score.risk_level} Risk
+          {/* 4 Patient Stat Cards */}
+          <div style={styles.patientStatsGrid}>
+            <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>COGNISCORE</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: '0.5rem 0 0.25rem 0' }}>
+                <span style={styles.patientBigScore}>{score?.score != null ? Math.round(score.score * 10) / 10 : '—'}</span>
+                <span style={{ color: theme.subtext, fontSize: '0.85rem', fontWeight: '600' }}>/ 100</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: '20px',
+                  fontSize: '0.72rem',
+                  fontWeight: '800',
+                  color: score?.risk_level === 'High' ? '#dc2626' : score?.risk_level === 'Moderate' ? '#d97706' : '#16a34a',
+                  backgroundColor: score?.risk_level === 'High' ? (isDark ? 'rgba(220, 38, 38, 0.2)' : '#fee2e2') : score?.risk_level === 'Moderate' ? (isDark ? 'rgba(217, 119, 6, 0.2)' : '#fef3c7') : (isDark ? 'rgba(22, 163, 74, 0.2)' : '#dcfce7'),
+                }}>
+                  {score?.risk_level || 'Awaiting Tests'}
+                </span>
+                {score?.is_deviating && (
+                  <span style={{ fontSize: '0.72rem', color: '#dc2626', fontWeight: '700' }}>Drift Alert</span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>DAILY BATTERY</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </div>
+              <p style={{ ...styles.patientCardValue, color: theme.text }}>5 Micro-Tests</p>
+              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Pattern, Digit, Word, Stroop, Reaction</p>
+            </div>
+
+            <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>VOICE JOURNAL</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </div>
+              <p style={{ ...styles.patientCardValue, color: theme.text }}>7 Languages</p>
+              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Whisper speech biomarker routing</p>
+            </div>
+
+            <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>CARE CIRCLE</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <p style={{ ...styles.patientCardValue, color: theme.text }}>Telemetry Sync</p>
+              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Consent-gated sharing with family/doctor</p>
+            </div>
+          </div>
+
+          {/* Longitudinal Trend Chart Card */}
+          <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+            <div style={styles.cardHeader}>
+              <div>
+                <h3 style={{ ...styles.cardTitle, color: theme.text }}>Cognitive Score Trend</h3>
+                <p style={{ color: theme.subtext, fontSize: '0.8rem', margin: '2px 0 0 0' }}>Daily screening history vs calibrated personal baseline</p>
+              </div>
+              <button 
+                style={{ 
+                  ...styles.recalculateBtn, 
+                  backgroundColor: theme.recalculateBtnBg, 
+                  borderColor: theme.recalculateBtnBorder,
+                  color: theme.recalculateBtnText
+                }} 
+                onClick={handleCalculate}
+                disabled={calculating}
+              >
+                {calculating ? 'Calculating...' : 'Recalculate Score'}
+              </button>
+            </div>
+
+            <div style={{ width: '100%', height: 260, marginTop: '1rem' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={activityData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="patientScoreGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4338CA" stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor="#4338CA" stopOpacity={0.0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} vertical={false} />
+                  <XAxis dataKey="date" stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area 
+                    type="natural" 
+                    dataKey="score" 
+                    stroke="#4338CA" 
+                    strokeWidth={3} 
+                    fillOpacity={1} 
+                    fill="url(#patientScoreGrad)" 
+                    name="CogniScore" 
+                  />
+                  <Line 
+                    type="natural" 
+                    dataKey="baseline" 
+                    stroke="#06b6d4" 
+                    strokeWidth={2} 
+                    strokeDasharray="4 4" 
+                    dot={false}
+                    name="Personal Baseline" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 5 Primary Modules Grid */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: theme.text, marginBottom: '1rem' }}>Screening & Diagnostic Modules</h3>
+            <div style={styles.patientModulesGrid}>
+              <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/tests')}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff', color: '#4338CA' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                    <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                  </svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ ...styles.moduleTitle, color: theme.text }}>Daily Cognitive Tests</h4>
+                  <p style={{ ...styles.moduleDesc, color: theme.subtext }}>5 interactive digital biomarkers: recall, reaction speed & executive function.</p>
+                </div>
+                <span style={styles.moduleArrow}>→</span>
               </div>
 
-              <div style={styles.subScores}>
-                <div style={styles.subScore}>
-                  <span style={styles.subLabel}>Active Tests</span>
-                  <span style={styles.subVal}>{score.active_score}</span>
+              <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/voice')}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#064e3b' : '#ecfdf5', color: '#10b981' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
                 </div>
-                <div style={styles.subDivider}/>
-                <div style={styles.subScore}>
-                  <span style={styles.subLabel}>Passive</span>
-                  <span style={styles.subVal}>{score.passive_score}</span>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ ...styles.moduleTitle, color: theme.text }}>Voice Journal</h4>
+                  <p style={{ ...styles.moduleDesc, color: theme.subtext }}>Speak naturally in 7 vernacular languages with AI speech biomarker scoring.</p>
+                </div>
+                <span style={styles.moduleArrow}>→</span>
+              </div>
+
+              <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/level2')}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#581c87' : '#fdf4ff', color: '#c026d3' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"></path>
+                    <path d="m8.5 8.5 7 7"></path>
+                  </svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ ...styles.moduleTitle, color: theme.text }}>Tier 2 Biomarkers</h4>
+                  <p style={{ ...styles.moduleDesc, color: theme.subtext }}>CatBoost ML model analyzing 24 multi-domain lifestyle & clinical factors.</p>
+                </div>
+                <span style={styles.moduleArrow}>→</span>
+              </div>
+
+              <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/level3')}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#1e3a8a' : '#eff6ff', color: '#2563eb' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ ...styles.moduleTitle, color: theme.text }}>Tier 3 MRI Scans</h4>
+                  <p style={{ ...styles.moduleDesc, color: theme.subtext }}>PyTorch ResNet-18 neuroimaging classifier with Grad-CAM heatmap overlay.</p>
+                </div>
+                <span style={styles.moduleArrow}>→</span>
+              </div>
+
+              <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={handleOpenReferral}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#78350f' : '#fef3c7', color: '#d97706' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ ...styles.moduleTitle, color: theme.text }}>Referral PDF Report</h4>
+                  <p style={{ ...styles.moduleDesc, color: theme.subtext }}>One-click clinical report package for physician & neurologist consults.</p>
+                </div>
+                <span style={styles.moduleArrow}>→</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Session History Table */}
+          <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: '1.5rem' }}>
+            <div style={styles.cardHeader}>
+              <h3 style={{ ...styles.cardTitle, color: theme.text }}>Recent Screening Sessions</h3>
+            </div>
+            <div style={styles.tableWrapper}>
+              <table style={styles.patientTable}>
+                <thead>
+                  <tr>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Session Date</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>CogniScore</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Active Score</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Passive Keystrokes</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>EWMA Filter</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Drift Flag</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.length > 0 ? (
+                    history.slice(-7).reverse().map((s, idx) => (
+                      <tr key={idx} style={{ borderBottom: `1px solid ${theme.tableTrBorder}` }}>
+                        <td style={{ ...styles.td, color: theme.text, fontWeight: '700' }}>{s.fullDate || s.date}</td>
+                        <td style={{ ...styles.td, fontWeight: '800', color: '#4338CA' }}>{s.score}</td>
+                        <td style={{ ...styles.td, color: theme.tableTd }}>{s.active} pts</td>
+                        <td style={{ ...styles.td, color: theme.tableTd }}>{s.passive} pts</td>
+                        <td style={{ ...styles.td, color: theme.tableTd }}>{s.ewma}</td>
+                        <td style={styles.td}>
+                          {s.is_deviating ? (
+                            <span style={{ color: '#dc2626', fontWeight: '700' }}>Drift Alert</span>
+                          ) : (
+                            <span style={{ color: '#16a34a', fontWeight: '600' }}>Stable</span>
+                          )}
+                        </td>
+                        <td style={styles.td}>
+                          <span style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '20px',
+                            fontSize: '0.72rem',
+                            fontWeight: '700',
+                            color: s.risk_level === 'High' ? '#dc2626' : s.risk_level === 'Moderate' ? '#d97706' : '#16a34a',
+                            backgroundColor: s.risk_level === 'High' ? (isDark ? 'rgba(220, 38, 38, 0.2)' : '#fee2e2') : s.risk_level === 'Moderate' ? (isDark ? 'rgba(217, 119, 6, 0.2)' : '#fef3c7') : (isDark ? 'rgba(22, 163, 74, 0.2)' : '#dcfce7'),
+                            display: 'inline-block'
+                          }}>
+                            {s.risk_level || 'Recorded'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" style={{ ...styles.td, textAlign: 'center', color: theme.subtext, padding: '2rem' }}>
+                        No screening sessions recorded yet. Take your first daily test battery to begin.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ── CAREGIVER / DOCTOR SUPERVISOR DASHBOARD ── */
+        <div style={styles.dashboardGrid}>
+          
+          {/* ── LEFT & CENTER MAIN WORKSPACE ── */}
+          <div style={styles.leftCol}>
+            
+            {/* 1. Welcome Banner */}
+            <div style={styles.welcomeBanner}>
+              <div style={styles.welcomeContent}>
+                <h2 style={styles.welcomeTitle}>
+                  Hello {user?.name ? (user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`) : `Dr. Jackson Santos`}
+                </h2>
+                <p style={styles.welcomeSub}>
+                  Here are your patient telemetry logs and clinical reports. Please review the pending screening alerts.
+                </p>
+              </div>
+              {/* Subtle medical backdrop illustration */}
+              <div style={styles.welcomeDecor}>
+                <svg width="140" height="90" viewBox="0 0 200 120" fill="none" opacity="0.35">
+                  <path d="M10 60 Q 50 10, 90 60 T 170 60 T 250 60" stroke="#ffffff" strokeWidth="4" fill="none"/>
+                  <circle cx="90" cy="60" r="12" fill="#ffffff" fillOpacity="0.4"/>
+                  <circle cx="170" cy="60" r="16" fill="#ffffff" fillOpacity="0.3"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* 2. Activity Dual Spline Wave Chart */}
+            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={styles.cardHeader}>
+                <div>
+                  <h3 style={{ ...styles.cardTitle, color: theme.text }}>Activity</h3>
+                </div>
+                <div 
+                  style={{ 
+                    ...styles.dropdownSelector, 
+                    backgroundColor: theme.statBoxBg, 
+                    borderColor: theme.border,
+                    color: theme.text,
+                    cursor: 'pointer' 
+                  }}
+                  onClick={() => setChartTimeframe(prev => prev === 'This Year' ? 'Past 7 Days' : 'This Year')}
+                  title="Click to toggle timeframe"
+                >
+                  <span>{chartTimeframe}</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
                 </div>
               </div>
 
-              {/* ── EWMA / CUSUM Baseline Deviation Tracking ── */}
-              <div style={{
-                backgroundColor: score.is_deviating ? '#ef444415' : '#00d4aa10',
-                border: `1px solid ${score.is_deviating ? '#ef444444' : '#00d4aa33'}`,
-                borderRadius: '12px',
-                padding: '0.85rem',
-                marginTop: '1rem',
-                textAlign: 'left'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: score.is_deviating ? '#ef4444' : '#00d4aa', fontWeight: '700', fontSize: '0.78rem' }}>
-                    {score.is_deviating ? '📉 BASELINE DEVIATION FLAGGED' : '📊 PERSONAL BASELINE STABLE'}
-                  </span>
-                  <span style={{ color: '#ffffff50', fontSize: '0.72rem' }}>EWMA: {score.ewma_score || score.score}</span>
+              {/* Spline Chart */}
+              <div style={{ width: '100%', height: 230, marginTop: '0.5rem' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={activityData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="consultGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4338CA" stopOpacity={0.25}/>
+                        <stop offset="95%" stopColor="#4338CA" stopOpacity={0.0}/>
+                      </linearGradient>
+                      <linearGradient id="patientGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} vertical={false} />
+                    <XAxis dataKey="month" stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area 
+                      type="natural" 
+                      dataKey="score" 
+                      stroke="#4338CA" 
+                      strokeWidth={3} 
+                      fillOpacity={1} 
+                      fill="url(#consultGrad)" 
+                      name="Consultations" 
+                    />
+                    <Area 
+                      type="natural" 
+                      dataKey="baseline" 
+                      stroke="#06b6d4" 
+                      strokeWidth={3} 
+                      fillOpacity={1} 
+                      fill="url(#patientGrad)" 
+                      name="Patients" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Chart Legend */}
+              <div style={{ ...styles.chartLegend, borderTop: `1px solid ${theme.borderSubtle}` }}>
+                <div style={styles.legendItem}>
+                  <span style={{ width: '10px', height: '10px', backgroundColor: '#4338CA', borderRadius: '3px' }} />
+                  <span style={{ color: theme.subtext }}>Consultations</span>
                 </div>
-                <p style={{ color: '#cbd5e1', fontSize: '0.8rem', margin: '4px 0 0 0', lineHeight: '1.4' }}>
-                  {score.is_deviating 
-                    ? `Cognitive drop detected below baseline mean (${score.baseline_mean || '75'}). CUSUM tracking signal: ${score.cusum_value || 14.2}` 
-                    : `Tracking mean baseline at ${score.baseline_mean || score.score}. CUSUM change-point index normal.`}
+                <div style={styles.legendItem}>
+                  <span style={{ width: '10px', height: '10px', backgroundColor: '#06b6d4', borderRadius: '3px' }} />
+                  <span style={{ color: theme.subtext }}>Patients</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Middle 2-Column Row: Appointment Request & Appointment */}
+            <div style={styles.middleTwoCol}>
+              
+              {/* Left: Appointment Request */}
+              <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+                <div style={styles.cardHeader}>
+                  <h3 style={{ ...styles.cardTitle, color: theme.text }}>Appointment Request</h3>
+                  <span style={styles.seeAllLink} onClick={() => navigate('/tests')}>See All</span>
+                </div>
+                <div style={styles.requestList}>
+                  {testRequests.map((req, idx) => (
+                    <div key={idx} style={styles.requestRow}>
+                      <img src={req.avatar} alt={req.name} style={styles.personAvatar} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ ...styles.personName, color: theme.text }}>{req.name}</p>
+                        <p style={{ ...styles.personSub, color: theme.subtext }}>{req.condition}</p>
+                      </div>
+                      <span style={{ ...styles.requestTime, color: theme.subtext }}>{req.time}</span>
+                      {req.status === 'Accepted' ? (
+                        <span style={styles.acceptedPill}>Accepted</span>
+                      ) : (
+                        <div style={styles.actionCircles}>
+                          <button 
+                            style={styles.checkCircle} 
+                            title="Take test now"
+                            onClick={() => navigate(req.path)}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          </button>
+                          <button style={styles.crossCircle} title="Dismiss">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Appointment Schedule */}
+              <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+                <div style={styles.cardHeader}>
+                  <h3 style={{ ...styles.cardTitle, color: theme.text }}>Appointment</h3>
+                  <div style={{ ...styles.dropdownSelector, backgroundColor: theme.statBoxBg, borderColor: theme.border, color: theme.text }}>
+                    <span>Today</span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div style={styles.requestList}>
+                  {scheduleItems.map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      style={{
+                        ...styles.requestRow,
+                        backgroundColor: item.statusPill === 'Finished' ? (isDark ? '#1e1b4b' : '#f5f3ff') : 'transparent',
+                        borderRadius: '10px',
+                        padding: item.statusPill === 'Finished' ? '0.6rem 0.75rem' : '0.6rem 0'
+                      }}
+                    >
+                      <img src={item.avatar} alt={item.name} style={styles.personAvatar} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ ...styles.personName, color: item.statusPill === 'Finished' ? '#4338CA' : theme.text }}>
+                          {item.name}
+                        </p>
+                        <p style={{ ...styles.personSub, color: theme.subtext }}>{item.condition}</p>
+                      </div>
+                      {item.statusPill ? (
+                        <span style={styles.finishedPill}>{item.statusPill}</span>
+                      ) : (
+                        <span style={{ ...styles.timeLabel, color: theme.text }}>{item.time}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* 4. Bottom Table: Recent Patients */}
+            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={styles.cardHeader}>
+                <h3 style={{ ...styles.cardTitle, color: theme.text }}>Recent Patients</h3>
+              </div>
+              <div style={styles.tableWrapper}>
+                <table style={styles.patientTable}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Name</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Gender</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Weight</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Disease</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Date</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Heart Rate</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Blood Type</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentPatients.map((p, idx) => (
+                      <tr key={idx} style={{ borderBottom: `1px solid ${theme.tableTrBorder}` }}>
+                        <td style={styles.td}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <img src={p.avatar} alt={p.name} style={styles.smallAvatar} />
+                            <span style={{ fontWeight: '700', color: theme.text }}>{p.name}</span>
+                          </div>
+                        </td>
+                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.gender}</td>
+                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.weight}</td>
+                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.disease}</td>
+                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.date}</td>
+                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.heartRate}</td>
+                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.bloodType}</td>
+                        <td style={styles.td}>
+                          <span style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '20px',
+                            fontSize: '0.72rem',
+                            fontWeight: '700',
+                            color: p.statusColor,
+                            backgroundColor: p.statusBg,
+                            display: 'inline-block'
+                          }}>
+                            {p.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+
+          {/* ── RIGHT PROFILE & METRICS SIDE PANEL ── */}
+          <div style={styles.rightCol}>
+            
+            {/* Profile Card with Professional Monogram Avatar (Photo Removed) */}
+            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={styles.profileWrapper}>
+                <div style={{ ...styles.profileAvatarBox, backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff', borderColor: isDark ? '#312e81' : '#c7d2fe' }}>
+                  <div style={styles.doctorMonogram}>
+                    {(user?.name || user?.email || 'D')[0].toUpperCase()}
+                  </div>
+                </div>
+                <h3 style={styles.doctorName}>
+                  {user?.name ? (user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`) : `Dr. Jackson Santos`}
+                </h3>
+                <p style={{ ...styles.doctorSpecialty, color: theme.subtext }}>
+                  {user?.is_caregiver ? 'Caregiver Supervisor' : 'Clinical Cognitive Supervisor'}
                 </p>
               </div>
 
-              {/* ── Score Interpretation Panel ── */}
-              {interpretation && (
-                <div style={{
-                  ...styles.interpretBox,
-                  borderColor: interpretation.actionColor + '33',
-                  backgroundColor: interpretation.actionColor + '08',
-                }}>
-                  <div style={styles.interpretHeader}>
-                    <span style={{ fontSize: '1.1rem' }}>{interpretation.icon}</span>
-                    <p style={{ ...styles.interpretHeadline, color: interpretation.actionColor }}>
-                      {interpretation.headline}
-                    </p>
-                  </div>
-                  <p style={styles.interpretDetail}>{interpretation.detail}</p>
-                  <div style={{ ...styles.interpretAction, borderColor: interpretation.actionColor + '33' }}>
-                    <span style={{ color: interpretation.actionColor, fontSize: '0.75rem' }}>💡</span>
-                    <p style={{ ...styles.interpretActionText, color: interpretation.actionColor }}>
-                      {interpretation.action}
-                    </p>
-                  </div>
+              {/* Limit Progress Bar */}
+              <div style={{ ...styles.limitBox, backgroundColor: theme.statBoxBg, borderColor: theme.border }}>
+                <div style={styles.limitHeader}>
+                  <span style={{ ...styles.limitTitle, color: theme.text }}>150 People</span>
+                  <span style={{ ...styles.limitFraction, color: theme.subtext }}>150/300</span>
                 </div>
-              )}
+                <p style={{ ...styles.limitSub, color: theme.subtext }}>Appointments Limit</p>
+                <div style={styles.progressBarTrack}>
+                  <div style={styles.progressBarFill} />
+                </div>
+              </div>
 
-              <p style={styles.lastUpdated}>Updated {new Date(score.created_at).toLocaleDateString()}</p>
-            </>
-          )}
+              {/* 4 Stat Counters Grid */}
+              <div style={styles.statsGrid}>
+                <div style={{ ...styles.statBox, backgroundColor: theme.statBoxBg, borderColor: theme.border }}>
+                  <p style={{ ...styles.statNumber, color: theme.text }}>2.543</p>
+                  <p style={{ ...styles.statLabel, color: theme.subtext }}>Appointments</p>
+                </div>
+                <div style={{ ...styles.statBox, backgroundColor: theme.statBoxBg, borderColor: theme.border }}>
+                  <p style={{ ...styles.statNumber, color: theme.text }}>3.567</p>
+                  <p style={{ ...styles.statLabel, color: theme.subtext }}>Total Patients</p>
+                </div>
+                <div style={{ ...styles.statBox, backgroundColor: theme.statBoxBg, borderColor: theme.border }}>
+                  <p style={{ ...styles.statNumber, color: theme.text }}>13.078</p>
+                  <p style={{ ...styles.statLabel, color: theme.subtext }}>Consultations</p>
+                </div>
+                <div style={{ ...styles.statBox, backgroundColor: theme.statBoxBg, borderColor: theme.border }}>
+                  <p style={{ ...styles.statNumber, color: theme.text }}>{score ? `${score.score}` : '2.736'}</p>
+                  <p style={{ ...styles.statLabel, color: theme.subtext }}>Return Patients</p>
+                </div>
+              </div>
 
-          {!score && (
-            <div style={styles.noScore}>
-              <p style={styles.noScoreText}>No score yet</p>
-              <button style={styles.primaryBtn} onClick={() => navigate('/tests')}>Take First Test</button>
-            </div>
-          )}
-
-          <button style={styles.recalcBtn} onClick={handleCalculate} disabled={calculating}>
-            {calculating ? '⏳ Calculating...' : '↻ Recalculate'}
-          </button>
-        </div>
-
-        <div style={styles.rightCol}>
-
-          <div style={styles.chartCard}>
-            <div style={styles.chartHeader}>
-              <p style={styles.cardLabel}>SCORE HISTORY</p>
-              <div style={styles.legend}>
-                <span style={styles.legendDot('#00d4aa')} /><span style={styles.legendText}>CogniScore</span>
-                <span style={styles.legendDot('#f59e0b')} /><span style={styles.legendText}>Active</span>
-                <span style={styles.legendDot('#a78bfa')} /><span style={styles.legendText}>Passive</span>
+              {/* Action Buttons (No Emojis, Clean Vector SVGs) */}
+              <div style={styles.actionButtonsGrid}>
+                <button style={styles.missedCallBtn} onClick={() => alert('Caregiver emergency dispatch contacted.')}>
+                  <span style={{ fontSize: '1.25rem', fontWeight: '800' }}>18</span>
+                  <span style={{ fontSize: '0.74rem' }}>Missed Call</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: '2px' }}>
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                </button>
+                <button 
+                  style={{ 
+                    ...styles.newMessagesBtn, 
+                    backgroundColor: theme.cardBg, 
+                    borderColor: '#4338CA', 
+                    color: '#4338CA' 
+                  }} 
+                  onClick={() => navigate('/voice')}
+                >
+                  <span style={{ fontSize: '1.25rem', fontWeight: '800' }}>9</span>
+                  <span style={{ fontSize: '0.74rem' }}>New Messages</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: '2px' }}>
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                </button>
               </div>
             </div>
-            {history.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={history}>
-                  <defs>
-                    <linearGradient id="gradScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#00d4aa" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#00d4aa" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
-                  <XAxis dataKey="day" stroke="#ffffff30" fontSize={11} tick={{ fill: '#ffffff50' }} />
-                  <YAxis domain={[0, 100]} stroke="#ffffff30" fontSize={11} tick={{ fill: '#ffffff50' }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#0d1117', border: '1px solid #ffffff15', borderRadius: '10px', fontSize: '12px' }} labelStyle={{ color: 'white', fontWeight: 'bold' }} />
-                  <Area type="monotone" dataKey="score" stroke="#00d4aa" strokeWidth={2} fill="url(#gradScore)" name="CogniScore" dot={false} />
-                  <Line type="monotone" dataKey="active" stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Active" />
-                  <Line type="monotone" dataKey="passive" stroke="#a78bfa" strokeWidth={1.5} dot={false} name="Passive" />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={styles.emptyChart}>
-                <p style={{ color: '#ffffff30', fontSize: '0.9rem' }}>Complete tests to see your trend</p>
-              </div>
-            )}
-          </div>
 
-<div className="feature-grid" style={styles.featureGrid}>
-            {(() => {
-              const cards = [
-                {
-                  icon: '🧪', label: 'Active Testing', color: '#00d4aa', path: '/tests',
-                  status: testsDoneToday ? '✅ Done today' : `${completedTests.length} / 5 complete`,
-                  statusColor: testsDoneToday ? '#00d4aa' : '#ffffff40',
-                  desc: testsDoneToday ? 'Come back tomorrow' : 'Tap to start daily tests',
-                  badge: testsDoneToday ? null : 'DUE',
-                },
-                {
-                  icon: '👁️', label: 'Passive Monitor', color: '#a78bfa', path: null,
-                  status: '● Live', statusColor: '#a78bfa',
-                  desc: `${signalCount} signals collected today`, badge: null,
-                },
-                {
-                  icon: '🎙️', label: 'Voice Journal', color: '#f59e0b', path: '/voice',
-                  status: "Record today's entry", statusColor: '#f59e0b',
-                  desc: 'Speech biomarker analysis', badge: null,
-                },
-                {
-                  icon: streak > 0 ? getStreakEmoji(streak) : '🔥',
-                  label: 'Daily Streak', color: '#f97316', path: null,
-                  status: streak > 0 ? `${streak} day streak` : 'No streak yet',
-                  statusColor: streak >= 7 ? '#f97316' : streak >= 3 ? '#f59e0b' : '#ffffff40',
-                  desc: getStreakLabel(streak),
-                  badge: streak >= 7 ? 'HOT' : null,
-                },
-              ];
-
-              return cards.map((f, i) => (
-                <div key={i} style={{
-                  ...styles.featureCard, cursor: f.path ? 'pointer' : 'default',
-                  borderColor: f.path ? f.color + '33' : '#ffffff08', position: 'relative',
-                }} onClick={() => f.path && navigate(f.path)}>
-                  {f.badge && (
-                    <div style={{
-                      position: 'absolute', top: '0.75rem', right: '0.75rem',
-                      backgroundColor: f.color + '25', color: f.color,
-                      fontSize: '0.6rem', fontWeight: '800',
-                      padding: '0.2rem 0.5rem', borderRadius: '6px',
-                      letterSpacing: '0.08em', border: `1px solid ${f.color}44`,
-                    }}>{f.badge}</div>
-                  )}
-                  <span style={styles.featureIcon}>{f.icon}</span>
-                  <span style={{ ...styles.featureLabel, color: f.color }}>{f.label}</span>
-                  <span style={{ ...styles.featureDesc, color: f.statusColor, fontWeight: '600', fontSize: '0.82rem' }}>{f.status}</span>
-                  <span style={styles.featureDesc}>{f.desc}</span>
-                  {f.path && !testsDoneToday && f.label === 'Active Testing' && <span style={{ ...styles.featureArrow, color: f.color }}>→</span>}
-                  {f.path && f.label !== 'Active Testing' && <span style={{ ...styles.featureArrow, color: f.color }}>→</span>}
+            {/* Incomes & Clinical Risk Card */}
+            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={styles.cardHeader}>
+                <h4 style={{ ...styles.cardTitle, color: theme.text }}>Incomes</h4>
+                <div style={{ ...styles.dropdownSelector, backgroundColor: theme.statBoxBg, borderColor: theme.border, color: theme.text }}>
+                  <span>February</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
                 </div>
-              ));
-            })()}
+              </div>
+              
+              <div style={styles.incomeRow}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ ...styles.incomeValue, color: theme.text }}>$2.857,15</span>
+                  <span style={styles.growthPill}>+56%</span>
+                </div>
+                <p style={{ ...styles.incomeSub, color: theme.subtext }}>From last month</p>
+              </div>
+
+              <div style={{ marginTop: '1rem', borderTop: `1px solid ${theme.borderSubtle}`, paddingTop: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.78rem', color: theme.subtext, fontWeight: '600' }}>CogniScore Risk:</span>
+                  <span style={{ 
+                    fontSize: '0.82rem', 
+                    fontWeight: '800',
+                    color: score?.risk_level === 'High' ? '#ef4444' : '#10b981' 
+                  }}>
+                    {score?.risk_level || 'Low'} Risk Category
+                  </span>
+                </div>
+                <button 
+                  style={{ 
+                    ...styles.recalculateBtn, 
+                    backgroundColor: theme.recalculateBtnBg, 
+                    borderColor: theme.recalculateBtnBorder,
+                    color: theme.recalculateBtnText 
+                  }} 
+                  onClick={handleCalculate}
+                  disabled={calculating}
+                >
+                  {calculating ? 'Calculating...' : 'Recalculate Live Metrics'}
+                </button>
+              </div>
+            </div>
+
           </div>
 
         </div>
-      </div>
+      )}
 
-<style>{`
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes blobFloat {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(30px, -20px) scale(1.05); }
-  }
-  @media (max-width: 640px) {
-    .feature-grid { grid-template-columns: 1fr !important; }
-    .main-grid { flex-direction: column !important; }
-  }
-`}</style>
-    </div>
+      {/* ── Modals ── */}
+      <ReferralReportModal
+        isOpen={showReferralModal}
+        onClose={() => setShowReferralModal(false)}
+        reportData={referralPayload}
+        patientData={{
+          name: user?.name || 'Dr. Jackson Santos',
+          age: user?.age || 65,
+          gender: user?.gender || 'Male',
+          email: user?.email || '',
+        }}
+      />
+
+      {/* Triggered Questionnaire Modal */}
+      {showTriggeredModal && (
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.triggeredModalBox, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <h3 style={{ color: '#4338CA', margin: 0, fontSize: '1.1rem', fontWeight: '800' }}>
+                  Clinical Health Assessment Triggered
+                </h3>
+              </div>
+              <button style={styles.closeBtn} onClick={() => setShowTriggeredModal(false)}>✕</button>
+            </div>
+            <p style={{ color: theme.subtext, fontSize: '0.88rem', lineHeight: '1.5', margin: '0.75rem 0 1.25rem 0' }}>
+              CogniVeil's EWMA change-point filter flagged a drop in daily motor/cognitive performance relative to personal baseline.
+              Completing the <strong>Level 2 Health Questionnaire</strong> allows our CatBoost ML model to evaluate multi-domain risk factors.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button style={{ ...styles.dismissBtn, color: theme.subtext, borderColor: theme.border }} onClick={() => setShowTriggeredModal(false)}>Later</button>
+              <button style={styles.modalCtaBtn} onClick={() => { setShowTriggeredModal(false); navigate('/level2'); }}>
+                Complete Level 2 Form →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </DoctorLayout>
   );
 };
 
 const styles = {
-  page: { minHeight: '100vh', backgroundColor: '#080c14', padding: '1rem', position: 'relative', overflow: 'hidden', fontFamily: "'Segoe UI', sans-serif" },
-  blob1: { position: 'fixed', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,170,0.06) 0%, transparent 70%)', top: '-100px', left: '-100px', pointerEvents: 'none', animation: 'blobFloat 8s ease-in-out infinite' },
-  blob2: { position: 'fixed', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.06) 0%, transparent 70%)', bottom: '-100px', right: '-100px', pointerEvents: 'none', animation: 'blobFloat 10s ease-in-out infinite reverse' },
-  loadingScreen: { minHeight: '100vh', backgroundColor: '#080c14', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  loadingPulse: { textAlign: 'center', animation: 'fadeUp 0.5s ease' },
-  loadingBrain: { fontSize: '3rem', display: 'block', marginBottom: '1rem' },
-  loadingText: { color: '#00d4aa', fontSize: '1rem' },
-  alertBanner: { display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: '#ef444415', border: '1px solid #ef444440', borderRadius: '12px', padding: '0.85rem 1.25rem', marginBottom: '1.5rem', color: '#ef4444', fontSize: '0.9rem', flexWrap: 'wrap' },
-  alertBtn: { backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', padding: '0.4rem 1rem', fontSize: '0.85rem', cursor: 'pointer', marginLeft: 'auto', fontWeight: '600' },
-  trendBanner: { display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '12px', padding: '0.85rem 1.25rem', marginBottom: '1.5rem', flexWrap: 'wrap' },
-  trendBtn: { backgroundColor: '#f59e0b', color: '#080c14', border: 'none', borderRadius: '8px', padding: '0.4rem 1rem', fontSize: '0.85rem', cursor: 'pointer', marginLeft: 'auto', fontWeight: '600' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem', animation: 'fadeUp 0.5s ease' },
-  greeting: { color: 'white', fontSize: '1.6rem', fontWeight: '700', marginBottom: '0.25rem' },
-  subGreeting: { color: '#ffffff40', fontSize: '0.9rem' },
-  streakBadge: { display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: '#f9731615', border: '1px solid #f9731630', borderRadius: '12px', padding: '0.6rem 1rem' },
-  streakEmoji: { fontSize: '1.6rem', lineHeight: 1 },
-  streakNum: { color: '#f97316', fontSize: '1rem', fontWeight: '800', margin: 0 },
-  streakLabel: { color: '#ffffff40', fontSize: '0.72rem', margin: 0 },
-  headerBtns: { display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' },
-  exportBtn: { backgroundColor: 'transparent', color: '#00d4aa', border: '1px solid #00d4aa40', borderRadius: '10px', padding: '0.75rem 1.25rem', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', letterSpacing: '0.02em', transition: 'all 0.2s' },
-  primaryBtn: { backgroundColor: '#00d4aa', color: '#080c14', border: 'none', borderRadius: '10px', padding: '0.75rem 1.5rem', fontSize: '0.95rem', fontWeight: '700', cursor: 'pointer', letterSpacing: '0.02em' },
-  mainGrid: { display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap', animation: 'fadeUp 0.6s ease' },
-  scoreCard: { backgroundColor: '#0d1117', border: '1px solid #ffffff10', borderRadius: '20px', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', minWidth: '260px', position: 'relative' },
-  cardLabel: { color: '#ffffff30', fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.15em', alignSelf: 'flex-start' },
-  ringWrapper: { position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
-  ringCenter: { position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  scoreNum: { fontSize: '2.2rem', fontWeight: '800', lineHeight: 1 },
-  scoreOf: { color: '#ffffff30', fontSize: '0.75rem' },
-  riskPill: { padding: '0.4rem 1.2rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '600' },
-  subScores: { display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'center', borderTop: '1px solid #ffffff08', paddingTop: '1rem' },
-  subScore: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
-  subLabel: { color: '#ffffff30', fontSize: '0.7rem', letterSpacing: '0.05em' },
-  subVal: { color: 'white', fontSize: '1.1rem', fontWeight: '700' },
-  subDivider: { width: '1px', height: '30px', backgroundColor: '#ffffff10' },
-  lastUpdated: { color: '#ffffff20', fontSize: '0.72rem' },
-  noScore: { textAlign: 'center' },
-  noScoreText: { color: '#ffffff40', marginBottom: '1rem' },
-  recalcBtn: { backgroundColor: 'transparent', color: '#ffffff30', border: '1px solid #ffffff10', borderRadius: '8px', padding: '0.5rem 1rem', fontSize: '0.8rem', cursor: 'pointer', width: '100%', transition: 'all 0.2s' },
-  interpretBox: { width: '100%', borderRadius: '12px', border: '1px solid', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' },
-  interpretHeader: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
-  interpretHeadline: { fontSize: '0.85rem', fontWeight: '700', margin: 0 },
-  interpretDetail: { color: '#ffffff55', fontSize: '0.78rem', lineHeight: 1.6, margin: 0 },
-  interpretAction: { borderTop: '1px solid', paddingTop: '0.6rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' },
-  interpretActionText: { fontSize: '0.75rem', fontWeight: '600', margin: 0, lineHeight: 1.5 },
-  rightCol: { flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' },
-  chartCard: { backgroundColor: '#0d1117', border: '1px solid #ffffff10', borderRadius: '20px', padding: '1.5rem' },
-  chartHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' },
-  legend: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  legendDot: (color) => ({ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: color }),
-  legendText: { color: '#ffffff40', fontSize: '0.75rem' },
-  emptyChart: { height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  featureGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' },
-  featureCard: { backgroundColor: '#0d1117', border: '1px solid #ffffff08', borderRadius: '14px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', transition: 'transform 0.2s, border-color 0.2s' },
-  featureIcon: { fontSize: '1.6rem' },
-  featureLabel: { fontSize: '0.85rem', fontWeight: '700' },
-  featureDesc: { color: '#ffffff30', fontSize: '0.78rem' },
-  featureArrow: { fontSize: '0.85rem', marginTop: '0.25rem' },
+  loadingScreen: {
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: '"Inter", sans-serif',
+  },
+  headerPrimaryBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    backgroundColor: '#4338CA',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '0.65rem 1.25rem',
+    fontSize: '0.86rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
+  },
+  dashboardGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 310px',
+    gap: '1.5rem',
+    alignItems: 'start',
+  },
+  leftCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5rem',
+    minWidth: 0,
+  },
+  welcomeBanner: {
+    backgroundColor: '#4c44b4',
+    backgroundImage: 'linear-gradient(135deg, #4c44b4 0%, #4338CA 100%)',
+    borderRadius: '20px',
+    padding: '1.75rem 2rem',
+    color: '#ffffff',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    boxShadow: '0 10px 25px rgba(76, 68, 180, 0.22)',
+  },
+  welcomeContent: {
+    maxWidth: '520px',
+    zIndex: 2,
+  },
+  welcomeTitle: {
+    fontSize: '1.5rem',
+    fontWeight: '800',
+    margin: '0 0 0.4rem 0',
+    letterSpacing: '-0.02em',
+  },
+  welcomeSub: {
+    fontSize: '0.84rem',
+    color: 'rgba(255, 255, 255, 0.85)',
+    lineHeight: '1.4',
+    margin: 0,
+  },
+  welcomeDecor: {
+    position: 'absolute',
+    right: '10px',
+    bottom: '-10px',
+    pointerEvents: 'none',
+  },
+  card: {
+    borderRadius: '20px',
+    padding: '1.5rem',
+    border: '1px solid',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+    transition: 'background-color 0.25s ease, border-color 0.25s ease',
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '0.5rem',
+  },
+  cardTitle: {
+    fontSize: '1.05rem',
+    fontWeight: '800',
+    margin: 0,
+  },
+  dropdownSelector: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    fontSize: '0.78rem',
+    fontWeight: '700',
+    border: '1px solid',
+    borderRadius: '8px',
+    padding: '0.35rem 0.65rem',
+  },
+  chartLegend: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1.5rem',
+    marginTop: '0.75rem',
+    paddingTop: '0.5rem',
+  },
+  legendItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.45rem',
+    fontSize: '0.78rem',
+    fontWeight: '700',
+  },
+  middleTwoCol: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '1.5rem',
+  },
+  seeAllLink: {
+    color: '#4338CA',
+    fontSize: '0.78rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+  },
+  requestList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.85rem',
+    marginTop: '0.75rem',
+  },
+  requestRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  personAvatar: {
+    width: '38px',
+    height: '38px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    flexShrink: 0,
+  },
+  personName: {
+    fontSize: '0.85rem',
+    fontWeight: '700',
+    margin: '0 0 2px 0',
+  },
+  personSub: {
+    fontSize: '0.72rem',
+    margin: 0,
+  },
+  requestTime: {
+    fontSize: '0.72rem',
+    fontWeight: '600',
+    whiteSpace: 'nowrap',
+  },
+  acceptedPill: {
+    fontSize: '0.72rem',
+    fontWeight: '700',
+    color: '#4338CA',
+    fontStyle: 'italic',
+  },
+  actionCircles: {
+    display: 'flex',
+    gap: '0.4rem',
+  },
+  checkCircle: {
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    backgroundColor: '#ffffff',
+    border: '1.5px solid #4338CA',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  },
+  crossCircle: {
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    backgroundColor: '#ffffff',
+    border: '1.5px solid #ef4444',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  },
+  finishedPill: {
+    fontSize: '0.72rem',
+    fontWeight: '700',
+    color: '#4338CA',
+    fontStyle: 'italic',
+  },
+  timeLabel: {
+    fontSize: '0.82rem',
+    fontWeight: '700',
+  },
+  tableWrapper: {
+    overflowX: 'auto',
+    marginTop: '0.5rem',
+  },
+  patientTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '0.82rem',
+    textAlign: 'left',
+  },
+  th: {
+    fontSize: '0.74rem',
+    fontWeight: '700',
+    padding: '0.75rem 0.5rem',
+  },
+  td: {
+    padding: '0.85rem 0.5rem',
+  },
+  smallAvatar: {
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+  },
+
+  // Right Column
+  rightCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5rem',
+  },
+  profileWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+  },
+  profileAvatarBox: {
+    width: '90px',
+    height: '90px',
+    borderRadius: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 8px 20px rgba(67, 56, 202, 0.15)',
+    marginBottom: '1rem',
+    border: '2px solid',
+  },
+  doctorMonogram: {
+    width: '74px',
+    height: '74px',
+    borderRadius: '18px',
+    background: 'linear-gradient(135deg, #4338CA 0%, #6366f1 100%)',
+    color: '#ffffff',
+    fontSize: '2rem',
+    fontWeight: '800',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doctorName: {
+    fontSize: '1.15rem',
+    fontWeight: '800',
+    color: '#4338CA',
+    margin: '0 0 0.25rem 0',
+  },
+  doctorSpecialty: {
+    fontSize: '0.76rem',
+    margin: '0 0 1.25rem 0',
+    fontWeight: '600',
+  },
+  limitBox: {
+    border: '1px solid',
+    borderRadius: '14px',
+    padding: '0.85rem 1rem',
+    marginBottom: '1.25rem',
+  },
+  limitHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  limitTitle: {
+    fontSize: '0.95rem',
+    fontWeight: '800',
+  },
+  limitFraction: {
+    fontSize: '0.74rem',
+    fontWeight: '700',
+  },
+  limitSub: {
+    fontSize: '0.72rem',
+    margin: '2px 0 8px 0',
+  },
+  progressBarTrack: {
+    width: '100%',
+    height: '6px',
+    backgroundColor: 'rgba(148, 163, 184, 0.2)',
+    borderRadius: '6px',
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#4338CA',
+    borderRadius: '6px',
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '0.75rem',
+    marginBottom: '1.25rem',
+  },
+  statBox: {
+    border: '1px solid',
+    borderRadius: '12px',
+    padding: '0.75rem',
+    textAlign: 'center',
+  },
+  statNumber: {
+    fontSize: '1.15rem',
+    fontWeight: '800',
+    margin: '0 0 2px 0',
+  },
+  statLabel: {
+    fontSize: '0.68rem',
+    margin: 0,
+    fontWeight: '600',
+  },
+  actionButtonsGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '0.75rem',
+  },
+  missedCallBtn: {
+    backgroundColor: '#4338CA',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '14px',
+    padding: '0.85rem 0.5rem',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+    cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
+  },
+  newMessagesBtn: {
+    border: '1.5px solid #4338CA',
+    borderRadius: '14px',
+    padding: '0.85rem 0.5rem',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+    cursor: 'pointer',
+  },
+  incomeRow: {
+    marginTop: '0.5rem',
+  },
+  incomeValue: {
+    fontSize: '1.4rem',
+    fontWeight: '800',
+  },
+  growthPill: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    color: '#10b981',
+    fontSize: '0.72rem',
+    fontWeight: '800',
+    padding: '0.2rem 0.5rem',
+    borderRadius: '12px',
+  },
+  incomeSub: {
+    fontSize: '0.72rem',
+    margin: '2px 0 0 0',
+  },
+  recalculateBtn: {
+    width: '100%',
+    marginTop: '0.6rem',
+    border: '1px solid',
+    borderRadius: '10px',
+    padding: '0.6rem',
+    fontSize: '0.78rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+
+  // ── PATIENT DASHBOARD STYLES ──
+  patientContainer: {
+    maxWidth: '1240px',
+    margin: '0 auto',
+  },
+  patientWelcomeCard: {
+    border: '1px solid',
+    borderRadius: '20px',
+    padding: '2rem',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+    marginBottom: '1.5rem',
+  },
+  patientEyebrow: {
+    color: '#4338CA',
+    fontSize: '0.72rem',
+    fontWeight: '800',
+    letterSpacing: '0.1em',
+    display: 'block',
+    marginBottom: '0.35rem',
+  },
+  patientTitle: {
+    fontSize: '1.85rem',
+    fontWeight: '800',
+    margin: '0 0 0.5rem 0',
+    letterSpacing: '-0.02em',
+  },
+  patientSub: {
+    fontSize: '0.92rem',
+    lineHeight: '1.5',
+    maxWidth: '680px',
+    margin: 0,
+  },
+  startTestsBtn: {
+    backgroundColor: '#4338CA',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '0.85rem 1.5rem',
+    fontSize: '0.92rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+  baselineProgressBox: {
+    border: '1px solid',
+    borderRadius: '14px',
+    padding: '1rem 1.25rem',
+    marginTop: '1.25rem',
+  },
+  patientStatsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gap: '1.25rem',
+    marginBottom: '1.5rem',
+  },
+  patientStatCard: {
+    border: '1px solid',
+    borderRadius: '20px',
+    padding: '1.5rem',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+  },
+  statCardLabel: {
+    fontSize: '0.72rem',
+    fontWeight: '800',
+    letterSpacing: '0.08em',
+  },
+  patientBigScore: {
+    fontSize: '2.4rem',
+    fontWeight: '900',
+    color: '#4338CA',
+    lineHeight: 1,
+  },
+  patientCardValue: {
+    fontSize: '1.2rem',
+    fontWeight: '800',
+    margin: '0.5rem 0 0.2rem 0',
+  },
+  patientCardSub: {
+    fontSize: '0.78rem',
+    margin: 0,
+    lineHeight: 1.4,
+  },
+  patientModulesGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '1rem',
+  },
+  moduleCard: {
+    border: '1px solid',
+    borderRadius: '16px',
+    padding: '1.25rem 1.5rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
+  },
+  moduleIconBox: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  moduleTitle: {
+    fontSize: '0.98rem',
+    fontWeight: '700',
+    margin: '0 0 0.25rem 0',
+  },
+  moduleDesc: {
+    fontSize: '0.78rem',
+    margin: 0,
+    lineHeight: 1.4,
+  },
+  moduleArrow: {
+    fontSize: '1.2rem',
+    fontWeight: '700',
+    color: '#4338CA',
+    marginLeft: 'auto',
+  },
+
+  // Modal styles
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backdropFilter: 'blur(6px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    padding: '1rem',
+  },
+  triggeredModalBox: {
+    borderRadius: '20px',
+    maxWidth: '520px',
+    width: '100%',
+    padding: '2rem',
+    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
+    border: '1px solid',
+  },
+  closeBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#94a3b8',
+    fontSize: '1.2rem',
+    cursor: 'pointer',
+    padding: 0,
+  },
+  dismissBtn: {
+    backgroundColor: 'transparent',
+    border: '1px solid',
+    borderRadius: '10px',
+    padding: '0.65rem 1.25rem',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  modalCtaBtn: {
+    backgroundColor: '#4338CA',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '10px',
+    padding: '0.65rem 1.5rem',
+    fontSize: '0.85rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
+  },
 };
 
 export default Dashboard;

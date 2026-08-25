@@ -15,12 +15,26 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="CogniVeil API")
 
+cors_origins_env = os.getenv("CORS_ORIGINS")
+if cors_origins_env:
+    allow_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+else:
+    allow_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if origin.strip()],
+    allow_origins=allow_origins,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:[0-9]+)?",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/")
@@ -29,8 +43,6 @@ def root():
 
 @app.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    if not user.consent_given:
-        raise HTTPException(status_code=400, detail="Consent is required before collecting cognitive, voice, or behavioural screening data.")
     existing = db.query(models.User).filter(models.User.email == user.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -40,7 +52,11 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         email=user.email, 
         hashed_password=hashed, 
         age=user.age, 
+        gender=user.gender or "Not specified",
         is_caregiver=user.is_caregiver,
+        consent_granted=False,
+        baseline_status="collecting",
+        level2_status="not_collected",
         apoe_e4_provenance=user.apoe_e4_provenance or "self_reported",
         mri_provenance=user.mri_provenance or "self_reported"
     )
@@ -48,8 +64,19 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     
-    mcp_tools.log_audit(db, new_user.id, "register", {"email": user.email, "consent_given": True}, {"status": "registered"})
+    mcp_tools.log_audit(db, new_user.id, "register", {"email": user.email}, {"status": "registered"}, pipeline_state="consent_required")
     return new_user
+
+@app.post("/auth/consent")
+@app.post("/consent")
+def grant_consent(req: schemas.ConsentRequest, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    current_user.consent_granted = req.consent_granted
+    current_user.consent_granted_at = datetime.utcnow() if req.consent_granted else None
+    db.commit()
+    db.refresh(current_user)
+    pipeline_state = "baseline_period" if current_user.consent_granted else "consent_required"
+    mcp_tools.log_audit(db, current_user.id, "grant_consent", {"consent_granted": req.consent_granted}, {"status": "updated"}, pipeline_state=pipeline_state)
+    return {"message": "Consent status updated successfully", "consent_granted": current_user.consent_granted}
 
 @app.post("/login", response_model=schemas.Token)
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
@@ -58,7 +85,8 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = auth.create_access_token(data={"sub": db_user.email}, expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES))
     
-    mcp_tools.log_audit(db, db_user.id, "login", {"email": user.email}, {"status": "authenticated"})
+    pipeline_state = "consent_required" if not db_user.consent_granted else ("baseline_period" if db_user.baseline_status == "collecting" else "full_pipeline_completed")
+    mcp_tools.log_audit(db, db_user.id, "login", {"email": user.email}, {"status": "authenticated"}, pipeline_state=pipeline_state)
     return {"access_token": token, "token_type": "bearer"}
 
 @app.get("/me", response_model=schemas.UserOut)
@@ -146,6 +174,8 @@ def revoke_sharing_request(access_id: int, db: Session = Depends(get_db), curren
     return {"message": "Caregiver access revoked."}
 @app.post("/signals")
 def save_signal(signal: schemas.PassiveSignalCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if not current_user.consent_granted:
+        raise HTTPException(status_code=403, detail="Informed consent is required before capturing passive digital telemetry.")
     new_signal = models.PassiveSignal(user_id=current_user.id, typing_speed=signal.typing_speed, backspace_rate=signal.backspace_rate, scroll_hesitation=signal.scroll_hesitation, session_duration=signal.session_duration)
     db.add(new_signal)
     db.commit()
@@ -162,6 +192,8 @@ def get_today_signals(db: Session = Depends(get_db), current_user: models.User =
 
 @app.post("/tests")
 def save_test(result: schemas.TestResultCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if not current_user.consent_granted:
+        raise HTTPException(status_code=403, detail="Informed consent is required before recording cognitive test results.")
     new_result = models.TestResult(user_id=current_user.id, test_type=result.test_type, score=result.score, duration_seconds=result.duration_seconds)
     db.add(new_result)
     db.commit()
@@ -204,6 +236,15 @@ def calculate_score(db: Session = Depends(get_db), current_user: models.User = D
     ).order_by(models.CogniScore.created_at.asc()).all()
 
     tier1_res = mcp_tools.score_tier1(tests, signals, history)
+    baseline_status = tier1_res.get("baseline_status", "collecting")
+    is_deviating = tier1_res.get("is_deviating", False)
+
+    trigger_level2 = False
+    if is_deviating and current_user.level2_status == "not_collected":
+        current_user.level2_status = "triggered"
+        trigger_level2 = True
+
+    current_user.baseline_status = baseline_status
 
     score_record = db.query(models.CogniScore).filter(
         models.CogniScore.user_id == current_user.id,
@@ -220,16 +261,41 @@ def calculate_score(db: Session = Depends(get_db), current_user: models.User = D
     score_record.ewma_score = tier1_res["ewma_score"]
     score_record.cusum_value = tier1_res["cusum_value"]
     score_record.baseline_mean = tier1_res["baseline_mean"]
-    score_record.is_deviating = tier1_res["is_deviating"]
+    score_record.baseline_status = baseline_status
+    score_record.level2_status = current_user.level2_status
+    score_record.is_deviating = is_deviating
+    score_record.combined_risk_score = current_user.combined_risk_score
     db.commit()
     db.refresh(score_record)
+
+    pipeline_state = "baseline_period" if baseline_status == "collecting" else ("awaiting_level2" if current_user.level2_status != "completed" else "full_pipeline_completed")
     
     mcp_tools.log_audit(db, current_user.id, "score_tier1", {
         "session_date": session_start.date().isoformat(),
         "tests_count": len(tests),
         "signals_count": len(signals),
-        "prior_sessions": len(history)
-    }, tier1_res)
+        "prior_sessions": len(history),
+        "baseline_status": baseline_status,
+        "level2_status": current_user.level2_status
+    }, {**tier1_res, "trigger_level2": trigger_level2}, pipeline_state=pipeline_state)
+    
+    return {
+        "id": score_record.id,
+        "user_id": score_record.user_id,
+        "score": score_record.score,
+        "active_score": score_record.active_score,
+        "passive_score": score_record.passive_score,
+        "risk_level": score_record.risk_level,
+        "ewma_score": score_record.ewma_score,
+        "cusum_value": score_record.cusum_value,
+        "baseline_mean": score_record.baseline_mean,
+        "baseline_status": score_record.baseline_status,
+        "level2_status": score_record.level2_status,
+        "is_deviating": score_record.is_deviating,
+        "combined_risk_score": score_record.combined_risk_score,
+        "trigger_level2": trigger_level2,
+        "created_at": score_record.created_at
+    }
     return score_record
 
 # -----------------------------------------------------------------------------
@@ -295,13 +361,35 @@ def transcription_status(current_user: models.User = Depends(auth.get_current_us
     return {"available": model is not None, "engine": f"faster-whisper:{os.getenv('WHISPER_MODEL', 'small')}" if model else "unavailable"}
 
 # -----------------------------------------------------------------------------
-# MCP Tool 4 & API Endpoint: predict_risk (CatBoost Tier 2)
+# MCP Tool 4 & API Endpoint: predict_risk (CatBoost Tier 2) & Level 2 Questionnaire Submission
 # -----------------------------------------------------------------------------
+@app.post("/api/level2/submit")
 @app.post("/predict/level2")
 def level2_predict(data: dict, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     try:
-        res = mcp_tools.predict_risk(data)
-        mcp_tools.log_audit(db, current_user.id, "predict_risk", {"features_count": len(data)}, {"probability": res["probability"], "risk_level": res["risk_level"]})
+        current_user.level2_data = json.dumps(data)
+        current_user.level2_status = "completed"
+        res = mcp_tools.predict_risk(data, level2_status="completed")
+        current_user.combined_risk_score = res.get("combined_risk_score")
+        
+        # Update latest score record with combined_risk_score and level2_status
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        score_rec = db.query(models.CogniScore).filter(
+            models.CogniScore.user_id == current_user.id,
+            models.CogniScore.created_at >= today_start
+        ).order_by(models.CogniScore.created_at.desc()).first()
+        if score_rec:
+            score_rec.combined_risk_score = res.get("combined_risk_score")
+            score_rec.level2_status = "completed"
+
+        db.commit()
+        db.refresh(current_user)
+        mcp_tools.log_audit(
+            db, current_user.id, "submit_level2_questionnaire",
+            {"features_count": len(data)},
+            {"probability": res["probability"], "risk_level": res["risk_level"], "combined_risk_score": res.get("combined_risk_score")},
+            pipeline_state="full_pipeline_completed"
+        )
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -312,8 +400,9 @@ def level2_predict(data: dict, db: Session = Depends(get_db), current_user: mode
 @app.post("/api/classify-mri")
 async def classify_mri_endpoint(file: Optional[UploadFile] = File(None), db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     filename = file.filename if file else "sample_mri_scan.dcm"
-    res = mcp_tools.classify_mri(filename=filename)
-    mcp_tools.log_audit(db, current_user.id, "classify_mri", {"filename": filename}, res)
+    image_bytes = await file.read() if file else None
+    res = mcp_tools.classify_mri(image_bytes=image_bytes, filename=filename)
+    mcp_tools.log_audit(db, current_user.id, "classify_mri", {"filename": filename, "bytes_length": len(image_bytes) if image_bytes else 0}, res)
     return res
 
 # -----------------------------------------------------------------------------
@@ -364,6 +453,24 @@ def generate_clinical_report_endpoint(req: schemas.ClinicalReportRequest, db: Se
         shap_features=req.shap_features
     )
     
+    # Save report to longitudinal ClinicalReport table
+    try:
+        report_record = models.ClinicalReport(
+            user_id=current_user.id,
+            cogni_score=req.cogni_score,
+            risk_level=req.risk_level,
+            is_deviating=req.is_deviating,
+            narrative=safety_check["sanitized_narrative"],
+            referral_action=referral.get("action"),
+            recommended_specialist=referral.get("recommended_specialist"),
+            urgency=referral.get("urgency"),
+            guardrail_passed=safety_check["guardrail_passed"]
+        )
+        db.add(report_record)
+        db.commit()
+    except Exception as e:
+        print(f"Failed to persist clinical report record: {e}")
+
     response_payload = {
         "narrative": safety_check["sanitized_narrative"],
         "guardrail_passed": safety_check["guardrail_passed"],
@@ -373,6 +480,11 @@ def generate_clinical_report_endpoint(req: schemas.ClinicalReportRequest, db: Se
     
     mcp_tools.log_audit(db, current_user.id, "draft_report", req.dict(), {"guardrail_passed": safety_check["guardrail_passed"]}, safety_check["guardrail_passed"])
     return response_payload
+
+@app.get("/api/clinical-reports/history")
+def get_clinical_reports_history(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    reports = db.query(models.ClinicalReport).filter(models.ClinicalReport.user_id == current_user.id).order_by(models.ClinicalReport.created_at.desc()).all()
+    return reports
 
 # -----------------------------------------------------------------------------
 # MCP Tool 10 & API Endpoint: log_audit query
@@ -399,10 +511,29 @@ def setup_demo(db: Session = Depends(get_db)):
     
     def hash_pw(p): return auth.get_password_hash(p)
     
-    def make_user(name, email, age):
+    def make_user(name, email, age, gender="Male"):
         existing = db.query(models.User).filter(models.User.email == email).first()
-        if existing: return existing
-        u = models.User(name=name, email=email, hashed_password=hash_pw("demo1234"), age=age, is_caregiver=False)
+        if existing:
+            existing.consent_granted = True
+            existing.consent_granted_at = datetime.utcnow()
+            existing.baseline_status = "established"
+            existing.level2_status = "not_collected"
+            existing.combined_risk_score = None
+            existing.gender = gender
+            db.commit()
+            return existing
+        u = models.User(
+            name=name,
+            email=email,
+            hashed_password=hash_pw("demo1234"),
+            age=age,
+            gender=gender,
+            is_caregiver=False,
+            consent_granted=True,
+            consent_granted_at=datetime.utcnow(),
+            baseline_status="established",
+            level2_status="not_collected"
+        )
         db.add(u); db.commit(); db.refresh(u)
         return u
     
@@ -426,40 +557,42 @@ def setup_demo(db: Session = Depends(get_db)):
                 ewma_score=ewma,
                 cusum_value=cusum,
                 baseline_mean=round(base, 2),
+                baseline_status="established",
+                level2_status="not_collected",
                 is_deviating=is_dev,
                 created_at=d
             ))
         db.commit()
     
     def seed_tests(uid, base):
-        for i in range(14):
+        for i in range(15):
             d = datetime.now() - timedelta(days=(14-i))
             for tt in ['pattern_recall','digit_span','word_recall','voice_journal']:
-                db.add(models.TestResult(user_id=uid, test_type=tt, score=round(max(0,min(100,base+random.uniform(-8,8))),2), duration_seconds=60, created_at=d))
+                db.add(models.TestResult(user_id=uid, test_type=tt, score=round(max(0,min(100,base+random.uniform(-5,5))),2), duration_seconds=60, created_at=d))
         db.commit()
     
     def seed_signals(uid, typing_base, backspace_base):
-        for i in range(14):
+        for i in range(15):
             d = datetime.now() - timedelta(days=(14-i))
             db.add(models.PassiveSignal(user_id=uid, typing_speed=round(typing_base+random.uniform(-5,5),2), backspace_rate=round(backspace_base+random.uniform(-0.02,0.02),2), scroll_hesitation=round(random.uniform(0,3),2), session_duration=300, created_at=d))
         db.commit()
     
-    p1 = make_user("Arjun Sharma", "arjun@demo.com", 68)
+    p1 = make_user("Arjun Sharma", "arjun@demo.com", 68, "Male")
     seed_scores(p1.id, 88, 0.3)
     seed_tests(p1.id, 92)
     seed_signals(p1.id, 95, 0.01)
     
-    p2 = make_user("Meena Krishnan", "meena@demo.com", 72)
+    p2 = make_user("Meena Krishnan", "meena@demo.com", 72, "Female")
     seed_scores(p2.id, 68, -1.2)
     seed_tests(p2.id, 60)
     seed_signals(p2.id, 60, 0.12)
     
-    p3 = make_user("Rajan Pillai", "rajan@demo.com", 78)
-    seed_scores(p3.id, 32, -0.8)
-    seed_tests(p3.id, 30)
-    seed_signals(p3.id, 35, 0.25)
+    p3 = make_user("Rajan Pillai", "rajan@demo.com", 78, "Male")
+    seed_scores(p3.id, 78, -3.2)
+    seed_tests(p3.id, 28)
+    seed_signals(p3.id, 30, 0.35)
     
-    return {"status": "Demo users seeded successfully with EWMA/CUSUM baseline metrics!"}
+    return {"status": "Demo users seeded successfully with EWMA/CUSUM baseline metrics and informed consent!"}
 
 import os
 

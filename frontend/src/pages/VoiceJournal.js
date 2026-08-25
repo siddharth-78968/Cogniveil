@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyseVoice, calculateScore } from '../utils/api';
+import VoiceGuideBar from '../components/VoiceGuideBar';
+import DoctorLayout from '../components/DoctorLayout';
 
 const VoiceJournal = () => {
   const navigate = useNavigate();
@@ -171,33 +173,29 @@ const prompts = useMemo(() => [
   const offset = result ? circumference - (result.voiceScore / 100) * circumference : circumference;
 
   return (
-    <div style={styles.page}>
-      <div style={styles.bgGlow1} />
-      <div style={styles.bgGlow2} />
-      <div style={styles.bgGrid} />
-
+    <DoctorLayout activeTitle="Voice Journal">
       <div style={styles.container}>
-        <button style={styles.backBtn} onClick={() => navigate('/dashboard')}>← Dashboard</button>
-
         <div style={styles.headerRow}>
           <div>
             <p style={styles.pageLabel}>SPEECH BIOMARKER ANALYSIS</p>
-            <h1 style={styles.pageTitle}>Voice Journal</h1>
+            <h1 style={styles.pageTitle}>Voice Journal & Acoustic Screening</h1>
             <p style={styles.pageSub}>Speak naturally in your preferred language. AI automatically routes to multilingual Whisper model.</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-            <label style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: '700' }}>SELECT LANGUAGE</label>
+            <label style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: '700' }}>SELECT LANGUAGE</label>
             <select
               value={selectedLang}
               onChange={(e) => setSelectedLang(e.target.value)}
               style={{
-                backgroundColor: '#0d1117',
-                border: '1px solid #ffffff22',
+                backgroundColor: '#ffffff',
+                border: '1.5px solid #e2e8f0',
                 borderRadius: '10px',
-                color: '#00d4aa',
+                color: '#4338CA',
                 padding: '0.5rem 0.8rem',
                 fontSize: '0.85rem',
-                fontWeight: '700'
+                fontWeight: '700',
+                outline: 'none',
+                cursor: 'pointer'
               }}
             >
               <option value="en">English (en)</option>
@@ -215,6 +213,8 @@ const prompts = useMemo(() => [
             )}
           </div>
         </div>
+
+        <VoiceGuideBar scriptKey="voice_journal_intro" defaultLang={selectedLang} />
 
         {/* Prompt card */}
         <div style={styles.promptCard}>
@@ -390,63 +390,29 @@ const prompts = useMemo(() => [
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes glow { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
-        @keyframes rippleAnim {
-          0% { transform: scale(1); opacity: 0.4; }
-          100% { transform: scale(2.2); opacity: 0; }
-        }
-        @keyframes waveAnim {
-          0%,100% { transform: scaleY(0.4); }
-          50% { transform: scaleY(1); }
-        }
-        @keyframes fadeIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
-      `}</style>
-    </div>
+    </DoctorLayout>
   );
 };
 
 const styles = {
-  page: {
-    minHeight: '100vh', backgroundColor: '#080c14',
-    padding: '2rem', position: 'relative', overflow: 'hidden',
-    fontFamily: "'Segoe UI', sans-serif",
-  },
-  bgGlow1: {
-    position: 'fixed', width: '500px', height: '500px', borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(0,212,170,0.06) 0%, transparent 70%)',
-    top: '-100px', left: '-100px', pointerEvents: 'none', animation: 'glow 7s ease-in-out infinite',
-  },
-  bgGlow2: {
-    position: 'fixed', width: '400px', height: '400px', borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(245,158,11,0.05) 0%, transparent 70%)',
-    bottom: '-100px', right: '-100px', pointerEvents: 'none', animation: 'glow 9s ease-in-out infinite reverse',
-  },
-  bgGrid: {
-    position: 'fixed', inset: 0,
-    backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)',
-    backgroundSize: '40px 40px', pointerEvents: 'none',
-  },
-  container: { maxWidth: '860px', margin: '0 auto', animation: 'fadeUp 0.5s ease' },
-  backBtn: { background: 'none', border: 'none', color: '#ffffff35', fontSize: '0.88rem', cursor: 'pointer', padding: 0, marginBottom: '1.5rem' },
-  headerRow: { marginBottom: '1.5rem' },
-  pageLabel: { color: '#ffffff25', fontSize: '0.68rem', fontWeight: '700', letterSpacing: '0.15em', marginBottom: '0.25rem' },
-  pageTitle: { color: 'white', fontSize: '2rem', fontWeight: '800', letterSpacing: '-0.02em', marginBottom: '0.25rem' },
-  pageSub: { color: '#ffffff40', fontSize: '0.88rem', lineHeight: 1.6, maxWidth: '560px' },
+  container: { maxWidth: '850px', margin: '0 auto' },
+  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' },
+  pageLabel: { color: '#4338CA', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.1em', marginBottom: '0.25rem' },
+  pageTitle: { color: '#1e293b', fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.02em', margin: '0 0 0.25rem 0' },
+  pageSub: { color: '#64748b', fontSize: '0.88rem', lineHeight: '1.4', maxWidth: '560px', margin: 0 },
   promptCard: {
-    backgroundColor: '#0d1117', border: '1px solid #f59e0b22',
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
     borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem',
-    borderLeft: '3px solid #f59e0b',
+    borderLeft: '4px solid #4338CA',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
   },
-  promptBadge: { color: '#f59e0b', fontSize: '0.68rem', fontWeight: '700', letterSpacing: '0.15em', marginBottom: '0.75rem' },
-  promptText: { color: 'white', fontSize: '1.05rem', lineHeight: 1.7, fontStyle: 'italic' },
+  promptBadge: { color: '#4338CA', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.1em', marginBottom: '0.5rem' },
+  promptText: { color: '#1e293b', fontSize: '1.1rem', lineHeight: '1.6', fontStyle: 'italic', fontWeight: '600', margin: 0 },
   recorderCard: {
-    backgroundColor: '#0d1117', border: '1px solid #ffffff08',
-    borderRadius: '20px', padding: '3rem 2rem',
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
+    borderRadius: '20px', padding: '3.5rem 2rem',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
-    marginBottom: '1.5rem',
+    marginBottom: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
   },
   micOuter: { position: 'relative', width: '130px', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   ripple: {
@@ -458,69 +424,73 @@ const styles = {
     width: '100px', height: '100px', borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'all 0.3s', position: 'relative', zIndex: 1,
+    backgroundColor: '#f5f3ff', border: '2px solid #4338CA',
   },
   micEmoji: { fontSize: '2.5rem' },
   timerBox: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
   timerText: { color: '#ef4444', fontSize: '2.8rem', fontWeight: '800', fontFamily: 'monospace', lineHeight: 1 },
-  timerLabel: { color: '#ef444488', fontSize: '0.7rem', letterSpacing: '0.1em' },
-  hintText: { color: '#ffffff25', fontSize: '0.88rem' },
+  timerLabel: { color: '#ef4444', fontSize: '0.7rem', letterSpacing: '0.1em', fontWeight: '800' },
+  hintText: { color: '#64748b', fontSize: '0.88rem', fontWeight: '600' },
   waveform: { display: 'flex', alignItems: 'center', gap: '4px', height: '40px' },
   waveBar: {
-    width: '4px', backgroundColor: '#ef4444aa', borderRadius: '2px',
+    width: '4px', backgroundColor: '#4338CA', borderRadius: '2px',
     animation: 'waveAnim 0.6s ease-in-out infinite',
   },
   recordBtn: {
-    border: 'none', borderRadius: '14px',
-    padding: '0.9rem 2.5rem', fontSize: '1rem', fontWeight: '700',
+    border: 'none', borderRadius: '12px',
+    padding: '0.9rem 2.5rem', fontSize: '0.95rem', fontWeight: '700',
     cursor: 'pointer', letterSpacing: '0.02em', transition: 'all 0.3s',
   },
-  tooShortText: { color: '#f59e0b', fontSize: '0.82rem' },
+  tooShortText: { color: '#ef4444', fontSize: '0.82rem', fontWeight: '700' },
   analysingBox: { padding: '1rem', width: '100%', maxWidth: '360px' },
   analysingSpinner: { display: 'flex', flexDirection: 'column', gap: '1rem' },
   analysingStep: {
     display: 'flex', alignItems: 'center', gap: '0.75rem',
-    color: '#ffffff60', fontSize: '0.88rem',
+    color: '#475569', fontSize: '0.88rem', fontWeight: '600',
     animation: 'fadeIn 0.5s ease both',
   },
   analysingDot: {
     width: '8px', height: '8px', borderRadius: '50%',
-    backgroundColor: '#00d4aa', flexShrink: 0,
+    backgroundColor: '#4338CA', flexShrink: 0,
   },
   resultsGrid: { display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' },
   scoreCard: {
-    backgroundColor: '#0d1117', borderRadius: '20px',
+    backgroundColor: '#ffffff', borderRadius: '20px', border: '1px solid #eef2f6',
     padding: '2rem', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', gap: '1rem', minWidth: '220px',
+    alignItems: 'center', gap: '1rem', minWidth: '240px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
   },
-  cardLabel: { color: '#ffffff25', fontSize: '0.68rem', fontWeight: '700', letterSpacing: '0.15em', alignSelf: 'flex-start' },
+  cardLabel: { color: '#94a3b8', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.1em', alignSelf: 'flex-start' },
   ringWrapper: { position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
   ringCenter: { position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  scoreNum: { fontSize: '2rem', fontWeight: '800', lineHeight: 1 },
-  scoreOf: { color: '#ffffff30', fontSize: '0.72rem' },
-  riskPill: { padding: '0.4rem 1.2rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '600' },
-  durationText: { color: '#ffffff25', fontSize: '0.75rem' },
+  scoreNum: { fontSize: '2.2rem', fontWeight: '800', lineHeight: 1 },
+  scoreOf: { color: '#94a3b8', fontSize: '0.75rem', fontWeight: '600' },
+  riskPill: { padding: '0.4rem 1.2rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700' },
+  durationText: { color: '#94a3b8', fontSize: '0.75rem' },
   metricsCol: { flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '1rem' },
   metricsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' },
   metricCard: {
-    backgroundColor: '#0d1117', border: '1px solid #ffffff08',
-    borderRadius: '12px', padding: '1rem',
+    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
+    borderRadius: '14px', padding: '1rem',
     display: 'flex', alignItems: 'center', gap: '0.75rem',
+    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)',
   },
   metricIcon: { fontSize: '1.4rem', flexShrink: 0 },
-  metricLabel: { color: '#ffffff35', fontSize: '0.7rem', letterSpacing: '0.04em', marginBottom: '2px' },
-  metricValue: { color: 'white', fontSize: '0.95rem', fontWeight: '700' },
-  audioCard: { backgroundColor: '#0d1117', border: '1px solid #ffffff08', borderRadius: '12px', padding: '1rem' },
+  metricLabel: { color: '#64748b', fontSize: '0.72rem', fontWeight: '700', marginBottom: '2px' },
+  metricValue: { color: '#1e293b', fontSize: '0.95rem', fontWeight: '800' },
+  audioCard: { backgroundColor: '#ffffff', border: '1px solid #eef2f6', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)' },
   audio: { width: '100%', borderRadius: '8px', marginTop: '0.5rem' },
   actionRow: { display: 'flex', gap: '0.75rem' },
   retryBtn: {
-    flex: 1, backgroundColor: 'transparent', color: '#ffffff50',
-    border: '1px solid #ffffff15', borderRadius: '10px',
-    padding: '0.75rem', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '600',
+    flex: 1, backgroundColor: '#ffffff', color: '#64748b',
+    border: '1.5px solid #e2e8f0', borderRadius: '10px',
+    padding: '0.75rem', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '700',
   },
   doneBtn: {
-    flex: 1, backgroundColor: '#00d4aa', color: '#080c14',
+    flex: 1, backgroundColor: '#4338CA', color: '#ffffff',
     border: 'none', borderRadius: '10px',
     padding: '0.75rem', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '700',
+    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
   },
 };
 

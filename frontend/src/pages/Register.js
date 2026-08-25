@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import './Landing.css';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [age, setAge] = useState('');
+  const [gender, setGender] = useState('Female');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [consentGiven, setConsentGiven] = useState(false);
   const [isCaregiver, setIsCaregiver] = useState(false);
   const { register, login } = useAuth();
   const navigate = useNavigate();
@@ -28,16 +29,10 @@ const Register = () => {
     }
 
     try {
-      if (!consentGiven) {
-        setError('Please provide consent before creating an account.');
-        setLoading(false);
-        return;
-      }
-      await register(name, email, password, parsedAge, consentGiven, isCaregiver);
-      // Auto-login after registration for seamless UX
+      await register(name, email, password, parsedAge, gender, isCaregiver);
       try {
         await login(email, password);
-        navigate('/dashboard');
+        navigate('/consent');
       } catch (loginErr) {
         navigate('/login');
       }
@@ -57,308 +52,457 @@ const Register = () => {
     }
   };
 
-  const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
-  const strengthColor = ['transparent', '#ef4444', '#f59e0b', '#00d4aa'][strength];
-  const strengthLabel = ['', 'Weak', 'Good', 'Strong'][strength];
-
   return (
-    <div style={styles.page}>
-      <div style={styles.bgGlow1} />
-      <div style={styles.bgGlow2} />
-      <div style={styles.bgGrid} />
-
-      <div style={styles.wrapper}>
-        {/* Left panel */}
-        <div className="reg-left" style={styles.leftPanel}>
-          <div style={styles.brandRow}>
-            <span style={styles.brandIcon}>🧠</span>
-            <span style={styles.brandName}>CogniVeil</span>
-          </div>
-          <h1 style={styles.tagline}>Your brain<br/>deserves care.</h1>
-          <p style={styles.taglineSub}>
-            Join thousands monitoring their cognitive health passively. 
-            No clinic visits. No long tests. Just 3 minutes a day.
-          </p>
-          <div style={styles.stepsList}>
-            {[
-              { icon: '📝', title: 'Create account', desc: 'Takes 30 seconds' },
-              { icon: '🧪', title: 'Take daily tests', desc: '3 short cognitive checks' },
-              { icon: '👁️', title: 'Passive monitoring begins', desc: 'Runs silently in background' },
-              { icon: '📊', title: 'Get your CogniScore', desc: 'AI-fused risk assessment' },
-            ].map((s, i) => (
-              <div key={i} style={styles.stepItem}>
-                <div style={styles.stepIconBox}>{s.icon}</div>
-                <div>
-                  <p style={styles.stepTitle}>{s.title}</p>
-                  <p style={styles.stepDesc}>{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right panel */}
-        <div className="reg-right" style={styles.formPanel}>
-          <p style={styles.formLabel}>GET STARTED</p>
-          <h2 style={styles.formTitle}>Create account</h2>
-          <p style={styles.formSub}>Free forever. No credit card required.</p>
-
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.field}>
-              <label style={styles.label}>Full name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                style={styles.input}
-                placeholder="e.g. Arjun Sharma"
-                required
-              />
-            </div>
-
-            <label style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', color: '#ffffff70', fontSize: '0.82rem', cursor: 'pointer' }}>
-              <input type="checkbox" checked={isCaregiver} onChange={e => setIsCaregiver(e.target.checked)} />
-              I am registering as a caregiver.
-            </label>
-
-            <label style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', color: '#ffffff70', fontSize: '0.78rem', lineHeight: 1.5, cursor: 'pointer' }}>
-              <input type="checkbox" checked={consentGiven} onChange={e => setConsentGiven(e.target.checked)} style={{ marginTop: '3px' }} />
-              <span>I consent to CogniVeil collecting my cognitive-task, voice-derived, and interaction data for screening. I understand it is not a medical diagnosis.</span>
-            </label>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Email address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                style={styles.input}
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Password</label>
-              <div style={styles.passWrapper}>
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  style={{ ...styles.input, paddingRight: '3rem' }}
-                  placeholder="Min 6 characters"
-                  required
-                />
-                <button type="button" style={styles.eyeBtn} onClick={() => setShowPass(!showPass)}>
-                  {showPass ? '🙈' : '👁️'}
-                </button>
-              </div>
-              {password.length > 0 && (
-                <div style={styles.strengthRow}>
-                  <div style={styles.strengthBar}>
-                    {[1,2,3].map(i => (
-                      <div key={i} style={{
-                        ...styles.strengthSegment,
-                        backgroundColor: i <= strength ? strengthColor : '#ffffff10',
-                      }}/>
-                    ))}
-                  </div>
-                  <span style={{ color: strengthColor, fontSize: '0.72rem', fontWeight: '600' }}>
-                    {strengthLabel}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Age</label>
-              <input
-                type="number"
-                value={age}
-                onChange={e => setAge(e.target.value)}
-                style={styles.input}
-                placeholder="e.g. 65"
-                min="18"
-                max="120"
-                required
-              />
-            </div>
-
-            {error && (
-              <div style={styles.errorBox}>
-                <span>⚠️</span> {error}
-              </div>
-            )}
-
-            <button type="submit" style={styles.submitBtn} disabled={loading}>
-              {loading ? 'Creating account...' : 'Create Account →'}
-            </button>
-          </form>
-
-          <p style={styles.loginText}>
-            Already have an account?{' '}
-            <Link to="/login" style={styles.loginLink}>Sign in</Link>
-          </p>
-
-          <p style={styles.disclaimer}>
-            By registering you agree that this is a screening tool only and does not replace clinical diagnosis.
-          </p>
-        </div>
+    <div className="landing-page" style={styles.pageWrapper}>
+      
+      {/* ══ Fixed video BG (Exact same URL as Landing page) ══ */}
+      <div className="lbg">
+        <video className="lbg-video" autoPlay muted loop playsInline>
+          <source
+            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_012548_ef22562c-c0ae-4816-ad9d-f8922af4e6a7.mp4"
+            type="video/mp4"
+          />
+        </video>
       </div>
 
-<style>{`
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes glow {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.7; }
-  }
-  input:focus {
-    outline: none !important;
-    border-color: #a78bfa55 !important;
-    box-shadow: 0 0 0 3px rgba(167,139,250,0.1) !important;
-  }
-  @media (max-width: 640px) {
-    .reg-left { display: none !important; }
-    .reg-right { width: 100% !important; min-width: unset !important; padding: 2rem 1.25rem !important; }
-  }
-`}</style>
+      {/* ══ Ambient Holographic Glow Overlay ══ */}
+      <div style={styles.ambientGlow} />
+
+      {/* ══ Fixed Floating Header matching Landing Page ══ */}
+      <header className="lheader">
+        <button className="llogo-btn" onClick={() => navigate('/')} title="CogniVeil Home">
+          <span className="llogo-text">CV</span>
+        </button>
+        <nav className="lnav-pill">
+          <button className="lnav-link" onClick={() => navigate('/')}>Home</button>
+          <button className="lnav-link" onClick={() => navigate('/#product')}>Product</button>
+          <button className="lnav-link" onClick={() => navigate('/#case-studies')}>Case Studies</button>
+          <button className="lnav-link" onClick={() => navigate('/#contact')}>Contact</button>
+        </nav>
+        <button className="lbtn-signin" onClick={() => navigate('/login')}>
+          Sign in
+        </button>
+      </header>
+
+      {/* ══ Centered Ultra-Glassmorphic 2-Column Card ══ */}
+      <div style={styles.contentContainer}>
+        <div style={styles.authCard}>
+          
+          {/* Left Hero Branding Column */}
+          <div style={styles.leftCol}>
+            <div style={styles.brandRow} onClick={() => navigate('/')}>
+              <span style={{ fontSize: '1.4rem' }}>🧠</span>
+              <span style={styles.brandTitle}>CogniVeil</span>
+            </div>
+
+            <h1 style={styles.heroTitle}>
+              Join the future of<br />cognitive health.
+            </h1>
+
+            <p style={styles.heroSub}>
+              Set up continuous digital telemetry, 7-day personalized baseline calibration, and vernacular voice journals.
+            </p>
+
+            {/* Privacy & Protocol Guarantee List */}
+            <div style={styles.guaranteeList}>
+              <div style={styles.guaranteeItem}>
+                <span style={styles.checkIcon}>✓</span>
+                <div>
+                  <h4 style={styles.guaranteeTitle}>7-Day Baseline Calibration</h4>
+                  <p style={styles.guaranteeDesc}>No cold-start false positives; your personal baseline is built over the first week.</p>
+                </div>
+              </div>
+              <div style={styles.guaranteeItem}>
+                <span style={styles.checkIcon}>✓</span>
+                <div>
+                  <h4 style={styles.guaranteeTitle}>Consent-Gated Telemetry</h4>
+                  <p style={styles.guaranteeDesc}>Passive typing cadence & micro-tests remain completely private under your control.</p>
+                </div>
+              </div>
+              <div style={styles.guaranteeItem}>
+                <span style={styles.checkIcon}>✓</span>
+                <div>
+                  <h4 style={styles.guaranteeTitle}>Family & Caregiver Circles</h4>
+                  <p style={styles.guaranteeDesc}>Optional real-time drift alerts for authorized doctors and loved ones.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Form Column */}
+          <div style={styles.rightCol}>
+            <span style={styles.formEyebrow}>GET STARTED</span>
+            <h2 style={styles.formHeading}>Create account</h2>
+            <p style={styles.formSub}>Takes less than 60 seconds to get calibrated</p>
+
+            <form onSubmit={handleSubmit} style={styles.form}>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  style={styles.input}
+                  placeholder="e.g. Eleanor Vance"
+                  required
+                />
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Email Address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={styles.input}
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+
+              <div style={styles.twoColInputs}>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Age</label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="120"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    style={styles.input}
+                    placeholder="65"
+                    required
+                  />
+                </div>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Gender</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    style={styles.select}
+                  >
+                    <option value="Female" style={{ background: '#0f172a' }}>Female</option>
+                    <option value="Male" style={{ background: '#0f172a' }}>Male</option>
+                    <option value="Other" style={{ background: '#0f172a' }}>Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Password</label>
+                <div style={styles.passwordWrapper}>
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ ...styles.input, paddingRight: '2.8rem' }}
+                    placeholder="Min. 6 characters"
+                    required
+                  />
+                  <button
+                    type="button"
+                    style={styles.eyeBtn}
+                    onClick={() => setShowPass(!showPass)}
+                  >
+                    {showPass ? '🙈' : '👁️'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Caregiver Account Checkbox */}
+              <div 
+                style={styles.caregiverRow}
+                onClick={() => setIsCaregiver(!isCaregiver)}
+              >
+                <input
+                  type="checkbox"
+                  checked={isCaregiver}
+                  onChange={(e) => setIsCaregiver(e.target.checked)}
+                  style={styles.checkbox}
+                />
+                <span style={styles.caregiverLabel}>
+                  I am a Doctor / Family Caregiver managing other patients
+                </span>
+              </div>
+
+              {error && (
+                <div style={styles.errorBox}>
+                  <span>⚠️</span> {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                style={styles.submitBtn}
+              >
+                {loading ? 'Creating Account...' : 'Get Started Free →'}
+              </button>
+            </form>
+
+            <p style={styles.footerLink}>
+              Already have an account? <Link to="/login" style={styles.createLink}>Sign In</Link>
+            </p>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 };
 
 const styles = {
-  page: {
+  pageWrapper: {
     minHeight: '100vh',
-    backgroundColor: '#080c14',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '90px 1.5rem 2.5rem 1.5rem',
+    fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif',
+    overflowX: 'hidden',
+  },
+  ambientGlow: {
+    position: 'fixed',
+    inset: 0,
+    background: 'radial-gradient(ellipse at 50% 40%, rgba(20, 20, 35, 0.35) 0%, rgba(0, 0, 0, 0.82) 100%)',
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+  contentContainer: {
+    position: 'relative',
+    zIndex: 10,
+    width: '100%',
+    maxWidth: '1060px',
+    margin: 'auto 0',
+  },
+  authCard: {
+    display: 'grid',
+    gridTemplateColumns: '1.08fr 1fr',
+    backgroundColor: 'rgba(15, 17, 26, 0.72)',
+    backdropFilter: 'blur(36px)',
+    WebkitBackdropFilter: 'blur(36px)',
+    border: '1px solid rgba(255, 255, 255, 0.16)',
+    borderRadius: '28px',
+    boxShadow: '0 30px 80px rgba(0, 0, 0, 0.75)',
+    overflow: 'hidden',
+  },
+  leftCol: {
+    padding: '3.2rem 2.75rem',
+    borderRight: '1px solid rgba(255, 255, 255, 0.09)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.3) 100%)',
+  },
+  brandRow: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.65rem',
+    cursor: 'pointer',
+    marginBottom: '1.5rem',
+  },
+  brandTitle: {
+    fontSize: '1.45rem',
+    fontWeight: '800',
+    color: '#00d4aa',
+    fontFamily: '"BubbledotICG-FinePos", monospace',
+    letterSpacing: '0.04em',
+  },
+  heroTitle: {
+    fontSize: 'clamp(2.1rem, 3.4vw, 2.6rem)',
+    fontWeight: '800',
+    color: '#ffffff',
+    lineHeight: 1.15,
+    margin: '0 0 1rem 0',
+    letterSpacing: '-0.02em',
+    fontFamily: '"Inter", "Segoe UI", sans-serif',
+  },
+  heroSub: {
+    fontSize: '0.92rem',
+    color: 'rgba(255, 255, 255, 0.7)',
+    lineHeight: 1.6,
+    margin: '0 0 2rem 0',
+  },
+  guaranteeList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.1rem',
+  },
+  guaranteeItem: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '0.85rem',
+  },
+  checkIcon: {
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(0, 212, 170, 0.15)',
+    color: '#00d4aa',
+    fontSize: '0.82rem',
+    fontWeight: '800',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '1rem',
-    position: 'relative',
-    overflow: 'hidden',
-    fontFamily: "'Segoe UI', sans-serif",
+    flexShrink: 0,
+    marginTop: '2px',
   },
-  bgGlow1: {
-    position: 'fixed',
-    width: '600px', height: '600px',
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(167,139,250,0.07) 0%, transparent 70%)',
-    top: '-200px', left: '-100px',
-    pointerEvents: 'none',
-    animation: 'glow 6s ease-in-out infinite',
+  guaranteeTitle: {
+    fontSize: '0.92rem',
+    fontWeight: '700',
+    color: '#ffffff',
+    margin: '0 0 0.15rem 0',
   },
-  bgGlow2: {
-    position: 'fixed',
-    width: '500px', height: '500px',
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(0,212,170,0.06) 0%, transparent 70%)',
-    bottom: '-150px', right: '-100px',
-    pointerEvents: 'none',
-    animation: 'glow 8s ease-in-out infinite reverse',
+  guaranteeDesc: {
+    fontSize: '0.78rem',
+    color: 'rgba(255, 255, 255, 0.6)',
+    margin: 0,
+    lineHeight: 1.4,
   },
-  bgGrid: {
-    position: 'fixed', inset: 0,
-    backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
-    backgroundSize: '40px 40px',
-    pointerEvents: 'none',
-  },
-  wrapper: {
-    display: 'flex',
-    width: '100%',
-    maxWidth: '1000px',
-    borderRadius: '24px',
-    overflow: 'hidden',
-    border: '1px solid #ffffff10',
-    position: 'relative',
-    zIndex: 1,
-    animation: 'fadeUp 0.6s ease',
-  },
-  leftPanel: {
-    flex: 1,
-    backgroundColor: '#0d1117',
-    padding: '3rem',
+
+  // Right Form Column
+  rightCol: {
+    padding: '3.2rem 2.75rem',
     display: 'flex',
     flexDirection: 'column',
-    gap: '1.5rem',
-    borderRight: '1px solid #ffffff08',
   },
-  brandRow: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  brandIcon: { fontSize: '1.8rem' },
-  brandName: { color: '#a78bfa', fontSize: '1.4rem', fontWeight: '800', letterSpacing: '-0.02em' },
-  tagline: { color: 'white', fontSize: '2.2rem', fontWeight: '800', lineHeight: 1.2, letterSpacing: '-0.03em' },
-  taglineSub: { color: '#ffffff50', fontSize: '0.9rem', lineHeight: 1.6 },
-  stepsList: { display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' },
-  stepItem: { display: 'flex', alignItems: 'center', gap: '1rem' },
-  stepIconBox: {
-    width: '40px', height: '40px',
-    backgroundColor: '#ffffff08',
-    borderRadius: '10px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '1.2rem', flexShrink: 0,
+  formEyebrow: {
+    fontSize: '0.72rem',
+    fontWeight: '800',
+    color: '#00d4aa',
+    letterSpacing: '0.12em',
+    marginBottom: '0.4rem',
+    display: 'block',
   },
-  stepTitle: { color: 'white', fontSize: '0.9rem', fontWeight: '600', marginBottom: '2px' },
-  stepDesc: { color: '#ffffff35', fontSize: '0.78rem' },
-  formPanel: {
-    width: '380px',
-    backgroundColor: '#080c14',
-    padding: '3rem',
+  formHeading: {
+    fontSize: '1.85rem',
+    fontWeight: '800',
+    color: '#ffffff',
+    margin: '0 0 0.35rem 0',
+    letterSpacing: '-0.02em',
+  },
+  formSub: {
+    fontSize: '0.86rem',
+    color: 'rgba(255, 255, 255, 0.6)',
+    margin: '0 0 1.25rem 0',
+  },
+  form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.6rem',
+    gap: '1rem',
   },
-  formLabel: { color: '#ffffff25', fontSize: '0.68rem', fontWeight: '700', letterSpacing: '0.15em' },
-  formTitle: { color: 'white', fontSize: '1.6rem', fontWeight: '800', letterSpacing: '-0.02em' },
-  formSub: { color: '#ffffff35', fontSize: '0.85rem', marginBottom: '0.5rem' },
-  form: { display: 'flex', flexDirection: 'column', gap: '0.9rem', marginTop: '0.25rem' },
-  field: { display: 'flex', flexDirection: 'column', gap: '0.4rem' },
-  label: { color: '#ffffff50', fontSize: '0.78rem', fontWeight: '500', letterSpacing: '0.03em' },
+  inputGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.35rem',
+  },
+  twoColInputs: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '0.85rem',
+  },
+  label: {
+    fontSize: '0.78rem',
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
   input: {
-    backgroundColor: '#0d1117',
-    border: '1px solid #ffffff12',
-    borderRadius: '10px',
-    padding: '0.75rem 1rem',
-    color: 'white',
-    fontSize: '0.95rem',
     width: '100%',
+    padding: '0.85rem 1.1rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.14)',
+    borderRadius: '12px',
+    color: '#ffffff',
+    fontSize: '0.9rem',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    fontFamily: 'inherit',
     boxSizing: 'border-box',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
   },
-  passWrapper: { position: 'relative' },
+  select: {
+    width: '100%',
+    padding: '0.85rem 1.1rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.14)',
+    borderRadius: '12px',
+    color: '#ffffff',
+    fontSize: '0.9rem',
+    outline: 'none',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box',
+    cursor: 'pointer',
+  },
+  passwordWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
   eyeBtn: {
-    position: 'absolute', right: '0.75rem', top: '50%',
-    transform: 'translateY(-50%)',
-    background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem',
+    position: 'absolute',
+    right: '0.9rem',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    opacity: 0.75,
+    padding: 0,
   },
-  strengthRow: { display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem' },
-  strengthBar: { display: 'flex', gap: '4px', flex: 1 },
-  strengthSegment: { flex: 1, height: '3px', borderRadius: '2px', transition: 'background-color 0.3s' },
+  caregiverRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.65rem',
+    cursor: 'pointer',
+    padding: '0.35rem 0',
+  },
+  checkbox: {
+    accentColor: '#00d4aa',
+    width: '16px',
+    height: '16px',
+    cursor: 'pointer',
+  },
+  caregiverLabel: {
+    fontSize: '0.78rem',
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+  },
   errorBox: {
-    backgroundColor: '#ef444415',
-    border: '1px solid #ef444430',
-    borderRadius: '8px',
-    padding: '0.65rem 1rem',
-    color: '#ef4444',
-    fontSize: '0.85rem',
-    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    backgroundColor: 'rgba(239, 68, 68, 0.14)',
+    border: '1px solid rgba(239, 68, 68, 0.4)',
+    borderRadius: '10px',
+    padding: '0.75rem',
+    fontSize: '0.82rem',
+    color: '#fca5a5',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
   },
   submitBtn: {
-    backgroundColor: '#a78bfa',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
+    marginTop: '0.4rem',
     padding: '0.85rem',
-    fontSize: '0.95rem',
+    borderRadius: '999px',
+    backgroundColor: '#ffffff',
+    color: '#080c14',
+    border: 'none',
+    fontSize: '0.92rem',
     fontWeight: '700',
     cursor: 'pointer',
-    marginTop: '0.25rem',
-    letterSpacing: '0.02em',
+    boxShadow: '0 4px 20px rgba(255, 255, 255, 0.25)',
+    transition: 'transform 0.15s ease, box-shadow 0.2s ease',
   },
-  loginText: { color: '#ffffff30', fontSize: '0.82rem', textAlign: 'center', marginTop: '0.5rem' },
-  loginLink: { color: '#a78bfa', textDecoration: 'none', fontWeight: '600' },
-  disclaimer: { color: '#ffffff18', fontSize: '0.7rem', textAlign: 'center', lineHeight: 1.5, marginTop: '0.5rem' },
+  footerLink: {
+    marginTop: '1.25rem',
+    textAlign: 'center',
+    fontSize: '0.84rem',
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  createLink: {
+    color: '#00d4aa',
+    textDecoration: 'none',
+    fontWeight: '700',
+    marginLeft: '0.35rem',
+  },
 };
 
 export default Register;

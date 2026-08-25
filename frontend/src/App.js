@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Navbar from './components/Navbar';
+import { ThemeProvider } from './context/ThemeContext';
 import PassiveTracker from './components/PassiveTracker';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -11,6 +11,7 @@ import Landing from './pages/Landing';
 import Level2Assessment from './pages/Level2Assessment';
 import Level3MRI from './pages/Level3MRI';
 import VoiceJournal from './pages/VoiceJournal';
+import Consent from './pages/Consent';
 import CareCircle from './pages/CareCircle';
 import { pingBackend } from './utils/api';
 
@@ -29,11 +30,13 @@ const AppContent = () => {
 
   return (
     <>
-      <Navbar />
       {user && <PassiveTracker />}
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/consent" element={
+          <ProtectedRoute><Consent /></ProtectedRoute>
+        } />
         <Route path="/dashboard" element={
           <ProtectedRoute><Dashboard /></ProtectedRoute>
         } />
@@ -60,11 +63,13 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 
