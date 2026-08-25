@@ -35,9 +35,8 @@ API.interceptors.response.use(
 export default API;
 
 export const registerUser = (data) => API.post('/register', data);
-export const loginUser = (data) => API.post('/login', data);
 export const getProfile = () => API.get('/me');
-export const getScore = () => API.get('/score');
+export const getCurrentUser = () => API.get('/auth/me');
 export const getScoreHistory = () => API.get('/scores/history');
 export const calculateScore = () => API.post('/score/calculate');
 export const saveSignal = (data) => API.post('/signals', data);

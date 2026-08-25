@@ -62,6 +62,7 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     return {"access_token": token, "token_type": "bearer"}
 
 @app.get("/me", response_model=schemas.UserOut)
+@app.get("/auth/me", response_model=schemas.UserOut)
 def get_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
 
@@ -143,7 +144,6 @@ def revoke_sharing_request(access_id: int, db: Session = Depends(get_db), curren
     db.commit()
     mcp_tools.log_audit(db, current_user.id, "caregiver_access_revoked", {"access_id": access_id}, {"status": "revoked"})
     return {"message": "Caregiver access revoked."}
-
 @app.post("/signals")
 def save_signal(signal: schemas.PassiveSignalCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     new_signal = models.PassiveSignal(user_id=current_user.id, typing_speed=signal.typing_speed, backspace_rate=signal.backspace_rate, scroll_hesitation=signal.scroll_hesitation, session_duration=signal.session_duration)
