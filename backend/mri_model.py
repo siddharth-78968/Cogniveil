@@ -23,8 +23,13 @@ import cv2
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.models as models
-import torchvision.transforms as transforms
+try:
+    import torchvision.models as tv_models
+    import torchvision.transforms as tv_transforms
+    HAS_TORCHVISION = True
+except ImportError:
+    HAS_TORCHVISION = False
+
 from typing import Dict, Any, Optional, Tuple, List
 
 MODEL_VERSION = "2026.1-resnet18-oasis-v1"
@@ -61,6 +66,31 @@ DIAGNOSTIC_CLASSES = [
 ]
 
 
+class BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, in_planes, planes, stride=1):
+        super(BasicBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(planes)
+
+        self.shortcut = nn.Sequential()
+        if stride != 1 or in_planes != self.expansion * planes:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(self.expansion * planes)
+            )
+
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += self.shortcut(x)
+        out = F.relu(out)
+        return out
+
+
 class ResNet18MRI(nn.Module):
     """
     ResNet-18 Deep Convolutional Neural Network specialized for
@@ -68,29 +98,58 @@ class ResNet18MRI(nn.Module):
     """
     def __init__(self, num_classes: int = 4):
         super().__init__()
-        # Load ResNet-18 backbone
-        self.backbone = models.resnet18(weights=None)
-        
-        # Modify input conv to handle single channel or 3-channel RGB
-        in_features = self.backbone.fc.in_features
-        self.backbone.fc = nn.Sequential(
-            nn.Linear(in_features, 256),
+        self.in_planes = 64
+
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        self.layer1 = self._make_layer(BasicBlock, 64, 2, stride=1)
+        self.layer2 = self._make_layer(BasicBlock, 128, 2, stride=2)
+        self.layer3 = self._make_layer(BasicBlock, 256, 2, stride=2)
+        self.layer4 = self._make_layer(BasicBlock, 512, 2, stride=2)
+
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Sequential(
+            nn.Linear(512, 256),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.3),
             nn.Linear(256, num_classes)
         )
         self._init_calibrated_weights()
 
+    def _make_layer(self, block, planes, num_blocks, stride):
+        strides = [stride] + [1] * (num_blocks - 1)
+        layers = []
+        for stride_val in strides:
+            layers.append(block(self.in_planes, planes, stride_val))
+            self.in_planes = planes * block.expansion
+        return nn.Sequential(*layers)
+
     def _init_calibrated_weights(self):
         """Initializes calibrated weights aligned with OASIS-1 structural benchmarks."""
-        for m in self.backbone.fc.modules():
-            if isinstance(m, nn.Linear):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0.0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.backbone(x)
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.maxpool(out)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = self.avgpool(out)
+        out = torch.flatten(out, 1)
+        out = self.fc(out)
+        return out
 
 
 # Instantiate global ResNet-18 model on CPU
@@ -99,12 +158,21 @@ _model = ResNet18MRI(num_classes=4)
 _model.to(_device)
 _model.eval()
 
-# Torchvision preprocessing transform
-_transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
+
+def _transform(img: Image.Image) -> torch.Tensor:
+    """Preprocesses PIL image to normalized tensor (224x224x3)."""
+    img_resized = img.resize((224, 224), Image.Resampling.BILINEAR)
+    arr = np.array(img_resized, dtype=np.float32) / 255.0
+    if arr.ndim == 2:
+        arr = np.stack([arr, arr, arr], axis=-1)
+    elif arr.shape[2] == 4:
+        arr = arr[:, :, :3]
+    # Normalize: mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+    std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+    arr = (arr - mean) / std
+    tensor = torch.from_numpy(arr.transpose(2, 0, 1)).float()
+    return tensor
 
 
 class GradCAM:
@@ -152,7 +220,7 @@ class GradCAM:
 
 
 # Attach Grad-CAM to layer4 of ResNet
-_grad_cam = GradCAM(_model, _model.backbone.layer4[-1])
+_grad_cam = GradCAM(_model, _model.layer4[-1])
 
 
 def _preprocess_scan(image_bytes: Optional[bytes]) -> Tuple[torch.Tensor, np.ndarray, Dict[str, Any]]:

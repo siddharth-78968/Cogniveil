@@ -20,7 +20,7 @@ class ConsentRequest(BaseModel):
     consent_granted: bool = True
 
 class CaregiverInviteRequest(BaseModel):
-    patient_email: EmailStr
+    patient_email: str
 
 class UserOut(BaseModel):
     id: int
@@ -67,6 +67,7 @@ class CogniScoreOut(BaseModel):
     baseline_status: Optional[str] = "collecting"
     level2_status: Optional[str] = "not_collected"
     trigger_level2: Optional[bool] = False
+    fusion_details: Optional[Dict[str, Any]] = None
     created_at: datetime
 
     class Config:
@@ -125,3 +126,24 @@ class AuditLogOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class AgentOrchestrationRequest(BaseModel):
+    voice_features: Optional[Dict[str, Any]] = None
+    voice_transcript: Optional[str] = ""
+    mri_filename: Optional[str] = "mri_scan.dcm"
+
+class AgentOrchestrationResponse(BaseModel):
+    pipeline_state: str
+    session_id: Optional[str] = None
+    tier1_fusion: Optional[Dict[str, Any]] = None
+    cognitive_analysis: Optional[Dict[str, Any]] = None
+    behavioral_analysis: Optional[Dict[str, Any]] = None
+    voice_analysis: Optional[Dict[str, Any]] = None
+    longitudinal_trend: Optional[Dict[str, Any]] = None
+    tier2_ml: Optional[Dict[str, Any]] = None
+    tier3_mri: Optional[Dict[str, Any]] = None
+    clinical_synthesis: Optional[Dict[str, Any]] = None
+    safety_review: Optional[Dict[str, Any]] = None
+    sanitized_narrative: Optional[str] = None
+    guidelines: Optional[List[Dict[str, Any]]] = None
+    message: Optional[str] = None

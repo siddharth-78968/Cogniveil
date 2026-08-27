@@ -486,13 +486,72 @@ def get_clinical_reports_history(db: Session = Depends(get_db), current_user: mo
     reports = db.query(models.ClinicalReport).filter(models.ClinicalReport.user_id == current_user.id).order_by(models.ClinicalReport.created_at.desc()).all()
     return reports
 
-# -----------------------------------------------------------------------------
-# MCP Tool 10 & API Endpoint: log_audit query
-# -----------------------------------------------------------------------------
 @app.get("/api/audit-logs", response_model=List[schemas.AuditLogOut])
 def get_audit_logs(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     logs = db.query(models.AuditLog).filter(models.AuditLog.user_id == current_user.id).order_by(models.AuditLog.created_at.desc()).limit(50).all()
     return logs
+
+# -----------------------------------------------------------------------------
+# Multi-Agent Screening Orchestration & Sub-Agent Endpoints
+# -----------------------------------------------------------------------------
+@app.post("/api/orchestrate", response_model=schemas.AgentOrchestrationResponse)
+def orchestrate_screening(
+    req: schemas.AgentOrchestrationRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Executes the master RiskOrchestrationAgent across all screening tiers."""
+    session_start = datetime.combine(date.today(), datetime.min.time())
+    session_end = session_start + timedelta(days=1)
+    
+    tests = db.query(models.TestResult).filter(
+        models.TestResult.user_id == current_user.id,
+        models.TestResult.created_at >= session_start,
+        models.TestResult.created_at < session_end
+    ).all()
+    signals = db.query(models.PassiveSignal).filter(
+        models.PassiveSignal.user_id == current_user.id,
+        models.PassiveSignal.created_at >= session_start,
+        models.PassiveSignal.created_at < session_end
+    ).all()
+    history = db.query(models.CogniScore).filter(
+        models.CogniScore.user_id == current_user.id,
+        models.CogniScore.created_at < session_start
+    ).order_by(models.CogniScore.created_at.asc()).all()
+
+    orchestration_result = mcp_tools.run_screening_orchestrator(
+        db=db,
+        user=current_user,
+        active_scores=tests,
+        signals=signals,
+        historical_scores=history,
+        voice_features=req.voice_features,
+        voice_transcript=req.voice_transcript or "",
+        mri_bytes=None
+    )
+    return orchestration_result
+
+@app.post("/api/behavior/analyze")
+def analyze_behavior_endpoint(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Executes BehaviorAnalysisAgent on structured typing and scrolling dynamics."""
+    result = mcp_tools.behavior_agent.analyze(data)
+    mcp_tools.log_audit(db, current_user.id, "analyze_behavior", data, result, agent_name="BehaviorAnalysisAgent")
+    return result
+
+@app.post("/api/cognitive/analyze")
+def analyze_cognitive_endpoint(
+    test_results: list,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Executes CognitiveTestAgent across battery psychometrics."""
+    result = mcp_tools.cognitive_agent.analyze(test_results)
+    mcp_tools.log_audit(db, current_user.id, "analyze_cognitive_tests", {"test_count": len(test_results)}, result, agent_name="CognitiveTestAgent")
+    return result
 
 # -----------------------------------------------------------------------------
 # Subgroup Fairness Analysis Endpoint
