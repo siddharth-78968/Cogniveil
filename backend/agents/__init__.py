@@ -6,6 +6,7 @@ Contains specialized agents for:
 - Cognitive Psychometric Battery Pattern Reasoning
 - Dynamic Multimodal Signal Fusion
 - Longitudinal Trajectory & Drift Tracking
+- Telemetry & Voice Data Quality Validation
 - Multi-Tier Risk Orchestration & State Gating
 - Evidence Synthesis & MedGemma Clinical Decision Support
 - Deterministic & Pattern Safety Guardrails
@@ -17,6 +18,7 @@ from .voice import VoiceAnalysisAgent
 from .cognitive import CognitiveTestAgent
 from .fusion import SignalFusionEngine
 from .longitudinal import LongitudinalTrendAgent
+from .data_quality import DataQualityAgent
 from .orchestrator import RiskOrchestrationAgent
 from .clinical import ClinicalSynthesisAgent
 from .safety import SafetyAgent
@@ -28,6 +30,7 @@ __all__ = [
     "CognitiveTestAgent",
     "SignalFusionEngine",
     "LongitudinalTrendAgent",
+    "DataQualityAgent",
     "RiskOrchestrationAgent",
     "ClinicalSynthesisAgent",
     "SafetyAgent",

@@ -1,9 +1,9 @@
 """RiskOrchestrationAgent for CogniVeil.
 
-High-level multi-tier lifecycle orchestrator and MCP tool dispatcher.
-Controls the state-aware transition across:
-  Onboarding -> Baseline Calibration -> Tier 1 Screening -> Longitudinal Drift Check ->
-  Tier 2 CatBoost ML -> Tier 3 Neuroimaging -> Clinical Synthesis -> Safety Guardrail -> Audit Log
+Master multi-tier lifecycle orchestrator and MCP tool dispatcher.
+Coordinates execution across:
+  Data Quality Check -> Baseline Calibration -> Per-Modality Scoring (Cognitive, Typing, Scrolling, Behavioral, Voice) ->
+  Signal Fusion Engine -> Longitudinal Trend -> Tier 2 CatBoost ML -> Tier 3 MRI -> Clinical Synthesis [E1..E7] -> Safety Guardrail -> Audit Logging.
 """
 
 from typing import Dict, Any, List, Optional
@@ -15,6 +15,7 @@ from .voice import VoiceAnalysisAgent
 from .cognitive import CognitiveTestAgent
 from .fusion import SignalFusionEngine
 from .longitudinal import LongitudinalTrendAgent
+from .data_quality import DataQualityAgent
 from .clinical import ClinicalSynthesisAgent
 from .safety import SafetyAgent
 from .audit import AuditAgent
@@ -27,6 +28,7 @@ class RiskOrchestrationAgent:
     VERSION = "2026.1"
 
     def __init__(self):
+        self.data_quality_agent = DataQualityAgent()
         self.behavior_agent = BehaviorAnalysisAgent()
         self.voice_agent = VoiceAnalysisAgent()
         self.cognitive_agent = CognitiveTestAgent()
@@ -61,14 +63,7 @@ class RiskOrchestrationAgent:
         user_age = getattr(user, "age", 68)
         session_id = f"S_{user_id or 'anon'}_{getattr(user, 'email', 'user').split('@')[0]}"
 
-        # Phase 1: Cognitive Battery Psychometrics Analysis
-        cog_res = self.cognitive_agent.analyze(tests)
-        self.audit_agent.record_event(
-            db, user_id, self.cognitive_agent.AGENT_NAME, "analyze_cognitive_tests",
-            {"test_count": len(tests)}, cog_res, session_id=session_id
-        )
-
-        # Phase 2: Behavioral Interaction Telemetry Analysis
+        # Step 1: Baseline Context & Data Quality Verification
         latest_signal = signals[-1] if signals else {}
         signal_dict = (
             {
@@ -79,36 +74,57 @@ class RiskOrchestrationAgent:
             }
             if hasattr(latest_signal, "typing_speed") else (latest_signal if isinstance(latest_signal, dict) else {})
         )
+
+        dq_telemetry = self.data_quality_agent.check_telemetry(signal_dict)
+        dq_voice = self.data_quality_agent.check_voice(voice_features, voice_transcript) if voice_features else None
+
+        self.audit_agent.record_event(
+            db, user_id, self.data_quality_agent.AGENT_NAME, "check_data_quality",
+            {"has_signals": len(signals) > 0, "has_voice": voice_features is not None},
+            {"telemetry": dq_telemetry, "voice": dq_voice},
+            session_id=session_id
+        )
+
+        # Step 2: Cognitive Battery Psychometrics Analysis
+        cog_res = self.cognitive_agent.analyze(tests)
+        self.audit_agent.record_event(
+            db, user_id, self.cognitive_agent.AGENT_NAME, "analyze_cognitive_tests",
+            {"test_count": len(tests)}, cog_res, session_id=session_id
+        )
+
+        # Step 3: Behavioral Telemetry Analysis (Typing + Scrolling)
         beh_res = self.behavior_agent.analyze(signal_dict)
         self.audit_agent.record_event(
             db, user_id, self.behavior_agent.AGENT_NAME, "analyze_behavior",
-            {"signal_samples": len(signals)}, beh_res, session_id=session_id
+            {"typing_score": beh_res["typing"]["score"], "scrolling_score": beh_res["scrolling"]["score"]},
+            beh_res, session_id=session_id
         )
 
-        # Phase 3: Voice Biomarker Analysis (if voice sample / features provided)
+        # Step 4: Voice Biomarker Analysis
         voice_res = None
         if voice_features:
             voice_res = self.voice_agent.analyze(voice_features, voice_transcript)
             self.audit_agent.record_event(
                 db, user_id, self.voice_agent.AGENT_NAME, "analyze_voice",
-                {"features_present": True, "transcript_length": len(voice_transcript)}, voice_res, session_id=session_id
+                {"voice_score": voice_res["voice_score"], "speech_status": voice_res["speech_status"]},
+                voice_res, session_id=session_id
             )
 
-        # Phase 4: Multimodal Signal Fusion
+        # Step 5: Signal Fusion Engine (Explicit Numeric Contributions)
         fusion_res = self.fusion_engine.fuse(cog_res, beh_res, voice_res)
         fused_score = fusion_res["cogni_score"]
         self.audit_agent.record_event(
             db, user_id, self.fusion_engine.AGENT_NAME, "fuse_signals",
-            {"cog": cog_res["cognitive_score"], "beh": beh_res["behavior_score"], "has_voice": voice_res is not None},
+            {"weights": fusion_res["fusion_weights"], "contributions": fusion_res["numeric_contributions"]},
             fusion_res, session_id=session_id
         )
 
-        # Phase 5: Longitudinal Trajectory & Drift Assessment
+        # Step 6: Longitudinal Trajectory & Drift Assessment
         long_res = self.longitudinal_agent.analyze(
             historical_scores=history,
             current_score=fused_score,
             voice_trend=voice_res.get("trend", "stable") if voice_res else "stable",
-            typing_trend=beh_res.get("typing_status", "stable"),
+            typing_trend=beh_res.get("behavior_trend", "stable"),
             memory_trend=cog_res.get("memory", "stable")
         )
         self.audit_agent.record_event(
@@ -120,12 +136,12 @@ class RiskOrchestrationAgent:
         is_deviating = long_res.get("is_deviating", False)
         baseline_status = long_res.get("baseline_status", "collecting")
 
-        # Lifecycle State Gating: Baseline Collection Mode (< 7 sessions)
+        # Baseline Calibration Window Check (< 7 days)
         if baseline_status == "collecting":
             pipeline_state = "baseline_period"
             self.audit_agent.record_event(
                 db, user_id, self.AGENT_NAME, "orchestrator_early_stop",
-                {"reason": "Baseline calibration week (< 7 days)", "sessions": long_res.get("sessions_collected")},
+                {"reason": "Baseline calibration period active (< 7 days)", "sessions": long_res.get("sessions_collected")},
                 {"pipeline_state": pipeline_state, "message": "Baseline calibration in progress. Drift alarms muted."},
                 pipeline_state=pipeline_state, next_action="continue_daily_tracking", session_id=session_id
             )
@@ -151,7 +167,6 @@ class RiskOrchestrationAgent:
                     db.commit()
             level2_status = "triggered"
 
-        # If Level 2 health questionnaire is not completed yet:
         if level2_status != "completed":
             pipeline_state = "awaiting_level2"
             self.audit_agent.record_event(
@@ -174,7 +189,7 @@ class RiskOrchestrationAgent:
                 "message": "Level 2 clinical questionnaire not completed. Monitoring continues without active diagnosis."
             }
 
-        # Phase 6: Tier 2 CatBoost ML Execution
+        # Step 7: Tier 2 CatBoost ML Execution
         tier2_res = None
         if catboost_predictor_fn is not None and getattr(user, "level2_data", None):
             level2_dict = json.loads(user.level2_data) if isinstance(user.level2_data, str) else user.level2_data
@@ -184,7 +199,7 @@ class RiskOrchestrationAgent:
                 {"features_count": len(level2_dict)}, tier2_res, session_id=session_id
             )
 
-        # Phase 7: Tier 3 Conditional Neuroimaging (ResNet-18 + GradCAM)
+        # Step 8: Tier 3 Conditional Neuroimaging (ResNet-18 + GradCAM)
         mri_res = None
         assessed_risk = tier2_res.get("risk_level", "Moderate") if tier2_res else fusion_res["risk_level"]
         if (mri_bytes is not None or assessed_risk in ["Moderate", "High"]) and mri_classifier_fn is not None:
@@ -194,10 +209,10 @@ class RiskOrchestrationAgent:
                 {"scan_provided": mri_bytes is not None, "filename": mri_filename}, mri_res, session_id=session_id
             )
 
-        # Phase 8: RAG Clinical Practice Guidelines Retrieval
+        # Step 9: RAG Clinical Guidelines Retrieval
         guidelines = guidelines_fn("Cognitive decline referral criteria", assessed_risk) if guidelines_fn else []
 
-        # Phase 9: Clinical Synthesis
+        # Step 10: Clinical Evidence Synthesis [E1..E7]
         synthesis_res = self.clinical_agent.synthesize(
             patient_name=user_name,
             age=user_age,
@@ -211,7 +226,7 @@ class RiskOrchestrationAgent:
             guidelines=guidelines
         )
 
-        # Phase 10: Safety Agent Review & Guardrail Enforcement
+        # Step 11: Safety Guardrail Enforcement
         provenance_meta = {
             "apoe_e4_provenance": getattr(user, "apoe_e4_provenance", "self_reported"),
             "mri_provenance": getattr(user, "mri_provenance", "self_reported")

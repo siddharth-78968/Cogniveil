@@ -11,7 +11,9 @@ API.interceptors.request.use((config) => {
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
-  if (!config.headers['Content-Type']) {
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  } else if (!config.headers['Content-Type']) {
     config.headers['Content-Type'] = 'application/json';
   }
   return config;
@@ -50,9 +52,9 @@ export const predictLevel2 = (data) => API.post('/predict/level2', data);
 
 // MCP Tool API Exports
 export const detectLanguage = (data) => API.post('/api/detect-language', data);
-export const analyseVoice = (formData) => API.post('/api/voice/analyze', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const analyseVoice = (formData) => API.post('/api/voice/analyze', formData);
 export const generateReferral = (data) => API.post('/api/generate-referral', data);
-export const classifyMRI = (formData) => API.post('/api/classify-mri', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const classifyMRI = (formData) => API.post('/api/classify-mri', formData);
 export const getClinicalReport = (data) => API.post('/api/clinical-report', data);
 export const getAuditLogs = () => API.get('/api/audit-logs');
 export const invitePatient = (data) => API.post('/caregiver/invites', data);

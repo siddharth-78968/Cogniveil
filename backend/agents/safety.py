@@ -17,13 +17,14 @@ class SafetyAgent:
     VERSION = "2026.1"
 
     FORBIDDEN_DIAGNOSTIC_CLAIMS = [
-        (r"\byou have alzheimer'?s\b", "screening indicates elevated risk factors that warrant clinical evaluation"),
-        (r"\byou have dementia\b", "screening reveals cognitive indicators that warrant specialist review"),
-        (r"\byou are diagnosed with [a-zA-Z\s]+\b", "screening markers suggest clinical follow-up is recommended"),
+        (r"\b(you|patient|user) (have|has) alzheimer'?s(\s+disease)?\b", "screening indicates elevated risk factors that warrant clinical evaluation"),
+        (r"\b(you|patient|user) (have|has) dementia\b", "screening reveals cognitive indicators that warrant specialist review"),
+        (r"\b(you|patient|user) (are|is) diagnosed with [a-zA-Z\s]+\b", "screening markers suggest clinical follow-up is recommended"),
+        (r"\b(diagnosed with|diagnosis of) (alzheimer'?s|dementia)\b", "evaluated for cognitive risk factors"),
         (r"\bthis proves (alzheimer'?s|dementia)\b", "these markers correlate with cognitive risk indicators"),
         (r"\bdefinitive diagnosis\b", "clinical decision support screening"),
         (r"\bguaranteed (alzheimer'?s|dementia|cure)\b", "assessed risk profile"),
-        (r"\bwe diagnose you\b", "screening assessment indicates"),
+        (r"\bwe diagnose (you|the patient|patient)\b", "screening assessment indicates"),
     ]
 
     REQUIRED_DISCLAIMER = (

@@ -41,9 +41,11 @@ from agents.longitudinal import LongitudinalTrendAgent
 from agents.clinical import ClinicalSynthesisAgent
 from agents.safety import SafetyAgent
 from agents.audit import AuditAgent
+from agents.data_quality import DataQualityAgent
 from agents.orchestrator import RiskOrchestrationAgent
 
 # Global Agent Singletons
+data_quality_agent = DataQualityAgent()
 behavior_agent = BehaviorAnalysisAgent()
 voice_agent = VoiceAnalysisAgent()
 cognitive_agent = CognitiveTestAgent()
@@ -243,6 +245,8 @@ def analyze_voice(features: dict, transcript: str = "", language_hint: str = "en
     lang_info = detect_language(transcript) if transcript.strip() else {"detected_language": "English", "language_code": language_hint}
     features_with_lang = {**features, "detected_language": lang_info["detected_language"]}
     return voice_agent.analyze(features_with_lang, transcript=transcript)
+
+analyse_voice = analyze_voice
 
 
 # =============================================================================

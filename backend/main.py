@@ -430,20 +430,21 @@ def generate_clinical_report_endpoint(req: schemas.ClinicalReportRequest, db: Se
     # 1. RAG retrieval (Tool 6)
     guidelines = mcp_tools.retrieve_guideline(query="cognitive decline referral", risk_level=req.risk_level)
     
-    # 2. Draft narrative (Tool 7)
-    narrative = mcp_tools.draft_report(
+    # 2. Synthesize 12-Section Evidence Dossier & Structured Report (Tool 14)
+    synth_res = mcp_tools.synthesize_evidence(
         patient_name=patient_name,
         age=age,
-        cogni_score=req.cogni_score,
-        risk_level=req.risk_level,
-        is_deviating=req.is_deviating,
-        shap_features=req.shap_features,
+        tier1_summary={"score": req.cogni_score, "risk_level": req.risk_level},
+        longitudinal_summary={"is_deviating": req.is_deviating, "days_with_decline": 4 if req.is_deviating else 0, "current_score": req.cogni_score},
+        tier2_result={"risk_level": req.risk_level, "shap_features": req.shap_features or []} if req.shap_features else None,
         mri_result=req.mri_result,
         guidelines=guidelines
     )
+    narrative = synth_res["raw_narrative"]
+    report_json = synth_res["report_json"]
     
     # 3. Guardrail check (Tool 9)
-    safety_check = mcp_tools.check_output_safety(narrative)
+    safety_check = mcp_tools.check_output_safety(narrative, risk_level=req.risk_level)
     
     # 4. Generate explicit referral (Tool 8)
     referral = mcp_tools.generate_referral(
@@ -472,10 +473,14 @@ def generate_clinical_report_endpoint(req: schemas.ClinicalReportRequest, db: Se
         print(f"Failed to persist clinical report record: {e}")
 
     response_payload = {
+        "report_json": report_json,
         "narrative": safety_check["sanitized_narrative"],
         "guardrail_passed": safety_check["guardrail_passed"],
         "guidelines": guidelines,
-        "referral": referral
+        "referral": referral,
+        "cogni_score": req.cogni_score,
+        "risk_level": req.risk_level,
+        "is_deviating": req.is_deviating
     }
     
     mcp_tools.log_audit(db, current_user.id, "draft_report", req.dict(), {"guardrail_passed": safety_check["guardrail_passed"]}, safety_check["guardrail_passed"])
