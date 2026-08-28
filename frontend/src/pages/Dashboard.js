@@ -12,6 +12,9 @@ import {
 import ReferralReportModal from '../components/ReferralReportModal';
 import ExplainMyResultModal from '../components/ExplainMyResultModal';
 import AuditTimelineWidget from '../components/AuditTimelineWidget';
+import EvidenceDrawer from '../components/EvidenceDrawer';
+import EvidenceGraphModal from '../components/EvidenceGraphModal';
+import AgentPipelineModal from '../components/AgentPipelineModal';
 import DoctorLayout from '../components/DoctorLayout';
 import { 
   AreaChart, 
@@ -61,7 +64,16 @@ const Dashboard = () => {
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showTriggeredModal, setShowTriggeredModal] = useState(false);
   const [showExplainModal, setShowExplainModal] = useState(false);
+  const [showEvidenceDrawer, setShowEvidenceDrawer] = useState(false);
+  const [selectedEvidenceId, setSelectedEvidenceId] = useState('E1');
+  const [showEvidenceGraphModal, setShowEvidenceGraphModal] = useState(false);
+  const [showAgentPipelineModal, setShowAgentPipelineModal] = useState(false);
   const [referralPayload, setReferralPayload] = useState(null);
+
+  const handleInspectEvidence = (eId) => {
+    setSelectedEvidenceId(eId);
+    setShowEvidenceDrawer(true);
+  };
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
@@ -317,6 +329,8 @@ const Dashboard = () => {
     <DoctorLayout 
       activeTitle="Dashboard"
       onOpenReferral={handleOpenReferral}
+      onOpenEvidenceGraph={() => setShowEvidenceGraphModal(true)}
+      onOpenAgentPipeline={() => setShowAgentPipelineModal(true)}
       actionButton={
         <button 
           style={styles.headerPrimaryBtn}
@@ -541,36 +555,52 @@ const Dashboard = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 0.65rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2' }}>
+                  <div 
+                    onClick={() => handleInspectEvidence('E1')}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                    title="Click to inspect Evidence E1 (Active Psychometrics)"
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.85rem' }}>🧠</span>
                       <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>1. Memory retention accuracy</span>
                     </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ 16.2% from baseline</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ 16.2% · View E1 →</span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 0.65rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2' }}>
+                  <div 
+                    onClick={() => handleInspectEvidence('E2')}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                    title="Click to inspect Evidence E2 (Keystroke Telemetry)"
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.85rem' }}>⌨️</span>
                       <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>2. Typing speed & cadence</span>
                     </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ 20.6% from baseline</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ 20.6% · View E2 →</span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 0.65rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb' }}>
+                  <div 
+                    onClick={() => handleInspectEvidence('E3')}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                    title="Click to inspect Evidence E3 (Navigation Telemetry)"
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.85rem' }}>📜</span>
                       <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>3. Navigation pause hesitation</span>
                     </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ 85.7% from baseline</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ 85.7% · View E3 →</span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 0.65rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb' }}>
+                  <div 
+                    onClick={() => handleInspectEvidence('E4')}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                    title="Click to inspect Evidence E4 (Speech Biomarkers)"
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.85rem' }}>🎙️</span>
                       <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>4. Speech inter-phrase pause rate</span>
                     </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ 42.0% from baseline</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ 42.0% · View E4 →</span>
                   </div>
                 </div>
               </div>
@@ -1177,6 +1207,29 @@ const Dashboard = () => {
         userData={user}
       />
 
+      {/* Evidence Drawer for Grounded Provenance Inspection [E1..E7] */}
+      <EvidenceDrawer
+        isOpen={showEvidenceDrawer}
+        onClose={() => setShowEvidenceDrawer(false)}
+        evidenceId={selectedEvidenceId}
+      />
+
+      {/* Multimodal Signal Graph Topology Modal */}
+      <EvidenceGraphModal
+        isOpen={showEvidenceGraphModal}
+        onClose={() => setShowEvidenceGraphModal(false)}
+        onSelectEvidence={(eId) => {
+          setSelectedEvidenceId(eId);
+          setShowEvidenceDrawer(true);
+        }}
+      />
+
+      {/* 10-Node Multi-Agent Execution Pipeline Modal */}
+      <AgentPipelineModal
+        isOpen={showAgentPipelineModal}
+        onClose={() => setShowAgentPipelineModal(false)}
+      />
+
       {/* Triggered Questionnaire Modal */}
       {showTriggeredModal && (
         <div style={styles.modalOverlay}>
@@ -1666,8 +1719,10 @@ const styles = {
   patientBigScore: {
     fontSize: '2.4rem',
     fontWeight: '900',
-    color: '#4338CA',
+    color: '#102A43',
     lineHeight: 1,
+    fontVariantNumeric: 'tabular-nums',
+    letterSpacing: '-0.02em',
   },
   patientCardValue: {
     fontSize: '1.2rem',

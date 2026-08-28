@@ -8,6 +8,18 @@ export const ThemeProvider = ({ children }) => {
     return saved ? saved === 'dark' : false;
   });
 
+  const [fontSizeScale, setFontSizeScale] = useState(() => {
+    return localStorage.getItem('cogniveil_font_scale') || 'md';
+  });
+
+  const [highContrast, setHighContrast] = useState(() => {
+    return localStorage.getItem('cogniveil_high_contrast') === 'true';
+  });
+
+  const [reducedMotion, setReducedMotion] = useState(() => {
+    return localStorage.getItem('cogniveil_reduced_motion') === 'true';
+  });
+
   useEffect(() => {
     localStorage.setItem('cogniveil_theme', isDark ? 'dark' : 'light');
     if (isDark) {
@@ -17,35 +29,77 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    localStorage.setItem('cogniveil_font_scale', fontSizeScale);
+    document.documentElement.setAttribute('data-font-scale', fontSizeScale);
+  }, [fontSizeScale]);
+
+  useEffect(() => {
+    localStorage.setItem('cogniveil_high_contrast', String(highContrast));
+    if (highContrast) {
+      document.documentElement.classList.add('high-contrast');
+    } else {
+      document.documentElement.classList.remove('high-contrast');
+    }
+  }, [highContrast]);
+
+  useEffect(() => {
+    localStorage.setItem('cogniveil_reduced_motion', String(reducedMotion));
+    if (reducedMotion) {
+      document.documentElement.classList.add('reduced-motion');
+    } else {
+      document.documentElement.classList.remove('reduced-motion');
+    }
+  }, [reducedMotion]);
+
   const toggleTheme = () => setIsDark(prev => !prev);
+  const toggleHighContrast = () => setHighContrast(prev => !prev);
+  const toggleReducedMotion = () => setReducedMotion(prev => !prev);
 
   const theme = {
     isDark,
-    bg: isDark ? '#0b0f19' : '#f4f6fc',
-    cardBg: isDark ? '#131b2e' : '#ffffff',
-    cardHeaderBg: isDark ? '#172138' : '#ffffff',
-    border: isDark ? 'rgba(255, 255, 255, 0.08)' : '#eef2f6',
-    borderSubtle: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9',
-    text: isDark ? '#f8fafc' : '#1e293b',
-    subtext: isDark ? '#94a3b8' : '#64748b',
-    statBoxBg: isDark ? '#18223a' : '#f8fafc',
-    inputBg: isDark ? '#18223a' : '#f8fafc',
-    inputBorder: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0',
-    topHeaderBg: isDark ? '#131b2e' : '#ffffff',
-    topHeaderBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : '#eef2f6',
-    tableTh: isDark ? '#64748b' : '#94a3b8',
-    tableTrBorder: isDark ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
-    tableTd: isDark ? '#cbd5e1' : '#475569',
-    chartGrid: isDark ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9',
-    chartText: isDark ? '#64748b' : '#94a3b8',
-    sidebarBg: isDark ? '#1e1b4b' : '#4338CA',
-    recalculateBtnBg: isDark ? '#1e293b' : '#f5f3ff',
-    recalculateBtnBorder: isDark ? '#312e81' : '#c7d2fe',
-    recalculateBtnText: isDark ? '#818cf8' : '#4338CA',
+    highContrast,
+    reducedMotion,
+    fontSizeScale,
+    bg: isDark ? '#0A141D' : '#F7F9F8',
+    cardBg: isDark ? '#10202E' : '#FFFFFF',
+    cardHeaderBg: isDark ? '#162B3D' : '#FFFFFF',
+    border: isDark ? '#1E3A52' : '#DCE6E4',
+    borderSubtle: isDark ? '#172D40' : '#E8F0EE',
+    text: isDark ? '#F0F4F8' : '#102A43',
+    subtext: isDark ? '#9FB3C8' : '#627D98',
+    statBoxBg: isDark ? '#162B3D' : '#F0F5F4',
+    inputBg: isDark ? '#162B3D' : '#FFFFFF',
+    inputBorder: isDark ? '#1E3A52' : '#DCE6E4',
+    topHeaderBg: isDark ? '#10202E' : '#FFFFFF',
+    topHeaderBorder: isDark ? '#1E3A52' : '#DCE6E4',
+    tableTh: isDark ? '#9FB3C8' : '#627D98',
+    tableTrBorder: isDark ? '#172D40' : '#E8F0EE',
+    tableTd: isDark ? '#E0FCFF' : '#102A43',
+    chartGrid: isDark ? 'rgba(255, 255, 255, 0.05)' : '#E8F0EE',
+    chartText: isDark ? '#9FB3C8' : '#627D98',
+    sidebarBg: isDark ? '#081119' : '#0F4C4A',
+    primaryTeal: '#0F4C4A',
+    secondaryTeal: '#287C78',
+    aiCyan: '#53B7C5',
+    statusNormal: '#2F7D5B',
+    statusMonitor: '#C8922E',
+    statusElevated: '#D97745',
+    statusHighRisk: '#C94C4C',
   };
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, theme }}>
+    <ThemeContext.Provider value={{
+      isDark,
+      toggleTheme,
+      fontSizeScale,
+      setFontSizeScale,
+      highContrast,
+      toggleHighContrast,
+      reducedMotion,
+      toggleReducedMotion,
+      theme
+    }}>
       {children}
     </ThemeContext.Provider>
   );

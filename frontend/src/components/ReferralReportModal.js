@@ -199,10 +199,15 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
             </div>
           </div>
 
-          {/* 2. Executive Clinical Summary */}
+          {/* 2. Executive Clinical Summary (MedGemma AI Synthesized) */}
           <div style={modalStyles.section}>
-            <h3 style={modalStyles.sectionHeader}>2. EXECUTIVE CLINICAL SUMMARY</h3>
-            <div style={{ ...modalStyles.calloutBox, borderLeft: '4px solid #4338CA' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <h3 style={modalStyles.sectionHeader}>2. EXECUTIVE CLINICAL SUMMARY</h3>
+              <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#0F4C4A', backgroundColor: '#E0FCFF', padding: '2px 8px', borderRadius: '4px', border: '1px solid #53B7C5' }}>
+                ✨ MEDGEMMA-4B SYNTHESIS
+              </span>
+            </div>
+            <div style={{ ...modalStyles.calloutBox, borderLeft: '4px solid #53B7C5', backgroundColor: '#F0F5F4' }}>
               <p style={modalStyles.bodyTextLeading}>{execSummary}</p>
             </div>
           </div>
@@ -373,9 +378,14 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
             )}
           </div>
 
-          {/* 9. Multimodal Evidence Integration */}
+          {/* 9. Multimodal Evidence Integration (MedGemma AI Synthesized) */}
           <div style={modalStyles.section}>
-            <h3 style={modalStyles.sectionHeader}>9. MULTIMODAL EVIDENCE INTEGRATION (CONCORDANCE REASONING)</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <h3 style={modalStyles.sectionHeader}>9. MULTIMODAL EVIDENCE INTEGRATION (CONCORDANCE REASONING)</h3>
+              <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#0F4C4A', backgroundColor: '#E0FCFF', padding: '2px 8px', borderRadius: '4px', border: '1px solid #53B7C5' }}>
+                ✨ MEDGEMMA-4B SYNTHESIS
+              </span>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ ...modalStyles.telemetryBox, borderLeft: '3px solid #dc2626' }}>
                 <h4 style={{ ...modalStyles.subHeader, color: '#dc2626' }}>✓ Concordant Findings (Agreement Across Modalities)</h4>
@@ -395,7 +405,7 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
                 </ul>
               </div>
             </div>
-            <p style={{ ...modalStyles.interpretationText, marginTop: '8px' }}>
+            <p style={{ ...modalStyles.interpretationText, marginTop: '8px', borderLeft: '3px solid #53B7C5', backgroundColor: '#F0F5F4' }}>
               <strong>Integrated Synthesis:</strong> {integration.reasoning}
             </p>
           </div>
@@ -416,7 +426,7 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
                   <tr key={i} style={modalStyles.tr}>
                     <td style={modalStyles.td}><strong>{row.factor}</strong></td>
                     <td style={modalStyles.td}>{row.evidence}</td>
-                    <td style={{ ...modalStyles.td, color: '#4338CA', fontWeight: '600' }}>{row.recommended_action}</td>
+                    <td style={{ ...modalStyles.td, color: '#0F4C4A', fontWeight: '700' }}>{row.recommended_action}</td>
                   </tr>
                 ))}
               </tbody>
@@ -437,15 +447,20 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
             </p>
           </div>
 
-          {/* 12. Final Decision-Support Summary */}
+          {/* 12. Final Decision-Support Summary (MedGemma AI Synthesized) */}
           <div style={modalStyles.section}>
-            <h3 style={modalStyles.sectionHeader}>12. FINAL CLINICAL DECISION-SUPPORT SUMMARY</h3>
-            <div style={{ ...modalStyles.calloutBox, backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <h3 style={modalStyles.sectionHeader}>12. FINAL CLINICAL DECISION-SUPPORT SUMMARY</h3>
+              <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#0F4C4A', backgroundColor: '#E0FCFF', padding: '2px 8px', borderRadius: '4px', border: '1px solid #53B7C5' }}>
+                ✨ MEDGEMMA-4B SYNTHESIS
+              </span>
+            </div>
+            <div style={{ ...modalStyles.calloutBox, backgroundColor: '#F0F5F4', border: '1px solid #DCE6E4', borderLeft: '4px solid #53B7C5' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: '#1e293b' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: '#102A43' }}>
                   OVERALL STATUS: {finalSummary.overall_screening_status.toUpperCase()}
                 </span>
-                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#6366f1', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#e0e7ff' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#0F4C4A', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#E0FCFF' }}>
                   Evidence Strength: {finalSummary.evidence_strength}
                 </span>
               </div>

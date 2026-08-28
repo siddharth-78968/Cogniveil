@@ -5,7 +5,6 @@ import { getAuditLogs } from '../utils/api';
 const AuditTimelineWidget = () => {
   const { theme, isDark } = useTheme();
   const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchLogs();
@@ -29,8 +28,6 @@ const AuditTimelineWidget = () => {
         { id: 9, timestamp: '19:44:13', agent_name: 'ClinicalSynthesisAgent', tool_name: 'synthesize_evidence', input_provenance: 'evidence_dossier_E1_E7', pipeline_state: 'dossier_compiled', guardrail_passed: true },
         { id: 10, timestamp: '19:44:15', agent_name: 'SafetyAgent', tool_name: 'check_output_safety', input_provenance: 'clinical_guidelines', pipeline_state: 'safety_certified', guardrail_passed: true },
       ]);
-    } finally {
-      setLoading(false);
     }
   };
 
