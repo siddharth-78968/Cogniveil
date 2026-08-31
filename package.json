@@ -9,7 +9,7 @@
     "mcp": "py -3.12 backend/mcp_server.py",
     "train:speech": "py -3.12 backend/train_speech_model.py --data backend/data/approved_speech_features.csv --model-version 2026.1",
     "seed": "py -3.12 backend/seed_demo.py",
-    "build": "cd frontend && npm install && npm run build"
+    "build": "npm --prefix frontend install && npm --prefix frontend run build"
   },
   "workspaces": [
     "frontend"
