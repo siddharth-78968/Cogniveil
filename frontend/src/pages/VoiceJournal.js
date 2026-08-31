@@ -16,6 +16,64 @@ const VoiceJournal = () => {
   const [selectedLang, setSelectedLang] = useState('en');
   const [langInfo, setLangInfo] = useState(null);
   const [transcript, setTranscript] = useState('');
+  const [simulateMic, setSimulateMic] = useState(false);
+
+  // Clinician Inspection State
+  const [patients, setPatients] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [clinicianVoiceData, setClinicianVoiceData] = useState(null);
+  const [loadingClinician, setLoadingClinician] = useState(false);
+
+  const currentUser = useMemo(() => {
+    try {
+      const u = localStorage.getItem('user');
+      return u ? JSON.parse(u) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const isClinician = currentUser?.is_caregiver === true;
+
+  useEffect(() => {
+    if (isClinician) {
+      fetchClinicianVoiceData();
+    }
+  }, [isClinician]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+  const fetchClinicianVoiceData = async () => {
+    try {
+      setLoadingClinician(true);
+      const { getClinicianPatients } = await import('../utils/api');
+      const res = await getClinicianPatients();
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setPatients(res.data);
+        const pId = res.data[0].id;
+        setSelectedPatientId(pId);
+        loadPatientVoice(pId);
+      }
+    } catch (err) {
+      console.log('Error loading clinician voice patients:', err.message);
+    } finally {
+      setLoadingClinician(false);
+    }
+  };
+
+  const loadPatientVoice = async (patientId) => {
+    try {
+      setSelectedPatientId(patientId);
+      setLoadingClinician(true);
+      const { getClinicianPatientVoice } = await import('../utils/api');
+      const res = await getClinicianPatientVoice(patientId);
+      setClinicianVoiceData(res.data);
+    } catch (err) {
+      console.log('Error loading patient voice:', err.message);
+    } finally {
+      setLoadingClinician(false);
+    }
+  };
+
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
   const timerInterval = useRef(null);
@@ -172,9 +230,172 @@ const prompts = useMemo(() => [
   const circumference = 2 * Math.PI * 40;
   const offset = result ? circumference - (result.voiceScore / 100) * circumference : circumference;
 
+  // ── CLINICIAN VIEWPORT: Acoustic Voice Review ───────────────────────────
+  if (isClinician && !simulateMic) {
+    const profile = clinicianVoiceData?.acoustic_profile;
+    return (
+      <DoctorLayout activeTitle="Acoustic Voice Journal">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.25rem' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#0F4C4A' }} />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.08em', color: '#287C78' }}>
+                  CLINICIAN WORKSPACE · ACOUSTIC SPEECH TELEMETRY
+                </span>
+              </div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0 0 0.35rem 0' }}>
+                Patient Acoustic Speech Biomarkers
+              </h1>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                Analyze temporal speech hesitation, pause-to-speech ratio, articulation syllable cadence, and formant dispersion.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSimulateMic(true)}
+              style={{
+                backgroundColor: '#162B3D',
+                color: '#53B7C5',
+                border: '1px solid #53B7C5',
+                borderRadius: '8px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.8rem',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
+              🎙️ Interactive Mic Test →
+            </button>
+          </div>
+
+          {/* Patient Selector Strip */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
+              Select Monitored Patient:
+            </span>
+            {patients.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => loadPatientVoice(p.id)}
+                style={{
+                  border: '1px solid',
+                  borderColor: selectedPatientId === p.id ? '#0F4C4A' : '#e2e8f0',
+                  backgroundColor: selectedPatientId === p.id ? '#E8F5EE' : 'transparent',
+                  color: selectedPatientId === p.id ? '#0F4C4A' : '#1e293b',
+                  borderRadius: '8px',
+                  padding: '0.4rem 0.85rem',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                {p.name} {p.is_deviating ? '⚠️' : '✓'}
+              </button>
+            ))}
+          </div>
+
+          {/* Acoustic Feature Grid */}
+          {loadingClinician ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>Loading speech acoustic biomarkers...</div>
+          ) : profile ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b' }}>MEAN PAUSE DURATION</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: profile.mean_pause_duration_ms > 600 ? '#C94C4C' : '#1e293b' }}>
+                    {profile.mean_pause_duration_ms} <span style={{ fontSize: '0.8rem' }}>ms</span>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Normative: &lt; 500 ms</span>
+                </div>
+
+                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b' }}>PAUSE-TO-SPEECH RATIO</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: profile.pause_to_speech_ratio > 0.25 ? '#C94C4C' : '#1e293b' }}>
+                    {Math.round(profile.pause_to_speech_ratio * 100)}%
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Normative: &lt; 20%</span>
+                </div>
+
+                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b' }}>ARTICULATION RATE</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: profile.articulation_rate_syl_per_sec < 4.0 ? '#D97745' : '#1e293b' }}>
+                    {profile.articulation_rate_syl_per_sec} <span style={{ fontSize: '0.8rem' }}>syl/sec</span>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Normative: &gt; 4.5 syl/sec</span>
+                </div>
+
+                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b' }}>FORMANT DISPERSION (F1/F2)</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0F4C4A' }}>
+                    {profile.formant_dispersion_f1_f2_ratio}
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Vocal tract vowel space ratio</span>
+                </div>
+              </div>
+
+              {/* Longitudinal Audio Transcripts Table */}
+              <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                <h4 style={{ margin: '0 0 0.85rem 0', fontSize: '0.95rem', fontWeight: '800', color: '#1e293b' }}>
+                  Recorded Speech Transcripts & Fluency Telemetry
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {profile.transcripts_history?.map((t) => (
+                    <div
+                      key={t.id}
+                      style={{
+                        padding: '0.85rem 1rem',
+                        backgroundColor: '#f8fafc',
+                        borderRadius: '10px',
+                        border: '1px solid #e2e8f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.76rem', fontWeight: '800', color: '#4338CA' }}>{t.date}</span>
+                        <span style={{ fontSize: '0.72rem', fontWeight: '700', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#E0FCFF', color: '#0F4C4A' }}>
+                          Fluency Score: {t.fluency_score} / 100
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: '600', color: '#64748b' }}>Prompt: "{t.prompt}"</p>
+                      <p style={{ margin: 0, fontSize: '0.88rem', fontStyle: 'italic', color: '#1e293b', backgroundColor: '#FFFFFF', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #eef2f6' }}>
+                        "{t.transcript}"
+                      </p>
+                      <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.74rem', color: '#64748b' }}>
+                        <span>⏱ Duration: {t.duration_seconds}s</span>
+                        <span>⏸ Pauses: {t.pause_count} hesitations</span>
+                        <span>📈 Mean Pause: {t.mean_pause_ms}ms</span>
+                        <span>⚡ Cadence: {t.speech_rate}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>No voice records available for selected patient.</div>
+          )}
+        </div>
+      </DoctorLayout>
+    );
+  }
+
   return (
-    <DoctorLayout activeTitle="Voice Journal">
+    <DoctorLayout activeTitle="Acoustic Voice Journal">
       <div style={styles.container}>
+        {isClinician && (
+          <div style={{ marginBottom: '0.5rem' }}>
+            <button
+              onClick={() => setSimulateMic(false)}
+              style={{ background: 'none', border: 'none', color: '#0F4C4A', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', padding: 0 }}
+            >
+              ← Back to Patient Voice Biomarkers Review
+            </button>
+          </div>
+        )}
         <div style={styles.headerRow}>
           <div>
             <p style={styles.pageLabel}>SPEECH BIOMARKER ANALYSIS</p>

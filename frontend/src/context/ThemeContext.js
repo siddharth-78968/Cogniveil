@@ -56,9 +56,39 @@ export const ThemeProvider = ({ children }) => {
   const toggleHighContrast = () => setHighContrast(prev => !prev);
   const toggleReducedMotion = () => setReducedMotion(prev => !prev);
 
-  const theme = {
+  const theme = highContrast ? {
+    isDark: true,
+    highContrast: true,
+    reducedMotion,
+    fontSizeScale,
+    bg: '#000000',
+    cardBg: '#0D0D0D',
+    cardHeaderBg: '#171717',
+    border: '#FFFFFF',
+    borderSubtle: '#FFFFFF',
+    text: '#FFFFFF',
+    subtext: '#FFFF00',
+    statBoxBg: '#000000',
+    inputBg: '#000000',
+    inputBorder: '#FFFFFF',
+    topHeaderBg: '#000000',
+    topHeaderBorder: '#FFFFFF',
+    tableTh: '#FFFF00',
+    tableTrBorder: '#FFFFFF',
+    tableTd: '#FFFFFF',
+    chartGrid: '#FFFFFF',
+    chartText: '#FFFFFF',
+    sidebarBg: '#000000',
+    primaryTeal: '#00FFFF',
+    secondaryTeal: '#FFFF00',
+    aiCyan: '#00FFFF',
+    statusNormal: '#00FF00',
+    statusMonitor: '#FFFF00',
+    statusElevated: '#FFA500',
+    statusHighRisk: '#FF3333',
+  } : {
     isDark,
-    highContrast,
+    highContrast: false,
     reducedMotion,
     fontSizeScale,
     bg: isDark ? '#0A141D' : '#F7F9F8',
@@ -87,6 +117,7 @@ export const ThemeProvider = ({ children }) => {
     statusElevated: '#D97745',
     statusHighRisk: '#C94C4C',
   };
+
 
   return (
     <ThemeContext.Provider value={{

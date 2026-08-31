@@ -7,7 +7,10 @@ import {
   getScoreHistory, 
   calculateScore, 
   getTodaySignals,
-  getClinicalReport
+  getClinicalReport,
+  getAppointments,
+  updateAppointmentStatus,
+  getClinicianPatients
 } from '../utils/api';
 import ReferralReportModal from '../components/ReferralReportModal';
 import ExplainMyResultModal from '../components/ExplainMyResultModal';
@@ -54,6 +57,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const isClinician = Boolean(user?.is_caregiver || user?.role === 'clinician' || user?.role === 'doctor');
   const { theme, isDark } = useTheme();
   const navigate = useNavigate();
   const [score, setScore] = useState(null);
@@ -69,10 +73,28 @@ const Dashboard = () => {
   const [showEvidenceGraphModal, setShowEvidenceGraphModal] = useState(false);
   const [showAgentPipelineModal, setShowAgentPipelineModal] = useState(false);
   const [referralPayload, setReferralPayload] = useState(null);
+  const [dashboardAppointments, setDashboardAppointments] = useState([]);
+  const [clinicianPatients, setClinicianPatients] = useState([]);
+  const [apptToast, setApptToast] = useState(null);
 
   const handleInspectEvidence = (eId) => {
     setSelectedEvidenceId(eId);
     setShowEvidenceDrawer(true);
+  };
+
+  const handleDashboardStatusChange = async (id, newStatus) => {
+    try {
+      await updateAppointmentStatus(id, newStatus);
+      setDashboardAppointments((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
+      );
+      setApptToast(`Appointment #${id} updated to ${newStatus}`);
+      setTimeout(() => setApptToast(null), 3500);
+    } catch (err) {
+      console.error('Error updating appointment on dashboard:', err);
+      setApptToast('Failed to update appointment status.');
+      setTimeout(() => setApptToast(null), 3500);
+    }
   };
 
   useEffect(() => {
@@ -120,6 +142,27 @@ const Dashboard = () => {
     try {
       await getTodaySignals();
     } catch (err) {}
+
+    try {
+      const apptsRes = await getAppointments();
+      if (Array.isArray(apptsRes.data)) {
+        setDashboardAppointments(apptsRes.data);
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard appointments:', err);
+    }
+
+    if (isClinician) {
+      try {
+        const patRes = await getClinicianPatients();
+        if (Array.isArray(patRes.data)) {
+          setClinicianPatients(patRes.data);
+        }
+      } catch (err) {
+        console.error('Error fetching clinician patients for dashboard:', err);
+      }
+    }
+
     setLoading(false);
   };
 
@@ -161,158 +204,7 @@ const Dashboard = () => {
     }
   };
 
-  // 12 data points for smooth spline matching the mock in Image 1
-  const activityData = history.length >= 12 ? history.slice(-12) : [
-    { month: 'Jan', score: 145, baseline: 120, date: '01 Jan' },
-    { month: 'Feb', score: 165, baseline: 155, date: '01 Feb' },
-    { month: 'Mar', score: 150, baseline: 152, date: '01 Mar' },
-    { month: 'Apr', score: 180, baseline: 160, date: '01 Apr' },
-    { month: 'May', score: 175, baseline: 190, date: '01 May' },
-    { month: 'Jun', score: 210, baseline: 180, date: '01 Jun' },
-    { month: 'Jul', score: 220, baseline: 195, date: '01 Jul' },
-    { month: 'Aug', score: 195, baseline: 210, date: '01 Aug' },
-    { month: 'Sep', score: 240, baseline: 200, date: '01 Sep' },
-    { month: 'Oct', score: 230, baseline: 225, date: '01 Oct' },
-    { month: 'Nov', score: 260, baseline: 240, date: '01 Nov' },
-    { month: 'Dec', score: 280, baseline: 250, date: '01 Dec' },
-  ];
-
-  // Request items matching "Appointment Request"
-  const testRequests = [
-    {
-      name: 'Lucile Crawford',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-      condition: 'Acoustic Fluency',
-      time: '18/03/2026 - 10 AM',
-      status: 'Accepted',
-      path: '/voice'
-    },
-    {
-      name: 'Amy Jacobs',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
-      condition: 'Stroop Reaction Test',
-      time: '18/03/2026 - 12 PM',
-      status: 'Accepted',
-      path: '/tests'
-    },
-    {
-      name: 'Adele Gross',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
-      condition: 'Episodic Memory',
-      time: '19/03/2026 - 3 PM',
-      status: 'Due',
-      path: '/tests'
-    },
-    {
-      name: 'Acoustic Voice Journal',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
-      condition: 'Speech Biomarker',
-      time: '24/03/2026 - 7 AM',
-      status: 'Due',
-      path: '/voice'
-    },
-  ];
-
-  // Schedule items matching "Appointment"
-  const scheduleItems = [
-    {
-      name: 'Mable Clarke',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-      condition: 'Passive Telemetry Sync',
-      statusPill: 'Finished',
-      time: null,
-    },
-    {
-      name: 'Ray Clayton',
-      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop&q=80',
-      condition: 'Cognitive Battery',
-      statusPill: null,
-      time: '12:00',
-    },
-    {
-      name: 'Cornelia Holland',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
-      condition: 'Tier 2 Biomarkers',
-      statusPill: null,
-      time: '14:00',
-    },
-    {
-      name: 'Brett Olson',
-      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&auto=format&fit=crop&q=80',
-      condition: 'MRI ResNet Review',
-      statusPill: null,
-      time: '16:00',
-    },
-  ];
-
-  // Recent Patient rows matching "Recent Patients" table
-  const recentPatients = [
-    {
-      name: 'Lucile Crawford',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-      gender: 'Female',
-      weight: '78.5 pts',
-      disease: '82.0 pts',
-      date: 'Today',
-      heartRate: '78.2 EWMA',
-      bloodType: 'CUSUM 0.4',
-      status: 'Accepted',
-      statusColor: '#6366f1',
-      statusBg: isDark ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff',
-    },
-    {
-      name: 'Amy Jacobs',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
-      gender: 'Female',
-      weight: '64.0 pts',
-      disease: '71.5 pts',
-      date: 'Today',
-      heartRate: '68.0 EWMA',
-      bloodType: 'CUSUM 3.8',
-      status: 'Checkup',
-      statusColor: '#06b6d4',
-      statusBg: isDark ? 'rgba(6, 182, 212, 0.15)' : '#ecfeff',
-    },
-    {
-      name: 'Adele Gross',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
-      gender: 'Female',
-      weight: '45.0 pts',
-      disease: '42.0 pts',
-      date: 'Yesterday',
-      heartRate: '48.5 EWMA',
-      bloodType: 'CUSUM 14.2',
-      status: 'Follow Up',
-      statusColor: '#ef4444',
-      statusBg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
-    },
-    {
-      name: 'Ray Clayton',
-      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop&q=80',
-      gender: 'Male',
-      weight: '88.0 pts',
-      disease: '85.0 pts',
-      date: 'Yesterday',
-      heartRate: '86.4 EWMA',
-      bloodType: 'CUSUM 0.2',
-      status: 'Completed',
-      statusColor: '#10b981',
-      statusBg: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5',
-    },
-    {
-      name: 'Arjun Sharma',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-      gender: 'Male',
-      weight: '92.0 pts',
-      disease: '95.0 pts',
-      date: '24 Aug',
-      heartRate: '88.0 EWMA',
-      bloodType: 'CUSUM 1.2',
-      status: 'Accepted',
-      statusColor: '#6366f1',
-      statusBg: isDark ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff',
-    }
-  ];
+  const activityData = history;
 
   if (loading) {
     return (
@@ -332,16 +224,31 @@ const Dashboard = () => {
       onOpenEvidenceGraph={() => setShowEvidenceGraphModal(true)}
       onOpenAgentPipeline={() => setShowAgentPipelineModal(true)}
       actionButton={
-        <button 
-          style={styles.headerPrimaryBtn}
-          onClick={() => navigate('/tests')}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>{user?.is_caregiver ? 'Make Appointment' : 'Take Daily Test'}</span>
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {isClinician ? (
+            <button 
+              style={styles.headerPrimaryBtn}
+              onClick={() => navigate('/appointments?action=new')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Schedule Appointment</span>
+            </button>
+          ) : (
+            <button 
+              style={styles.headerPrimaryBtn}
+              onClick={() => navigate('/tests')}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Take Daily Test</span>
+            </button>
+          )}
+        </div>
       }
     >
       {/* ── PATIENT DASHBOARD (For normal users) ── */}
@@ -357,13 +264,26 @@ const Dashboard = () => {
                   Longitudinal neuromotor & speech biomarker screening. Take your 3-minute daily tests to maintain baseline accuracy.
                 </p>
               </div>
-              <button style={styles.startTestsBtn} onClick={() => navigate('/tests')}>
-                <span>Take Today's Tests</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button style={styles.startTestsBtn} onClick={() => navigate('/tests')}>
+                  <span>Take Today's Tests</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </button>
+                <button 
+                  style={{
+                    ...styles.startTestsBtn,
+                    backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+                    border: `1.5px solid ${theme.border}`,
+                    color: theme.text
+                  }}
+                  onClick={() => navigate('/appointments?action=new')}
+                >
+                  <span>Book Consultation</span>
+                </button>
+              </div>
             </div>
 
             {/* Baseline Calibration Progress */}
@@ -394,8 +314,8 @@ const Dashboard = () => {
                 </svg>
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: '0.5rem 0 0.25rem 0' }}>
-                <span style={styles.patientBigScore}>{score?.score != null ? Math.round(score.score * 10) / 10 : '—'}</span>
-                <span style={{ color: theme.subtext, fontSize: '0.85rem', fontWeight: '600' }}>/ 100</span>
+                <span style={styles.patientBigScore}>{score?.score != null ? Math.round(score.score * 10) / 10 : 'Not available'}</span>
+                {score?.score != null && <span style={{ color: theme.subtext, fontSize: '0.85rem', fontWeight: '600' }}>/ 100</span>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{
@@ -403,10 +323,10 @@ const Dashboard = () => {
                   borderRadius: '20px',
                   fontSize: '0.72rem',
                   fontWeight: '800',
-                  color: score?.risk_level === 'High' ? '#dc2626' : score?.risk_level === 'Moderate' ? '#d97706' : '#16a34a',
-                  backgroundColor: score?.risk_level === 'High' ? (isDark ? 'rgba(220, 38, 38, 0.2)' : '#fee2e2') : score?.risk_level === 'Moderate' ? (isDark ? 'rgba(217, 119, 6, 0.2)' : '#fef3c7') : (isDark ? 'rgba(22, 163, 74, 0.2)' : '#dcfce7'),
+                  color: score?.risk_level === 'High' ? '#dc2626' : score?.risk_level === 'Moderate' ? '#d97706' : score?.risk_level === 'Low' ? '#16a34a' : theme.subtext,
+                  backgroundColor: score?.risk_level === 'High' ? (isDark ? 'rgba(220, 38, 38, 0.2)' : '#fee2e2') : score?.risk_level === 'Moderate' ? (isDark ? 'rgba(217, 119, 6, 0.2)' : '#fef3c7') : score?.risk_level === 'Low' ? (isDark ? 'rgba(22, 163, 74, 0.2)' : '#dcfce7') : (isDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9'),
                 }}>
-                  {score?.risk_level || 'Awaiting Tests'}
+                  {score?.risk_level ? `${score.risk_level} Risk` : 'No assessments yet'}
                 </span>
                 {score?.is_deviating && (
                   <span style={{ fontSize: '0.72rem', color: '#dc2626', fontWeight: '700' }}>Drift Alert</span>
@@ -424,8 +344,10 @@ const Dashboard = () => {
                   <line x1="3" y1="10" x2="21" y2="10"></line>
                 </svg>
               </div>
-              <p style={{ ...styles.patientCardValue, color: theme.text }}>5 Micro-Tests</p>
-              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Pattern, Digit, Word, Stroop, Reaction</p>
+              <p style={{ ...styles.patientCardValue, color: theme.text }}>
+                {score?.active_score != null ? `${Math.round(score.active_score)} pts` : 'No tests yet'}
+              </p>
+              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>5 Micro-Tasks: Pattern, Digit, Word, Stroop, Reaction</p>
             </div>
 
             <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
@@ -438,13 +360,15 @@ const Dashboard = () => {
                   <line x1="8" y1="23" x2="16" y2="23"></line>
                 </svg>
               </div>
-              <p style={{ ...styles.patientCardValue, color: theme.text }}>7 Languages</p>
-              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Whisper speech biomarker routing</p>
+              <p style={{ ...styles.patientCardValue, color: theme.text }}>
+                {score?.voice_score != null ? `${Math.round(score.voice_score)} pts` : 'No voice recordings yet'}
+              </p>
+              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Vernacular speech biomarker routing</p>
             </div>
 
             <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>CARE CIRCLE</span>
+                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>BEHAVIORAL TELEMETRY</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="9" cy="7" r="4"></circle>
@@ -452,8 +376,10 @@ const Dashboard = () => {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
               </div>
-              <p style={{ ...styles.patientCardValue, color: theme.text }}>Telemetry Sync</p>
-              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Consent-gated sharing with family/doctor</p>
+              <p style={{ ...styles.patientCardValue, color: theme.text }}>
+                {score?.passive_score != null ? `${Math.round(score.passive_score)} pts` : 'No data yet'}
+              </p>
+              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Passive typing & navigation telemetry</p>
             </div>
           </div>
 
@@ -467,144 +393,162 @@ const Dashboard = () => {
                   Deterministic multimodal fusion with transparent weight contributions and individual baseline delta tracking.
                 </p>
               </div>
-              <button 
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  backgroundColor: isDark ? '#312e81' : '#e0e7ff',
-                  color: '#4338CA',
-                  border: '1px solid #6366f1',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  fontWeight: '800',
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(99,102,241,0.15)'
-                }}
-                onClick={() => setShowExplainModal(true)}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                <span>How did CogniVeil reach this result?</span>
-              </button>
+              {score && (
+                <button 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    backgroundColor: isDark ? '#312e81' : '#e0e7ff',
+                    color: '#4338CA',
+                    border: '1px solid #6366f1',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px',
+                    fontWeight: '800',
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(99,102,241,0.15)'
+                  }}
+                  onClick={() => setShowExplainModal(true)}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <span>How did CogniVeil reach this result?</span>
+                </button>
+              )}
             </div>
 
             {/* Main 2-Column Grid: Modality Contribution Bars & Primary Contributors Box */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-              
-              {/* Left Column: Contribution Breakdown */}
-              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: '800', color: theme.text }}>MODALITY WEIGHT CONTRIBUTIONS</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#6366f1' }}>
-                    {score?.voice_score ? 'Tri-Modal (60/20/20)' : 'Bi-Modal (80/20)'}
-                  </span>
-                </div>
-
-                {/* Cognitive Modality */}
-                <div style={{ marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                    <span style={{ color: theme.text }}>Active Cognitive Battery (60%)</span>
-                    <span style={{ color: '#4338CA' }}>{Math.round(score?.active_score || 73)} / 100 <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.active_score || 73) * 0.6).toFixed(1)} pts)</strong></span>
-                  </div>
-                  <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${Math.min(score?.active_score || 73, 100)}%`, height: '100%', backgroundColor: '#4338CA', borderRadius: '4px' }} />
-                  </div>
-                </div>
-
-                {/* Behavioral Modality with Typing & Scrolling Sub-chips */}
-                <div style={{ marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                    <span style={{ color: theme.text }}>Behavioral Telemetry (20%)</span>
-                    <span style={{ color: '#06b6d4' }}>{Math.round(score?.passive_score || 67)} / 100 <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.passive_score || 67) * 0.2).toFixed(1)} pts)</strong></span>
-                  </div>
-                  <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${Math.min(score?.passive_score || 67, 100)}%`, height: '100%', backgroundColor: '#06b6d4', borderRadius: '4px' }} />
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.45rem' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(6,182,212,0.15)' : '#ecfeff', color: '#0891b2' }}>
-                      ⌨️ Typing: {Math.round(score?.typing_score || score?.passive_score || 64)}/100
-                    </span>
-                    <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(6,182,212,0.15)' : '#ecfeff', color: '#0891b2' }}>
-                      📜 Scrolling: {Math.round(score?.scrolling_score || score?.passive_score || 72)}/100
+            {!score ? (
+              <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '12px', border: `1px dashed ${theme.border}` }}>
+                <span style={{ fontSize: '1.8rem' }}>🧠</span>
+                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '0.95rem', fontWeight: '800' }}>No assessment data yet</h4>
+                <p style={{ margin: 0, color: theme.subtext, fontSize: '0.82rem' }}>Complete daily cognitive tests, voice recordings, and telemetry to generate your multimodal breakdown.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                
+                {/* Left Column: Contribution Breakdown */}
+                <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: '800', color: theme.text }}>MODALITY WEIGHT CONTRIBUTIONS</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#6366f1' }}>
+                      {score?.voice_score ? 'Tri-Modal (60/20/20)' : 'Bi-Modal (80/20)'}
                     </span>
                   </div>
+
+                  {/* Cognitive Modality */}
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                      <span style={{ color: theme.text }}>Active Cognitive Battery (60%)</span>
+                      <span style={{ color: '#4338CA' }}>{score?.active_score != null ? `${Math.round(score.active_score)} / 100` : 'No tests'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.active_score || 0) * 0.6).toFixed(1)} pts)</strong></span>
+                    </div>
+                    <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(score?.active_score || 0, 100)}%`, height: '100%', backgroundColor: '#4338CA', borderRadius: '4px' }} />
+                    </div>
+                  </div>
+
+                  {/* Behavioral Modality with Typing & Scrolling Sub-chips */}
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                      <span style={{ color: theme.text }}>Behavioral Telemetry (20%)</span>
+                      <span style={{ color: '#06b6d4' }}>{score?.passive_score != null ? `${Math.round(score.passive_score)} / 100` : 'No telemetry'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.passive_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
+                    </div>
+                    <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(score?.passive_score || 0, 100)}%`, height: '100%', backgroundColor: '#06b6d4', borderRadius: '4px' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.45rem' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(6,182,212,0.15)' : '#ecfeff', color: '#0891b2' }}>
+                        ⌨️ Typing: {score?.typing_score != null ? `${Math.round(score.typing_score)}/100` : 'Active'}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(6,182,212,0.15)' : '#ecfeff', color: '#0891b2' }}>
+                        📜 Scrolling: {score?.scrolling_score != null ? `${Math.round(score.scrolling_score)}/100` : 'Active'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Voice Modality */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                      <span style={{ color: theme.text }}>Acoustic Voice Biomarkers (20%)</span>
+                      <span style={{ color: '#10b981' }}>{score?.voice_score != null ? `${Math.round(score.voice_score)} / 100` : 'No voice entry'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.voice_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
+                    </div>
+                    <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(score?.voice_score || 0, 100)}%`, height: '100%', backgroundColor: '#10b981', borderRadius: '4px' }} />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Voice Modality */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                    <span style={{ color: theme.text }}>Acoustic Voice Biomarkers (20%)</span>
-                    <span style={{ color: '#10b981' }}>{Math.round(score?.voice_score || 70)} / 100 <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.voice_score || 70) * 0.2).toFixed(1)} pts)</strong></span>
+                {/* Right Column: Why? PRIMARY CONTRIBUTORS */}
+                <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: '800', color: theme.text }}>WHY? PRIMARY DELTA CONTRIBUTORS</span>
+                    <span style={{ fontSize: '0.72rem', fontWeight: '700', color: theme.subtext }}>VS PERSONAL BASELINE</span>
                   </div>
-                  <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${Math.min(score?.voice_score || 70, 100)}%`, height: '100%', backgroundColor: '#10b981', borderRadius: '4px' }} />
-                  </div>
+
+                  {score?.is_deviating ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                      <div 
+                        onClick={() => handleInspectEvidence('E1')}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                        title="Click to inspect Evidence E1 (Active Psychometrics)"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.85rem' }}>🧠</span>
+                          <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>1. Memory retention accuracy</span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ Deviating · View E1 →</span>
+                      </div>
+
+                      <div 
+                        onClick={() => handleInspectEvidence('E2')}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                        title="Click to inspect Evidence E2 (Keystroke Telemetry)"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.85rem' }}>⌨️</span>
+                          <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>2. Typing speed & cadence</span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ Latency drift · View E2 →</span>
+                      </div>
+
+                      <div 
+                        onClick={() => handleInspectEvidence('E3')}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                        title="Click to inspect Evidence E3 (Navigation Telemetry)"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.85rem' }}>📜</span>
+                          <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>3. Navigation pause hesitation</span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ Elevated pause · View E3 →</span>
+                      </div>
+
+                      <div 
+                        onClick={() => handleInspectEvidence('E4')}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                        title="Click to inspect Evidence E4 (Speech Biomarkers)"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.85rem' }}>🎙️</span>
+                          <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>4. Speech inter-phrase pause rate</span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ Pause duration · View E4 →</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext }}>
+                      <span style={{ fontSize: '1.5rem', color: '#2F7D5B' }}>✓</span>
+                      <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', fontWeight: '700', color: theme.text }}>All indicators within normal baseline limits</p>
+                      <span style={{ fontSize: '0.75rem' }}>No statistical change-point drift detected across active or passive telemetry channels.</span>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {/* Right Column: Why? PRIMARY CONTRIBUTORS */}
-              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: '800', color: theme.text }}>WHY? PRIMARY DELTA CONTRIBUTORS</span>
-                  <span style={{ fontSize: '0.72rem', fontWeight: '700', color: theme.subtext }}>VS PERSONAL BASELINE</span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                  <div 
-                    onClick={() => handleInspectEvidence('E1')}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
-                    title="Click to inspect Evidence E1 (Active Psychometrics)"
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.85rem' }}>🧠</span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>1. Memory retention accuracy</span>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ 16.2% · View E1 →</span>
-                  </div>
-
-                  <div 
-                    onClick={() => handleInspectEvidence('E2')}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
-                    title="Click to inspect Evidence E2 (Keystroke Telemetry)"
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.85rem' }}>⌨️</span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>2. Typing speed & cadence</span>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ 20.6% · View E2 →</span>
-                  </div>
-
-                  <div 
-                    onClick={() => handleInspectEvidence('E3')}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
-                    title="Click to inspect Evidence E3 (Navigation Telemetry)"
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.85rem' }}>📜</span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>3. Navigation pause hesitation</span>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ 85.7% · View E3 →</span>
-                  </div>
-
-                  <div 
-                    onClick={() => handleInspectEvidence('E4')}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
-                    title="Click to inspect Evidence E4 (Speech Biomarkers)"
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.85rem' }}>🎙️</span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>4. Speech inter-phrase pause rate</span>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ 42.0% · View E4 →</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Longitudinal Trend Chart Card */}
@@ -628,40 +572,48 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <div style={{ width: '100%', height: 260, marginTop: '1rem' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={activityData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="patientScoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4338CA" stopOpacity={0.25}/>
-                      <stop offset="95%" stopColor="#4338CA" stopOpacity={0.0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} vertical={false} />
-                  <XAxis dataKey="date" stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis domain={[0, 100]} stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area 
-                    type="natural" 
-                    dataKey="score" 
-                    stroke="#4338CA" 
-                    strokeWidth={3} 
-                    fillOpacity={1} 
-                    fill="url(#patientScoreGrad)" 
-                    name="CogniScore" 
-                  />
-                  <Line 
-                    type="natural" 
-                    dataKey="baseline" 
-                    stroke="#06b6d4" 
-                    strokeWidth={2} 
-                    strokeDasharray="4 4" 
-                    dot={false}
-                    name="Personal Baseline" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            {history.length === 0 ? (
+              <div style={{ padding: '3.5rem 1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '12px', border: `1px dashed ${theme.border}`, marginTop: '1rem' }}>
+                <span style={{ fontSize: '2rem' }}>📈</span>
+                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '1rem', fontWeight: '800' }}>No historical data yet</h4>
+                <p style={{ margin: 0, color: theme.subtext, fontSize: '0.85rem' }}>Complete at least one assessment to begin tracking your cognitive trajectory.</p>
+              </div>
+            ) : (
+              <div style={{ width: '100%', height: 260, marginTop: '1rem' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={activityData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="patientScoreGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4338CA" stopOpacity={0.25}/>
+                        <stop offset="95%" stopColor="#4338CA" stopOpacity={0.0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} vertical={false} />
+                    <XAxis dataKey="date" stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis domain={[0, 100]} stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area 
+                      type="natural" 
+                      dataKey="score" 
+                      stroke="#4338CA" 
+                      strokeWidth={3} 
+                      fillOpacity={1} 
+                      fill="url(#patientScoreGrad)" 
+                      name="CogniScore" 
+                    />
+                    <Line 
+                      type="natural" 
+                      dataKey="baseline" 
+                      stroke="#06b6d4" 
+                      strokeWidth={2} 
+                      strokeDasharray="4 4" 
+                      dot={false}
+                      name="Personal Baseline" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
 
           {/* 5 Primary Modules Grid */}
@@ -915,85 +867,159 @@ const Dashboard = () => {
             </div>
 
             {/* 3. Middle 2-Column Row: Appointment Request & Appointment */}
+            {apptToast && (
+              <div style={{
+                padding: '0.6rem 1rem',
+                backgroundColor: 'rgba(47, 125, 91, 0.15)',
+                color: '#2F7D5B',
+                borderRadius: '8px',
+                border: '1px solid #2F7D5B',
+                fontSize: '0.8rem',
+                fontWeight: '700',
+                marginBottom: '1rem'
+              }}>
+                ✓ {apptToast}
+              </div>
+            )}
             <div style={styles.middleTwoCol}>
               
               {/* Left: Appointment Request */}
               <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
                 <div style={styles.cardHeader}>
                   <h3 style={{ ...styles.cardTitle, color: theme.text }}>Appointment Request</h3>
-                  <span style={styles.seeAllLink} onClick={() => navigate('/tests')}>See All</span>
+                  <span style={styles.seeAllLink} onClick={() => navigate('/appointments?tab=Due')}>See All</span>
                 </div>
                 <div style={styles.requestList}>
-                  {testRequests.map((req, idx) => (
-                    <div key={idx} style={styles.requestRow}>
-                      <img src={req.avatar} alt={req.name} style={styles.personAvatar} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ ...styles.personName, color: theme.text }}>{req.name}</p>
-                        <p style={{ ...styles.personSub, color: theme.subtext }}>{req.condition}</p>
-                      </div>
-                      <span style={{ ...styles.requestTime, color: theme.subtext }}>{req.time}</span>
-                      {req.status === 'Accepted' ? (
-                        <span style={styles.acceptedPill}>Accepted</span>
-                      ) : (
-                        <div style={styles.actionCircles}>
-                          <button 
-                            style={styles.checkCircle} 
-                            title="Take test now"
-                            onClick={() => navigate(req.path)}
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                          </button>
-                          <button style={styles.crossCircle} title="Dismiss">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <line x1="18" y1="6" x2="6" y2="18"></line>
-                              <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                          </button>
+                  {(() => {
+                    const requests = dashboardAppointments.filter(a => a.status === 'Due' || a.status === 'Pending' || a.status === 'Rejected');
+                    
+                    if (requests.length === 0) {
+                      return (
+                        <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext, fontSize: '0.82rem' }}>
+                          No pending appointment requests at this time.
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      );
+                    }
+                    
+                    return requests.slice(0, 4).map((req, idx) => {
+                      const patientDisplay = req.patient_name || req.name || 'Patient';
+                      const conditionDisplay = req.appointment_type || req.condition || 'Neurological Evaluation';
+                      const timeDisplay = req.scheduled_time || req.time || 'Upcoming';
+                      const statusDisplay = req.status || 'Pending';
+                      const isAccepted = statusDisplay === 'Accepted';
+                      const isRejected = statusDisplay === 'Rejected';
+
+                      return (
+                        <div 
+                          key={req.id || idx} 
+                          style={{ ...styles.requestRow, cursor: 'pointer' }}
+                          onClick={() => navigate('/appointments?tab=Due')}
+                        >
+                          <div style={{ ...styles.personAvatar, backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>
+                            {patientDisplay.charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0, marginLeft: '8px' }}>
+                            <p style={{ ...styles.personName, color: theme.text }}>{patientDisplay}</p>
+                            <p style={{ ...styles.personSub, color: theme.subtext }}>{conditionDisplay}</p>
+                          </div>
+                          <span style={{ ...styles.requestTime, color: theme.subtext, fontSize: '0.74rem' }}>{timeDisplay}</span>
+                          
+                          {isAccepted ? (
+                            <span style={styles.acceptedPill}>Accepted</span>
+                          ) : isRejected ? (
+                            <span style={{ ...styles.acceptedPill, backgroundColor: 'rgba(201, 76, 76, 0.15)', color: '#C94C4C' }}>Rejected</span>
+                          ) : (
+                            <div style={styles.actionCircles} onClick={(e) => e.stopPropagation()}>
+                              <button 
+                                style={styles.checkCircle} 
+                                title="Accept Consultation"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (req.id) handleDashboardStatusChange(req.id, 'Accepted');
+                                  else navigate('/appointments?tab=Due');
+                                }}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                              </button>
+                              <button 
+                                style={styles.crossCircle} 
+                                title="Reject Consultation" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (req.id) handleDashboardStatusChange(req.id, 'Rejected');
+                                  else navigate('/appointments?tab=Due');
+                                }}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
               {/* Right: Appointment Schedule */}
               <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
                 <div style={styles.cardHeader}>
-                  <h3 style={{ ...styles.cardTitle, color: theme.text }}>Appointment</h3>
-                  <div style={{ ...styles.dropdownSelector, backgroundColor: theme.statBoxBg, borderColor: theme.border, color: theme.text }}>
-                    <span>Today</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                  </div>
+                  <h3 style={{ ...styles.cardTitle, color: theme.text }}>Appointment Schedule</h3>
+                  <span style={styles.seeAllLink} onClick={() => navigate('/appointments?tab=Accepted')}>View All</span>
                 </div>
                 <div style={styles.requestList}>
-                  {scheduleItems.map((item, idx) => (
-                    <div 
-                      key={idx} 
-                      style={{
-                        ...styles.requestRow,
-                        backgroundColor: item.statusPill === 'Finished' ? (isDark ? '#1e1b4b' : '#f5f3ff') : 'transparent',
-                        borderRadius: '10px',
-                        padding: item.statusPill === 'Finished' ? '0.6rem 0.75rem' : '0.6rem 0'
-                      }}
-                    >
-                      <img src={item.avatar} alt={item.name} style={styles.personAvatar} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ ...styles.personName, color: item.statusPill === 'Finished' ? '#4338CA' : theme.text }}>
-                          {item.name}
-                        </p>
-                        <p style={{ ...styles.personSub, color: theme.subtext }}>{item.condition}</p>
-                      </div>
-                      {item.statusPill ? (
-                        <span style={styles.finishedPill}>{item.statusPill}</span>
-                      ) : (
-                        <span style={{ ...styles.timeLabel, color: theme.text }}>{item.time}</span>
-                      )}
-                    </div>
-                  ))}
+                  {(() => {
+                    const scheduled = dashboardAppointments.filter(a => a.status === 'Accepted' || a.status === 'Finished');
+                    
+                    if (scheduled.length === 0) {
+                      return (
+                        <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext, fontSize: '0.82rem' }}>
+                          No confirmed appointments scheduled.
+                        </div>
+                      );
+                    }
+
+                    return scheduled.slice(0, 4).map((item, idx) => {
+                      const patientDisplay = item.patient_name || item.name || 'Patient';
+                      const conditionDisplay = item.appointment_type || item.condition || 'Clinical Consultation';
+                      const isFinished = item.status === 'Finished' || item.statusPill === 'Finished';
+                      const timeDisplay = item.scheduled_time || item.time || '10:00 AM';
+
+                      return (
+                        <div 
+                          key={item.id || idx} 
+                          style={{
+                            ...styles.requestRow,
+                            backgroundColor: isFinished ? (isDark ? '#1e1b4b' : '#f5f3ff') : 'transparent',
+                            borderRadius: '10px',
+                            padding: isFinished ? '0.6rem 0.75rem' : '0.6rem 0',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => navigate('/appointments?tab=Accepted')}
+                        >
+                          <div style={{ ...styles.personAvatar, backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>
+                            {patientDisplay.charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0, marginLeft: '8px' }}>
+                            <p style={{ ...styles.personName, color: isFinished ? '#4338CA' : theme.text }}>
+                              {patientDisplay}
+                            </p>
+                            <p style={{ ...styles.personSub, color: theme.subtext }}>{conditionDisplay}</p>
+                          </div>
+                          {isFinished ? (
+                            <span style={styles.finishedPill}>Completed</span>
+                          ) : (
+                            <span style={{ ...styles.timeLabel, color: theme.text, fontSize: '0.74rem' }}>{timeDisplay}</span>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
@@ -1010,44 +1036,63 @@ const Dashboard = () => {
                     <tr>
                       <th style={{ ...styles.th, color: theme.tableTh }}>Name</th>
                       <th style={{ ...styles.th, color: theme.tableTh }}>Gender</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Weight</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Disease</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Date</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Heart Rate</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Blood Type</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Status</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Age</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Status / Tier</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Screening Date</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>CogniScore</th>
+                      <th style={{ ...styles.th, color: theme.tableTh }}>Risk & Drift</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {recentPatients.map((p, idx) => (
-                      <tr key={idx} style={{ borderBottom: `1px solid ${theme.tableTrBorder}` }}>
-                        <td style={styles.td}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                            <img src={p.avatar} alt={p.name} style={styles.smallAvatar} />
-                            <span style={{ fontWeight: '700', color: theme.text }}>{p.name}</span>
-                          </div>
-                        </td>
-                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.gender}</td>
-                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.weight}</td>
-                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.disease}</td>
-                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.date}</td>
-                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.heartRate}</td>
-                        <td style={{ ...styles.td, color: theme.tableTd }}>{p.bloodType}</td>
-                        <td style={styles.td}>
-                          <span style={{
-                            padding: '0.25rem 0.75rem',
-                            borderRadius: '20px',
-                            fontSize: '0.72rem',
-                            fontWeight: '700',
-                            color: p.statusColor,
-                            backgroundColor: p.statusBg,
-                            display: 'inline-block'
-                          }}>
-                            {p.status}
-                          </span>
+                    {clinicianPatients.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" style={{ ...styles.td, textAlign: 'center', color: theme.subtext, padding: '2rem' }}>
+                          No monitored patients available in clinical directory.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      clinicianPatients.slice(0, 6).map((p, idx) => {
+                        const isDrift = p.is_deviating || p.risk_level === 'High';
+                        const riskBadgeBg = isDrift 
+                          ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2')
+                          : (isDark ? 'rgba(47, 125, 91, 0.2)' : '#dcfce7');
+                        const riskBadgeColor = isDrift ? '#ef4444' : '#2F7D5B';
+                        return (
+                          <tr key={p.id || idx} style={{ borderBottom: `1px solid ${theme.tableTrBorder}`, cursor: 'pointer' }} onClick={() => navigate('/patients')}>
+                            <td style={styles.td}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <div style={{ backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.78rem', borderRadius: '50%', width: '28px', height: '28px', minWidth: '28px' }}>
+                                  {(p.name || 'P').charAt(0).toUpperCase()}
+                                </div>
+                                <span style={{ fontWeight: '700', color: theme.text }}>{p.name}</span>
+                              </div>
+                            </td>
+                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.gender || 'N/A'}</td>
+                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.age ? `${p.age} yrs` : 'N/A'}</td>
+                            <td style={{ ...styles.td, color: theme.tableTd }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: p.level2_status === 'triggered' ? '#D97745' : theme.text }}>
+                                {p.level2_status === 'triggered' ? '⚠️ Tier 2 Triggered' : 'Tier 1 Baseline'}
+                              </span>
+                            </td>
+                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Active'}</td>
+                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.score != null ? `${Math.round(p.score)} pts` : (p.cogni_score != null ? `${Math.round(p.cogni_score)} pts` : 'Enrolled')}</td>
+                            <td style={styles.td}>
+                              <span style={{
+                                padding: '0.25rem 0.75rem',
+                                borderRadius: '20px',
+                                fontSize: '0.72rem',
+                                fontWeight: '700',
+                                color: riskBadgeColor,
+                                backgroundColor: riskBadgeBg,
+                                display: 'inline-block'
+                              }}>
+                                {p.risk_level || 'Active'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>

@@ -37,13 +37,27 @@ const Login = () => {
     }
   };
 
-  const handleDemoLogin = (demoEmail, demoPass = 'password123') => {
+  const handleDemoLogin = async (demoEmail, demoPass = 'demo1234') => {
     setEmail(demoEmail);
     setPassword(demoPass);
-    login(demoEmail, demoPass)
-      .then(() => navigate('/dashboard'))
-      .catch(() => setError('Failed to login with demo account. Ensure the backend is running.'));
+    setLoading(true);
+    setError('');
+    try {
+      await login(demoEmail, demoPass);
+      navigate('/dashboard');
+    } catch (err) {
+      // Fallback try password123
+      try {
+        await login(demoEmail, 'password123');
+        navigate('/dashboard');
+      } catch (err2) {
+        setError('Failed to login with demo account. Ensure the backend is running on port 8000.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const demoAccounts = [
     { label: 'Rajan Pillai (Elevated Risk / MCI Drift)', email: 'rajan@demo.com', color: '#D97745', bg: '#FFF0E8' },

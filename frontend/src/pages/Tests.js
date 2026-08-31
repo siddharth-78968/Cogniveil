@@ -542,46 +542,271 @@ const ReactionTimeTest = ({ onComplete }) => {
 const Tests = () => {
   const navigate = useNavigate();
   const [activeTest, setActiveTest] = useState(null);
-const userEmail = localStorage.getItem('userEmail') || 'default';
-const today = new Date().toDateString();
-const sessionKey = `testSession_${userEmail}_${today}`;
+  const [simulateMode, setSimulateMode] = useState(false);
 
-const [completed, setCompleted] = useState(() => {
-  try {
-    const key = `testSession_${localStorage.getItem('userEmail') || 'default'}_${new Date().toDateString()}`;
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : [];
-  } catch { return []; }
-});
+  // Clinician Inspection State
+  const [patients, setPatients] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [clinicianTestsData, setClinicianTestsData] = useState(null);
+  const [loadingClinician, setLoadingClinician] = useState(false);
+
+  const currentUser = React.useMemo(() => {
+    try {
+      const u = localStorage.getItem('user');
+      return u ? JSON.parse(u) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const isClinician = currentUser?.is_caregiver === true;
+
+  const userEmail = localStorage.getItem('userEmail') || 'default';
+  const today = new Date().toDateString();
+  const sessionKey = `testSession_${userEmail}_${today}`;
+
+  const [completed, setCompleted] = useState(() => {
+    try {
+      const key = `testSession_${localStorage.getItem('userEmail') || 'default'}_${new Date().toDateString()}`;
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [allDone, setAllDone] = useState(false);
   const [alreadyDone, setAlreadyDone] = useState(false);
 
+  // Fetch patient list and cognitive results when in clinician mode
   React.useEffect(() => {
-    const userEmail = localStorage.getItem('userEmail') || 'default';
-    const lastDate = localStorage.getItem(`lastTestDate_${userEmail}`);
-    const today = new Date().toDateString();
-    if (lastDate === today) {
-      setAlreadyDone(true);
+    if (isClinician) {
+      fetchClinicianData();
+    } else {
+      const uEmail = localStorage.getItem('userEmail') || 'default';
+      const lastDate = localStorage.getItem(`lastTestDate_${uEmail}`);
+      const tDay = new Date().toDateString();
+      if (lastDate === tDay) {
+        setAlreadyDone(true);
+      }
     }
-  }, []);
+  }, [isClinician]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+  const fetchClinicianData = async () => {
+    try {
+      setLoadingClinician(true);
+      const { getClinicianPatients } = await import('../utils/api');
+      const res = await getClinicianPatients();
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setPatients(res.data);
+        const pId = res.data[0].id;
+        setSelectedPatientId(pId);
+        loadPatientTests(pId);
+      }
+    } catch (err) {
+      console.log('Error loading clinician patients:', err.message);
+    } finally {
+      setLoadingClinician(false);
+    }
+  };
+
+  const loadPatientTests = async (patientId) => {
+    try {
+      setSelectedPatientId(patientId);
+      setLoadingClinician(true);
+      const { getClinicianPatientTests } = await import('../utils/api');
+      const res = await getClinicianPatientTests(patientId);
+      setClinicianTestsData(res.data);
+    } catch (err) {
+      console.log('Error loading patient tests:', err.message);
+    } finally {
+      setLoadingClinician(false);
+    }
+  };
 
   const handleComplete = async (testId, score, duration) => {
     try { await saveTestResult({ test_type: testId, score, duration_seconds: duration }); }
     catch (err) { console.log('Could not save'); }
     const newCompleted = [...completed, testId];
     setCompleted(newCompleted);
-localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
+    localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
     if (newCompleted.length === tests.length) {
       try { await calculateScore(); } catch (err) { }
-      const userEmail = localStorage.getItem('userEmail') || 'default';
-      localStorage.setItem(`lastTestDate_${userEmail}`, new Date().toDateString());
+      const uEmail = localStorage.getItem('userEmail') || 'default';
+      localStorage.setItem(`lastTestDate_${uEmail}`, new Date().toDateString());
       setTimeout(() => setAllDone(true), 2500);
     } else {
       setTimeout(() => setActiveTest(null), 2500);
     }
   };
 
-  if (alreadyDone) return (
+  // ── CLINICIAN VIEWPORT: Review Mode ─────────────────────────────────────────
+  if (isClinician && !simulateMode) {
+    return (
+      <DoctorLayout activeTitle="Daily Cognitive Battery">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.25rem' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#0F4C4A' }} />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.08em', color: '#287C78' }}>
+                  CLINICIAN WORKSPACE · ACTIVE PSYCHOMETRICS
+                </span>
+              </div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0 0 0.35rem 0' }}>
+                Patient Cognitive Battery Review
+              </h1>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                Review objective psychometric results across working memory, episodic recall, Stroop executive interference, and reaction latencies.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSimulateMode(true)}
+              style={{
+                backgroundColor: '#162B3D',
+                color: '#53B7C5',
+                border: '1px solid #53B7C5',
+                borderRadius: '8px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.8rem',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
+              🎮 Preview / Demo Battery →
+            </button>
+          </div>
+
+          {/* Patient Selector Strip */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
+              Select Monitored Patient:
+            </span>
+            {patients.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => loadPatientTests(p.id)}
+                style={{
+                  border: '1px solid',
+                  borderColor: selectedPatientId === p.id ? '#0F4C4A' : '#e2e8f0',
+                  backgroundColor: selectedPatientId === p.id ? '#E8F5EE' : 'transparent',
+                  color: selectedPatientId === p.id ? '#0F4C4A' : '#1e293b',
+                  borderRadius: '8px',
+                  padding: '0.4rem 0.85rem',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                {p.name} {p.is_deviating ? '⚠️' : '✓'}
+              </button>
+            ))}
+          </div>
+
+          {/* Domain Breakdown Cards */}
+          {loadingClinician ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>Loading patient psychometrics...</div>
+          ) : clinicianTestsData ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b' }}>TOTAL RECORDED SESSIONS</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#1e293b' }}>{clinicianTestsData.total_test_sessions}</div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Across 5 validated screening batteries</span>
+                </div>
+                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b' }}>DOMAIN COVERAGE</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0F4C4A' }}>100% Complete</div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Episodic, Working, Inhibitory, Motor Speed</span>
+                </div>
+                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b' }}>CLINICAL CALIBRATION</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#4338CA' }}>Age-Normed (65+)</div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Z-Score threshold σ = ±1.5 SD</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {clinicianTestsData.domain_breakdown?.map((domain) => {
+                  const isImpaired = domain.z_score < -1.0;
+                  return (
+                    <div
+                      key={domain.test_type}
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #eef2f6',
+                        borderRadius: '12px',
+                        padding: '1.15rem 1.25rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+                          {tests.find(t => t.id === domain.test_type)?.icon || '🧠'}
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 2px 0', fontSize: '0.95rem', fontWeight: '800', color: '#1e293b' }}>
+                            {domain.name}
+                          </h4>
+                          <span style={{ fontSize: '0.76rem', color: '#64748b' }}>
+                            {domain.domain} · Battery Weight: {domain.weight}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>
+                            Patient Avg Score
+                          </span>
+                          <strong style={{ fontSize: '1.2rem', color: isImpaired ? '#C94C4C' : '#1e293b' }}>
+                            {domain.average_score} <span style={{ fontSize: '0.72rem', color: '#64748b' }}>/ 100</span>
+                          </strong>
+                        </div>
+
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>
+                            Normative Mean
+                          </span>
+                          <span style={{ fontSize: '0.95rem', fontWeight: '700', color: '#64748b' }}>
+                            {domain.normative_mean} pts
+                          </span>
+                        </div>
+
+                        <div style={{ minWidth: '130px', textAlign: 'right' }}>
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              fontWeight: '800',
+                              padding: '0.25rem 0.65rem',
+                              borderRadius: '6px',
+                              border: '1px solid',
+                              backgroundColor: isImpaired ? '#FEF2F2' : '#F0FDF4',
+                              color: isImpaired ? '#C94C4C' : '#15803D',
+                              borderColor: isImpaired ? '#FECACA' : '#BBF7D0'
+                            }}
+                          >
+                            Z = {domain.z_score > 0 ? `+${domain.z_score}` : domain.z_score} ({domain.status})
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>No test data available for selected patient.</div>
+          )}
+        </div>
+      </DoctorLayout>
+    );
+  }
+
+  if (alreadyDone && !simulateMode) return (
     <DoctorLayout activeTitle="Daily Tests">
       <div style={styles.doneCard}>
         <span style={{ fontSize: '3rem' }}>✓</span>
@@ -615,6 +840,16 @@ localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
     <DoctorLayout activeTitle="Daily Tests">
       {!activeTest ? (
         <div style={styles.container}>
+          {isClinician && (
+            <div style={{ marginBottom: '1rem' }}>
+              <button
+                onClick={() => setSimulateMode(false)}
+                style={{ background: 'none', border: 'none', color: '#0F4C4A', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', padding: 0 }}
+              >
+                ← Back to Patient Results Review
+              </button>
+            </div>
+          )}
           <div style={styles.headerRow}>
             <div>
               <p style={styles.pageLabel}>DAILY ASSESSMENT</p>
@@ -678,6 +913,7 @@ localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
               <h2 style={styles.activeTitle}>{tests.find(t => t.id === activeTest)?.name}</h2>
             </div>
           </div>
+
           {activeTest === 'pattern_recall' && <PatternRecall onComplete={(s, d) => handleComplete('pattern_recall', s, d)} />}
           {activeTest === 'digit_span' && <DigitSpan onComplete={(s, d) => handleComplete('digit_span', s, d)} />}
           {activeTest === 'word_recall' && <WordRecall onComplete={(s, d) => handleComplete('word_recall', s, d)} />}

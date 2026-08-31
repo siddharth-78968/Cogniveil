@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { classifyMRI } from '../utils/api';
 import DoctorLayout from '../components/DoctorLayout';
@@ -11,6 +11,64 @@ const Level3MRI = () => {
   const [result, setResult] = useState(null);
   const [step, setStep] = useState('upload');
   const [camMode, setCamMode] = useState('blend');
+  const [simulateUpload, setSimulateUpload] = useState(false);
+
+  // Clinician Inspection State
+  const [patients, setPatients] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [clinicianMRIData, setClinicianMRIData] = useState(null);
+  const [loadingClinician, setLoadingClinician] = useState(false);
+
+  const currentUser = React.useMemo(() => {
+    try {
+      const u = localStorage.getItem('user');
+      return u ? JSON.parse(u) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const isClinician = currentUser?.is_caregiver === true;
+
+  useEffect(() => {
+    if (isClinician) {
+      fetchClinicianMRI();
+    }
+  }, [isClinician]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+  const fetchClinicianMRI = async () => {
+    try {
+      setLoadingClinician(true);
+      const { getClinicianPatients } = await import('../utils/api');
+      const res = await getClinicianPatients();
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setPatients(res.data);
+        const pId = res.data[0].id;
+        setSelectedPatientId(pId);
+        loadPatientMRI(pId);
+      }
+    } catch (err) {
+      console.log('Error loading clinician MRI patients:', err.message);
+    } finally {
+      setLoadingClinician(false);
+    }
+  };
+
+  const loadPatientMRI = async (patientId) => {
+    try {
+      setSelectedPatientId(patientId);
+      setLoadingClinician(true);
+      const { getClinicianPatientMRI } = await import('../utils/api');
+      const res = await getClinicianPatientMRI(patientId);
+      setClinicianMRIData(res.data);
+    } catch (err) {
+      console.log('Error loading patient MRI:', err.message);
+    } finally {
+      setLoadingClinician(false);
+    }
+  };
+
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -53,9 +111,180 @@ const Level3MRI = () => {
     return '#ef4444';
   };
 
+  // ── CLINICIAN VIEWPORT: Structural Neuroimaging & Grad-CAM ─────────────
+  if (isClinician && !simulateUpload) {
+    const mri = clinicianMRIData?.mri_analysis;
+    return (
+      <DoctorLayout activeTitle="Tier 3 MRI Scans">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.25rem' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#0F4C4A' }} />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.08em', color: '#287C78' }}>
+                  CLINICIAN WORKSPACE · STRUCTURAL NEUROIMAGING
+                </span>
+              </div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0 0 0.35rem 0' }}>
+                Patient Structural MRI & Grad-CAM Visual Attention
+              </h1>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                ResNet-18 volumetric classification, CDR staging, ventricular-brain ratios, and medial temporal lobe saliency heatmaps.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSimulateUpload(true)}
+              style={{
+                backgroundColor: '#162B3D',
+                color: '#53B7C5',
+                border: '1px solid #53B7C5',
+                borderRadius: '8px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.8rem',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
+              📤 Upload / Test Scan File →
+            </button>
+          </div>
+
+          {/* Patient Selector Strip */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
+              Select Monitored Patient:
+            </span>
+            {patients.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => loadPatientMRI(p.id)}
+                style={{
+                  border: '1px solid',
+                  borderColor: selectedPatientId === p.id ? '#0F4C4A' : '#e2e8f0',
+                  backgroundColor: selectedPatientId === p.id ? '#E8F5EE' : 'transparent',
+                  color: selectedPatientId === p.id ? '#0F4C4A' : '#1e293b',
+                  borderRadius: '8px',
+                  padding: '0.4rem 0.85rem',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                {p.name} {p.is_deviating ? '⚠️' : '✓'}
+              </button>
+            ))}
+          </div>
+
+          {/* Neuroimaging Diagnostic Grid */}
+          {loadingClinician ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>Loading neuroimaging volumetric analysis...</div>
+          ) : mri ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Classification Banner & Scanner Metadata */}
+              <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '1rem' }}>
+                <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
+                    ResNet-18 Volumetric Classification
+                  </span>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '900', color: mri.predicted_class.includes('Very Mild') ? '#D97745' : '#2F7D5B', margin: '4px 0' }}>
+                    {mri.predicted_class}
+                  </div>
+                  <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#4338CA' }}>
+                    Clinical Dementia Rating: {mri.cdr_stage} · Confidence: {Math.round(mri.confidence * 100)}%
+                  </span>
+
+                  <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: '#64748b' }}>
+                    <span>Scan ID: <strong>{mri.scan_id}</strong></span>
+                    <span>Acquisition: <strong>{mri.acquisition_date}</strong></span>
+                    <span>Hardware: <strong>{mri.scanner}</strong></span>
+                    <span>Resolution: <strong>{mri.resolution}</strong></span>
+                  </div>
+                </div>
+
+                {/* Volumetric Metrics Grid */}
+                <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <h4 style={{ margin: '0 0 0.85rem 0', fontSize: '0.92rem', fontWeight: '800', color: '#1e293b' }}>
+                    Quantitative Morphometry & Volumetric Biomarkers
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.85rem' }}>
+                    <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Brain Parenchymal Fraction (BPF)</span>
+                      <div style={{ fontSize: '1.3rem', fontWeight: '900', color: mri.volumetric_metrics.brain_parenchymal_fraction_bpf < 0.82 ? '#C94C4C' : '#1e293b' }}>
+                        {mri.volumetric_metrics.brain_parenchymal_fraction_bpf}
+                      </div>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Normative: {mri.volumetric_metrics.bpf_normative_range}</span>
+                    </div>
+
+                    <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Ventricular Brain Ratio (VBR)</span>
+                      <div style={{ fontSize: '1.3rem', fontWeight: '900', color: mri.volumetric_metrics.ventricular_brain_ratio_vbr > 0.10 ? '#C94C4C' : '#1e293b' }}>
+                        {mri.volumetric_metrics.ventricular_brain_ratio_vbr}
+                      </div>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Normative: {mri.volumetric_metrics.vbr_normative_range}</span>
+                    </div>
+
+                    <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Hippocampal Occupancy</span>
+                      <div style={{ fontSize: '1.3rem', fontWeight: '900', color: mri.volumetric_metrics.hippocampal_occupancy_ratio < 0.70 ? '#D97745' : '#1e293b' }}>
+                        {mri.volumetric_metrics.hippocampal_occupancy_ratio}
+                      </div>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Normative: &gt; 0.80</span>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '0.85rem', display: 'flex', gap: '1.5rem', fontSize: '0.76rem', color: '#64748b' }}>
+                    <span>Left Hippocampus: <strong>{mri.volumetric_metrics.left_hippocampal_volume_mm3} mm³</strong></span>
+                    <span>Right Hippocampus: <strong>{mri.volumetric_metrics.right_hippocampal_volume_mm3} mm³</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grad-CAM Medial Temporal Attention & Findings */}
+              <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: '800', color: '#1e293b' }}>
+                    Grad-CAM Medial Temporal Saliency & Radiological Impression
+                  </h4>
+                  <span style={{ fontSize: '0.72rem', fontWeight: '700', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#E8F5EE', color: '#0F4C4A' }}>
+                    Layer: {mri.gradcam.target_layer}
+                  </span>
+                </div>
+
+                <div style={{ padding: '0.85rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '0.85rem' }}>
+                  <p style={{ margin: 0, fontSize: '0.84rem', color: '#1e293b', lineHeight: '1.5' }}>
+                    🧠 <strong>Findings:</strong> {mri.clinical_notes}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '2rem', fontSize: '0.76rem', color: '#64748b' }}>
+                  <span>Primary Attention: <strong>{mri.gradcam.primary_attention_region}</strong></span>
+                  <span>Secondary Attention: <strong>{mri.gradcam.secondary_attention_region}</strong></span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>No structural MRI records found for selected patient.</div>
+          )}
+        </div>
+      </DoctorLayout>
+    );
+  }
+
   return (
     <DoctorLayout activeTitle="Tier 3 MRI Scans">
       <div style={styles.container}>
+        {isClinician && (
+          <div style={{ marginBottom: '0.5rem' }}>
+            <button
+              onClick={() => setSimulateUpload(false)}
+              style={{ background: 'none', border: 'none', color: '#0F4C4A', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', padding: 0 }}
+            >
+              ← Back to Patient MRI Results Review
+            </button>
+          </div>
+        )}
         <div style={styles.headerRow}>
           <div style={styles.levelBadge}>TIER 3</div>
           <div>

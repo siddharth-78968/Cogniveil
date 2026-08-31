@@ -13,12 +13,28 @@ import Level3MRI from './pages/Level3MRI';
 import VoiceJournal from './pages/VoiceJournal';
 import Consent from './pages/Consent';
 import CareCircle from './pages/CareCircle';
+import Appointments from './pages/Appointments';
+import Patients from './pages/Patients';
+import ReferralReport from './pages/ReferralReport';
 import { pingBackend } from './utils/api';
+
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div style={{ color: 'white', padding: '2rem' }}>Loading...</div>;
   return user ? children : <Navigate to="/login" />;
+};
+
+const RoleProtectedRoute = ({ children, requiredRole }) => {
+  const { user, loading, isClinician } = useAuth();
+  if (loading) return <div style={{ color: 'white', padding: '2rem' }}>Loading...</div>;
+  if (!user) return <Navigate to="/login" />;
+
+  if (requiredRole === 'clinician' && !isClinician) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
 };
 
 const AppContent = () => {
@@ -40,6 +56,9 @@ const AppContent = () => {
         <Route path="/dashboard" element={
           <ProtectedRoute><Dashboard /></ProtectedRoute>
         } />
+        <Route path="/patients" element={
+          <RoleProtectedRoute requiredRole="clinician"><Patients /></RoleProtectedRoute>
+        } />
         <Route path="/tests" element={
           <ProtectedRoute><Tests /></ProtectedRoute>
         } />
@@ -56,10 +75,19 @@ const AppContent = () => {
         <Route path="/care-circle" element={
           <ProtectedRoute><CareCircle /></ProtectedRoute>
         } />
+        <Route path="/appointments" element={
+          <ProtectedRoute><Appointments /></ProtectedRoute>
+        } />
+        <Route path="/referral" element={
+          <RoleProtectedRoute requiredRole="clinician"><ReferralReport /></RoleProtectedRoute>
+        } />
+        <Route path="*" element={<Navigate to="/" />} />
+
       </Routes>
     </>
   );
 };
+
 
 const App = () => {
   return (

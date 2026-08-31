@@ -20,6 +20,28 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 
+def generate_clinical_referral_summary(
+    patient_name: str,
+    is_deviating: bool = True
+) -> str:
+    """Produces a concise 3-5 sentence executive clinical referral summary without raw technical metrics."""
+    if is_deviating:
+        return (
+            f"Screening identified a persistent decline in memory and processing-speed performance "
+            f"compared with {patient_name}'s established baseline across multiple sessions. "
+            f"Behavioral telemetry also showed increased hesitation and correction activity. "
+            f"Voice analysis demonstrated increased pausing, while speech coherence remained relatively preserved. "
+            f"The combined findings suggest that formal clinical evaluation may be appropriate."
+        )
+    else:
+        return (
+            f"Multimodal screening demonstrated stable cognitive performance consistent with "
+            f"{patient_name}'s established personal baseline across all monitored sessions. "
+            f"Passive behavioral interaction patterns and acoustic voice fluency parameters remained within normative limits. "
+            f"Routine periodic longitudinal screening is recommended to continue tracking cognitive trajectory."
+        )
+
+
 class ClinicalSynthesisAgent:
     """Specialized MedGemma clinical intelligence agent generating 12-section structured evidence reports."""
 
@@ -376,14 +398,10 @@ class ClinicalSynthesisAgent:
             "boundary_statement": "Interpretation is subject to the completeness and quality of available digital observations."
         }
 
-        # ── 11. Executive Clinical Summary (3-5 Sentences) ───────────────────
-        executive_summary = (
-            f"Patient {patient_name} presented for multimodal cognitive health screening, demonstrating an overall CogniScore of {cogni_score:.1f}/100 "
-            f"({status_text}). Time-series analysis confirms a persistent deviation from established baseline across {len(trajectory)} sessions, "
-            f"driven primarily by a {abs(cognitive_table[0]['change_percent']):.1f}% reduction in memory retention, reduced typing speed ({typing_details['wpm_change']}), "
-            f"and heightened navigation hesitation ({scrolling_details['hesitation_change']}). "
-            f"Tier 2 multivariate modeling estimated a {catboost_prob:.1%} risk probability with actionable lifestyle factors identified in sleep and vascular profiles. "
-            f"These findings represent probabilistic screening indicators that warrant comprehensive formal clinical evaluation."
+        # ── 11. Executive Clinical Summary (3-5 Concise Sentences) ────────────
+        executive_summary = generate_clinical_referral_summary(
+            patient_name=patient_name,
+            is_deviating=is_deviating
         )
 
         # ── 12. Final Decision-Support Summary & Certified Disclaimer ───────

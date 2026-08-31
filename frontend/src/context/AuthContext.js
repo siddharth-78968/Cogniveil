@@ -24,17 +24,25 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', accessToken);
     setToken(accessToken);
 
-    let userData = { email, is_caregiver: false };
-    try {
-      const meRes = await getCurrentUser();
-      userData = meRes.data;
-    } catch (_) {
+    let userData = { email, role: 'patient', is_caregiver: false };
+    if (res.data && res.data.user) {
+      userData = res.data.user;
+    } else {
       try {
-        const profRes = await getProfile();
-        userData = profRes.data;
-      } catch (err) {
-        // fallback
+        const meRes = await getCurrentUser();
+        userData = meRes.data;
+      } catch (_) {
+        try {
+          const profRes = await getProfile();
+          userData = profRes.data;
+        } catch (err) {
+          // fallback
+        }
       }
+    }
+    // Normalize role
+    if (!userData.role) {
+      userData.role = userData.is_caregiver ? 'clinician' : 'patient';
     }
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('userEmail', userData.email || email);
@@ -46,6 +54,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const meRes = await getCurrentUser();
       const userData = meRes.data;
+      if (!userData.role) {
+        userData.role = userData.is_caregiver ? 'clinician' : 'patient';
+      }
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('userEmail', userData.email);
       setUser(userData);
@@ -55,8 +66,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password, age, gender = 'Not specified', isCaregiver = false) => {
-    const res = await registerUser({ name, email, password, age, gender, is_caregiver: isCaregiver });
+  const register = async (name, email, password, age, gender = 'Not specified', isCaregiver = false, role = null) => {
+    const assignedRole = role || (isCaregiver ? 'clinician' : 'patient');
+    const res = await registerUser({ 
+      name, 
+      email, 
+      password, 
+      age, 
+      gender, 
+      is_caregiver: isCaregiver || assignedRole === 'clinician',
+      role: assignedRole
+    });
     return res;
   };
 
@@ -68,8 +88,11 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const isClinician = user?.role === 'clinician' || Boolean(user?.is_caregiver);
+  const isPatient = !isClinician;
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, refreshUser, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, refreshUser, logout, loading, isClinician, isPatient }}>
       {children}
     </AuthContext.Provider>
   );

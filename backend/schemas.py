@@ -8,6 +8,7 @@ class UserCreate(BaseModel):
     password: str
     age: int
     gender: Optional[str] = "Not specified"
+    role: Optional[str] = "patient"
     is_caregiver: bool = False
     apoe_e4_provenance: Optional[str] = "self_reported"
     mri_provenance: Optional[str] = "self_reported"
@@ -28,7 +29,10 @@ class UserOut(BaseModel):
     email: str
     age: int
     gender: Optional[str] = "Not specified"
+    role: str = "patient"
     is_caregiver: bool
+    patient_id: Optional[int] = None
+    clinician_id: Optional[int] = None
     consent_granted: bool = False
     consent_granted_at: Optional[datetime] = None
     baseline_status: str = "collecting"
@@ -76,9 +80,11 @@ class CogniScoreOut(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user: Optional[UserOut] = None
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+    role: Optional[str] = None
 
 class LanguageDetectRequest(BaseModel):
     text: Optional[str] = None
@@ -147,3 +153,82 @@ class AgentOrchestrationResponse(BaseModel):
     sanitized_narrative: Optional[str] = None
     guidelines: Optional[List[Dict[str, Any]]] = None
     message: Optional[str] = None
+
+class ClinicianOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    role: str = "clinician"
+    specialty: Optional[str] = "Cognitive Neurologist & Supervisor"
+
+    class Config:
+        from_attributes = True
+
+class AppointmentCreate(BaseModel):
+    patient_id: Optional[int] = None
+    clinician_id: Optional[int] = None
+    patient_name: Optional[str] = None
+    appointment_type: str = "Neurological Evaluation"
+    scheduled_time: str
+    notes: Optional[str] = None
+    location: Optional[str] = "Memory & Cognitive Health Clinic - Suite 402"
+
+class AppointmentStatusUpdate(BaseModel):
+    status: str  # "Accepted", "Due", "Finished", "Cancelled", "Rejected", "Pending"
+
+class AppointmentOut(BaseModel):
+    id: int
+    user_id: int
+    patient_id: Optional[int] = None
+    clinician_id: Optional[int] = None
+    patient_name: str
+    clinician_name: Optional[str] = None
+    appointment_type: str
+    scheduled_time: str
+    status: str
+    notes: Optional[str] = None
+    location: str
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class NotificationOut(BaseModel):
+    id: int
+    user_id: int
+    title: str
+    message: str
+    type: str
+    severity: str
+    link: Optional[str] = None
+    is_read: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SearchResultItem(BaseModel):
+    id: str
+    title: str
+    subtitle: str
+    category: str  # "patient", "test", "biomarker", "report", "module"
+    link: str
+    badge: Optional[str] = None
+
+class SearchResponse(BaseModel):
+    query: str
+    total_results: int
+    results: List[SearchResultItem]
+
+class EvidenceGraphResponse(BaseModel):
+    user_id: int
+    patient_name: str
+    cogni_score: float
+    risk_level: str
+    is_deviating: bool
+    nodes: Dict[str, Any]
+    edges: List[Dict[str, Any]]
+    dossier: Optional[Dict[str, Any]] = None
+

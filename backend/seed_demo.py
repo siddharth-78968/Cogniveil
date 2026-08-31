@@ -12,8 +12,10 @@ models.Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
 
+import auth
+
 def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+    return auth.get_password_hash(password)
 
 def create_user(name, email, password, age):
     existing = db.query(models.User).filter(models.User.email == email).first()
@@ -113,10 +115,58 @@ seed_scores(p3.id, base_score=32, trend=-0.8, days=14)
 seed_signals(p3.id, typing_base=35, backspace_base=0.25, days=14)
 seed_tests(p3.id, score_base=30, days=14)
 
+# Clinician
+existing_doc = db.query(models.User).filter(models.User.email == "clinician@demo.com").first()
+if not existing_doc:
+    doc = models.User(
+        name="Dr. Jackson Santos",
+        email="clinician@demo.com",
+        hashed_password=hash_password("demo1234"),
+        age=48,
+        role="clinician",
+        is_caregiver=True,
+        consent_granted=True
+    )
+    db.add(doc)
+    db.commit()
+    db.refresh(doc)
+else:
+    doc = existing_doc
+
+# Seed isolated demo consultations if none exist
+existing_appts = db.query(models.Appointment).filter(models.Appointment.patient_id.in_([p1.id, p2.id, p3.id])).count()
+if existing_appts == 0:
+    db.add(models.Appointment(
+        user_id=p1.id, patient_id=p1.id, clinician_id=doc.id,
+        patient_name=p1.name, clinician_name=doc.name,
+        appointment_type="Comprehensive Neurological Evaluation",
+        scheduled_time="2026-09-15 - 10:00 AM",
+        status="Accepted", notes="Baseline psychometric and neuromotor verification.",
+        location="Memory & Cognitive Health Clinic - Suite 402"
+    ))
+    db.add(models.Appointment(
+        user_id=p2.id, patient_id=p2.id, clinician_id=doc.id,
+        patient_name=p2.name, clinician_name=doc.name,
+        appointment_type="Acoustic Fluency & Cognitive Battery",
+        scheduled_time="2026-09-18 - 02:30 PM",
+        status="Pending", notes="Speech pause telemetry review requested by patient.",
+        location="Memory & Cognitive Health Clinic - Suite 402"
+    ))
+    db.add(models.Appointment(
+        user_id=p3.id, patient_id=p3.id, clinician_id=doc.id,
+        patient_name=p3.name, clinician_name=doc.name,
+        appointment_type="Neurological Evaluation",
+        scheduled_time="2026-09-10 - 11:00 AM",
+        status="Accepted", notes="Clinical follow-up for longitudinal drift.",
+        location="Memory & Cognitive Health Clinic - Suite 402"
+    ))
+    db.commit()
+
 print("\n--- Demo Seeding Complete ---")
 print("\nDemo login credentials:")
-print("Healthy:  arjun@demo.com  / demo1234")
-print("Drifting: meena@demo.com  / demo1234")
-print("High Risk: rajan@demo.com / demo1234")
+print("Healthy:   arjun@demo.com     / demo1234")
+print("Drifting:  meena@demo.com     / demo1234")
+print("High Risk: rajan@demo.com     / demo1234")
+print("Clinician: clinician@demo.com / demo1234")
 
 db.close()

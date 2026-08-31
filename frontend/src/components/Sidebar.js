@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isClinician } = useAuth();
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,18 +16,19 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
 
   const isActive = (path) => location.pathname === path;
 
-  const navGroups = [
+  // Role-Specific Navigation Groups
+  const clinicianNavGroups = [
     {
-      group: 'OVERVIEW',
+      group: 'CLINICAL OVERVIEW',
       items: [
         { label: 'Dashboard', path: '/dashboard', icon: 'grid' },
+        { label: 'Patients Directory', path: '/patients', icon: 'patients' },
+        { label: 'Appointments', path: '/appointments', icon: 'calendar' },
       ]
     },
     {
       group: 'ASSESSMENT & SCREENING',
       items: [
-        { label: 'Daily Cognitive Battery', path: '/tests', icon: 'battery' },
-        { label: 'Acoustic Voice Journal', path: '/voice', icon: 'waveform' },
         { label: 'Tier 2 Clinical ML', path: '/level2', icon: 'stethoscope' },
         { label: 'Tier 3 MRI Scans', path: '/level3', icon: 'mri' },
       ]
@@ -37,7 +38,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
       items: [
         { label: 'Multimodal Evidence Graph', action: 'evidence_graph', icon: 'graph', isAi: true },
         { label: 'AI Agent Pipeline (10 Nodes)', action: 'agent_pipeline', icon: 'pipeline', isAi: true },
-        { label: 'Clinical Referral Report', action: 'referral_modal', icon: 'report', isAi: true },
+        { label: 'Clinical Referral Report', path: '/referral', icon: 'report', isAi: true },
       ]
     },
     {
@@ -48,6 +49,35 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
       ]
     }
   ];
+
+  const patientNavGroups = [
+    {
+      group: 'MY OVERVIEW',
+      items: [
+        { label: 'My Dashboard', path: '/dashboard', icon: 'grid' },
+        { label: 'My Appointments', path: '/appointments', icon: 'calendar' },
+      ]
+    },
+    {
+      group: 'DAILY SCREENING & HEALTH',
+      items: [
+        { label: 'Daily Cognitive Battery', path: '/tests', icon: 'battery' },
+        { label: 'Acoustic Voice Journal', path: '/voice', icon: 'waveform' },
+        { label: 'Health Assessment (Tier 2)', path: '/level2', icon: 'stethoscope' },
+        { label: 'My MRI Results (Tier 3)', path: '/level3', icon: 'mri' },
+      ]
+    },
+    {
+      group: 'CARE & PRIVACY',
+      items: [
+        { label: 'Care Circle & Telemetry', path: '/care-circle', icon: 'caregivers' },
+        { label: 'Consent & Privacy', path: '/consent', icon: 'shield_check' },
+      ]
+    }
+  ];
+
+  const navGroups = isClinician ? clinicianNavGroups : patientNavGroups;
+
 
   // 1.5px single-weight stroke outline pictogram system inside 24x24 viewBox
   const renderIcon = (type, isAi) => {
@@ -64,6 +94,26 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                   <rect x="3" y="14" width="7" height="7" rx="1.5" fill="currentColor" fillOpacity="0.25"></rect>
                 </svg>
               );
+            case 'patients':
+              return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              );
+            case 'calendar':
+              return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              );
+
+
             case 'battery':
               return (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -227,7 +277,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
           <div style={styles.userInfo}>
             <span style={styles.userName}>{user?.name || user?.email?.split('@')[0]}</span>
             <span style={styles.userRole}>
-              {user?.is_caregiver ? 'Clinical Supervisor' : 'Monitored Patient'}
+              {isClinician ? 'Clinician / Neurologist' : 'Monitored Patient'}
             </span>
           </div>
           <button 
