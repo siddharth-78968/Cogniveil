@@ -77,13 +77,56 @@ const Register = () => {
     <div style={{ ...styles.pageWrapper, backgroundColor: theme.bg, color: theme.text }}>
       {/* Top Navigation */}
       <header style={{ ...styles.header, backgroundColor: theme.topHeaderBg, borderBottom: `1px solid ${theme.border}` }}>
-        <div style={styles.brandBox} onClick={() => navigate('/')}>
+        <div 
+          style={{ ...styles.brandBox, cursor: 'pointer' }} 
+          onClick={() => navigate('/')}
+          title="← Return to Landing Page"
+        >
+          <div style={{
+            width: '28px',
+            height: '28px',
+            backgroundColor: isDark ? '#e3ece0' : '#273822',
+            borderRadius: '5px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: '900',
+            fontSize: '0.92rem',
+            color: isDark ? '#0b100c' : '#ffffff',
+            marginRight: '6px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.12)'
+          }}>
+            C
+          </div>
           <span style={{ ...styles.brandTitle, color: theme.text }}>CogniVeil</span>
           <span style={{ ...styles.brandPipe, color: theme.border }}>/</span>
           <span style={{ ...styles.brandSub, color: theme.subtext }}>Patient onboarding & enrollment</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => navigate('/')}
+            title="Return to Landing Page"
+            style={{
+              background: 'none',
+              border: `1px solid ${theme.border}`,
+              padding: '6px 14px',
+              borderRadius: '6px',
+              fontSize: '0.78rem',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: '700',
+              cursor: 'pointer',
+              color: theme.text,
+              backgroundColor: theme.cardBg,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <span>←</span>
+            <span>Back to Home</span>
+          </button>
           <button 
             className="theme-toggle-switch" 
             onClick={toggleTheme}
@@ -245,9 +288,28 @@ const Register = () => {
             </button>
           </form>
 
-          <div style={{ ...styles.footerNote, color: theme.subtext }}>
-            <span>Already have an active profile? </span>
-            <Link to="/login" style={{ color: isDark ? '#22d3ee' : '#0284C7', fontWeight: '600' }}>Sign in to workspace</Link>
+          <div style={{ ...styles.footerNote, color: theme.subtext, textAlign: 'center' }}>
+            <div>
+              <span>Already have an active profile? </span>
+              <Link to="/login" style={{ color: isDark ? '#22d3ee' : '#0284C7', fontWeight: '600' }}>Sign in to workspace</Link>
+            </div>
+            <div style={{ marginTop: '10px' }}>
+              <Link 
+                to="/" 
+                style={{ 
+                  color: theme.subtext, 
+                  fontSize: '0.82rem', 
+                  fontFamily: "'JetBrains Mono', monospace", 
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>←</span>
+                <span>Return to Public Landing Page</span>
+              </Link>
+            </div>
           </div>
 
         </div>

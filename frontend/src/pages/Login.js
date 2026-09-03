@@ -142,20 +142,46 @@ const Login = () => {
           </svg>
         </div>
 
-        {/* Brand Header */}
+        {/* Brand Header (Clickable Return to Landing Page) */}
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div 
+            onClick={() => navigate('/')}
+            title="← Return to Landing Page"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '10px',
+              cursor: 'pointer',
+              userSelect: 'none',
+              padding: '6px 10px',
+              marginLeft: '-10px',
+              borderRadius: '8px',
+              transition: 'background-color 0.15s ease, transform 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
             <div style={{
               width: '32px',
               height: '32px',
               backgroundColor: isDark ? '#e3ece0' : '#273822',
-              borderRadius: '4px',
+              borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: '900',
               fontSize: '1rem',
-              color: isDark ? '#0b100c' : '#ffffff'
+              color: isDark ? '#0b100c' : '#ffffff',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
             }}>
               C
             </div>
@@ -326,20 +352,55 @@ const Login = () => {
         
         <div style={{ maxWidth: '520px', width: '100%' }}>
           
-          {/* Top Bar with Theme Toggle */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2.5rem' }}>
+          {/* Top Bar with Back to Landing & Theme Toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+            <button
+              onClick={() => navigate('/')}
+              title="Return to Home Landing Page"
+              style={{
+                background: 'none',
+                border: `1px solid ${isDark ? '#233222' : '#d2ded0'}`,
+                padding: '7px 14px',
+                borderRadius: '8px',
+                fontSize: '0.78rem',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: '700',
+                cursor: 'pointer',
+                color: isDark ? '#cdd8c5' : '#3f533a',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.15s ease',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = isDark ? '#34d399' : '#273822';
+                e.currentTarget.style.color = isDark ? '#34d399' : '#273822';
+                e.currentTarget.style.transform = 'translateX(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = isDark ? '#233222' : '#d2ded0';
+                e.currentTarget.style.color = isDark ? '#cdd8c5' : '#3f533a';
+                e.currentTarget.style.transform = 'translateX(0)';
+              }}
+            >
+              <span style={{ fontSize: '1rem', lineHeight: '1' }}>←</span>
+              <span>Back to Home</span>
+            </button>
+
             <button
               onClick={toggleTheme}
               style={{
                 background: 'none',
                 border: `1px solid ${isDark ? '#233222' : '#d2ded0'}`,
-                padding: '6px 14px',
-                borderRadius: '6px',
+                padding: '7px 14px',
+                borderRadius: '8px',
                 fontSize: '0.75rem',
                 fontFamily: "'JetBrains Mono', monospace",
                 fontWeight: '700',
                 cursor: 'pointer',
-                color: isDark ? '#cdd8c5' : '#3f533a'
+                color: isDark ? '#cdd8c5' : '#3f533a',
+                transition: 'all 0.15s ease'
               }}
             >
               {isDark ? 'LIGHT MODE' : 'DARK MODE'}
@@ -566,8 +627,8 @@ const Login = () => {
 
           </div>
 
-          {/* Claude-Style Floating Bottom Pill Button */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
+          {/* Claude-Style Floating Bottom Pill Button & Return Link */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
             <Link
               to="/register"
               style={{
@@ -587,6 +648,25 @@ const Login = () => {
             >
               <span style={{ fontSize: '1.1rem', lineHeight: '1' }}>+</span>
               <span>Enroll new patient record</span>
+            </Link>
+
+            <Link
+              to="/"
+              style={{
+                fontSize: '0.82rem',
+                fontFamily: "'JetBrains Mono', monospace",
+                color: isDark ? '#7a8e74' : '#546b4f',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'color 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = isDark ? '#34d399' : '#273822'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = isDark ? '#7a8e74' : '#546b4f'; }}
+            >
+              <span>←</span>
+              <span>Return to Public Landing Page</span>
             </Link>
           </div>
 

@@ -8,10 +8,19 @@ const Landing = () => {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
 
-  // Intro Splash Animation State (plays on initial visit / refresh)
-  const [showIntro, setShowIntro] = useState(true);
+  // Intro Splash Animation State (plays on initial visit, remembers across navigation in session)
+  const [showIntro, setShowIntro] = useState(() => {
+    try {
+      return !sessionStorage.getItem('cogniveil_intro_seen');
+    } catch (e) {
+      return true;
+    }
+  });
 
   const handleIntroComplete = () => {
+    try {
+      sessionStorage.setItem('cogniveil_intro_seen', 'true');
+    } catch (e) {}
     setShowIntro(false);
   };
 
@@ -549,7 +558,12 @@ const Landing = () => {
       {/* ── CLINICAL INTRO SPLASH ANIMATION ── */}
       <IntroSplash
         isOpen={showIntro}
-        onClose={() => setShowIntro(false)}
+        onClose={() => {
+          try {
+            sessionStorage.setItem('cogniveil_intro_seen', 'true');
+          } catch (e) {}
+          setShowIntro(false);
+        }}
         onComplete={handleIntroComplete}
       />
 
