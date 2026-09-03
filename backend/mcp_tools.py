@@ -240,11 +240,26 @@ def detect_language(text: str = None, sample_id: str = None) -> dict:
 # =============================================================================
 # MCP Tool 08: analyze_voice
 # =============================================================================
-def analyze_voice(features: dict, transcript: str = "", language_hint: str = "en") -> dict:
+def analyze_voice(
+    features: dict,
+    transcript: str = "",
+    language_hint: str = "en",
+    baseline: Optional[dict] = None,
+    historical_records: Optional[list] = None,
+) -> dict:
     """Interprets derived speech acoustic biomarkers and lexical features."""
     lang_info = detect_language(transcript) if transcript.strip() else {"detected_language": "English", "language_code": language_hint}
-    features_with_lang = {**features, "detected_language": lang_info["detected_language"]}
-    return voice_agent.analyze(features_with_lang, transcript=transcript)
+    features_with_lang = {
+        **features,
+        "detected_language": lang_info["detected_language"],
+        "language_code": lang_info.get("language_code", language_hint),
+    }
+    return voice_agent.analyze(
+        features_with_lang,
+        transcript=transcript,
+        baseline=baseline,
+        historical_records=historical_records,
+    )
 
 analyse_voice = analyze_voice
 

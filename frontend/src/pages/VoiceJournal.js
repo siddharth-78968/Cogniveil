@@ -10,6 +10,7 @@ const VoiceJournal = () => {
   const [audioURL, setAudioURL] = useState(null);
   const [analysing, setAnalysing] = useState(false);
   const [result, setResult] = useState(null);
+  const [qualityError, setQualityError] = useState(null);
   const [timer, setTimer] = useState(0);
   const [prompt, setPrompt] = useState('');
   const [ripple, setRipple] = useState(false);
@@ -40,7 +41,6 @@ const VoiceJournal = () => {
       fetchClinicianVoiceData();
     }
   }, [isClinician]); // eslint-disable-line react-hooks/exhaustive-deps
-
 
   const fetchClinicianVoiceData = async () => {
     try {
@@ -85,13 +85,15 @@ const VoiceJournal = () => {
   const meterInterval = useRef(null);
   const rmsSamples = useRef([]);
 
-const prompts = useMemo(() => [
-  "Describe what you did this morning in as much detail as you can.",
-  "Tell me about a memorable trip or vacation you took.",
-  "Describe your favourite meal and how it is prepared.",
-  "Talk about a person who has been important in your life.",
-  "Describe the neighbourhood or area where you grew up.",
-], []);
+  // Standardized Narrative Tasks for Longitudinal Comparability
+  const prompts = useMemo(() => [
+    "Describe what you did yesterday from morning to evening in as much detail as you can.",
+    "Describe your daily morning routine step by step from when you wake up.",
+    "Tell me about a memorable trip or activity you enjoyed recently.",
+    "Describe your favourite meal and explain how it is prepared.",
+    "Describe the neighbourhood or area where you spent time growing up.",
+  ], []);
+
   useEffect(() => {
     const random = prompts[Math.floor(Math.random() * prompts.length)];
     setPrompt(random);
@@ -99,6 +101,7 @@ const prompts = useMemo(() => [
 
   const startRecording = async () => {
     try {
+      setQualityError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const preferredMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : undefined;
       mediaRecorder.current = new MediaRecorder(stream, preferredMime ? { mimeType: preferredMime } : undefined);
@@ -172,48 +175,88 @@ const prompts = useMemo(() => [
 
   const analyseAudio = async (audioBlob) => {
     setAnalysing(true);
+    setQualityError(null);
     try {
       const duration = timerRef.current || 10;
       const samples = rmsSamples.current;
       const activityThreshold = Math.max(0.012, (samples.reduce((sum, value) => sum + value, 0) / Math.max(samples.length, 1)) * 0.55);
       const active = samples.map(value => value >= activityThreshold);
-      let pauseCount = 0;
-      let silenceFrames = 0;
+      
+      const pauseDurationsMs = [];
+      let currentPauseFrames = 0;
       active.forEach(isActive => {
-        if (isActive) silenceFrames = 0;
-        else {
-          silenceFrames += 1;
-          if (silenceFrames === 5) pauseCount += 1; // 0.5 seconds at 100 ms sampling
+        if (isActive) {
+          if (currentPauseFrames >= 2) {
+            pauseDurationsMs.push(currentPauseFrames * 100);
+          }
+          currentPauseFrames = 0;
+        } else {
+          currentPauseFrames += 1;
         }
       });
+      if (currentPauseFrames >= 2) {
+        pauseDurationsMs.push(currentPauseFrames * 100);
+      }
+
+      const meanRms = samples.reduce((sum, value) => sum + value, 0) / Math.max(samples.length, 1);
+      const maxRms = samples.length > 0 ? Math.max(...samples) : meanRms;
+
       const features = {
         duration_seconds: duration,
         speech_activity_ratio: active.filter(Boolean).length / Math.max(active.length, 1),
-        pause_count: pauseCount,
-        mean_rms: samples.reduce((sum, value) => sum + value, 0) / Math.max(samples.length, 1),
+        pause_count: pauseDurationsMs.length,
+        pause_durations_ms: pauseDurationsMs,
+        mean_rms: meanRms,
+        max_rms: maxRms,
       };
+
       const formData = new FormData();
       formData.append('audio', audioBlob, `voice-journal-${Date.now()}.webm`);
       formData.append('features_json', JSON.stringify(features));
       formData.append('transcript', transcriptRef.current);
       formData.append('language_hint', selectedLang);
+
       const response = await analyseVoice(formData);
       const analysis = response.data;
+
+      // Check for audio quality rejection
+      if (analysis.status === 'insufficient_audio') {
+        setQualityError({
+          reason: analysis.reason || 'Audio quality insufficient for reliable analysis.',
+          recommendation: analysis.recommendation || 'Please record again in a quiet room and speak clearly for at least 10 seconds.'
+        });
+        setAnalysing(false);
+        return;
+      }
+
       if (analysis.transcript) setTranscript(analysis.transcript);
       setLangInfo({ detected_language: analysis.detected_language, whisper_mode: analysis.analysis_method });
+      
+      const pauseAnalysis = analysis.pause_analysis || {};
+      const lingMetrics = analysis.linguistic_metrics || {};
+      const baseline = analysis.personal_baseline || {};
+      const dataConf = analysis.data_confidence || {};
+
       setResult({
         duration: analysis.duration_seconds,
         wordsPerMinute: analysis.words_per_minute ?? 'Unavailable',
         pauseFrequency: `${analysis.pause_rate_per_minute} / min`,
+        meanPauseMs: pauseAnalysis.mean_pause_duration_ms ? `${Math.round(pauseAnalysis.mean_pause_duration_ms)} ms` : '500 ms',
         fluency: `${Math.round(analysis.speech_activity_ratio * 100)}% active speech`,
+        pauseRatio: `${Math.round((pauseAnalysis.pause_to_speech_ratio || (1.0 - analysis.speech_activity_ratio)) * 100)}%`,
         vocabularyRichness: analysis.vocabulary_richness === null ? 'Unavailable' : `${Math.round(analysis.vocabulary_richness * 100)}% unique`,
         voiceScore: analysis.voice_score,
         risk: analysis.risk_level,
+        trajectory: analysis.trajectory || 'Stable',
+        confidence: dataConf.overall_confidence || 'Moderate',
+        audioQuality: analysis.quality_assessment?.quality_level || 'Good',
+        explanation: analysis.explanation,
+        baselineData: baseline,
         transcriptAvailable: analysis.transcript_available,
         transcriptionEngine: analysis.transcription?.engine || 'browser-speech-recognition',
       });
-      // Refresh today's single session score so the voice task contributes to
-      // the same longitudinal baseline record as today's cognitive tasks.
+
+      // Refresh today's score
       await calculateScore().catch(() => {});
       setAnalysing(false);
     } catch (e) {
@@ -242,14 +285,14 @@ const prompts = useMemo(() => [
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.25rem' }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#0F4C4A' }} />
                 <span style={{ fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.08em', color: '#287C78' }}>
-                  CLINICIAN WORKSPACE · ACOUSTIC SPEECH TELEMETRY
+                  CLINICIAN WORKSPACE · MULTIMODAL SPEECH & LANGUAGE TELEMETRY
                 </span>
               </div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0 0 0.35rem 0' }}>
-                Patient Acoustic Speech Biomarkers
+                Patient Acoustic & Linguistic Biomarkers
               </h1>
               <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
-                Analyze temporal speech hesitation, pause-to-speech ratio, articulation syllable cadence, and formant dispersion.
+                Analyze temporal speech hesitation, pause-to-speech ratio, articulation cadence, and personal baseline shifts.
               </p>
             </div>
 
@@ -307,7 +350,7 @@ const prompts = useMemo(() => [
                   <div style={{ fontSize: '1.6rem', fontWeight: '800', color: profile.mean_pause_duration_ms > 600 ? '#C94C4C' : '#1e293b' }}>
                     {profile.mean_pause_duration_ms} <span style={{ fontSize: '0.8rem' }}>ms</span>
                   </div>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Normative: &lt; 500 ms</span>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Normative: &lt; 550 ms</span>
                 </div>
 
                 <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
@@ -315,23 +358,23 @@ const prompts = useMemo(() => [
                   <div style={{ fontSize: '1.6rem', fontWeight: '800', color: profile.pause_to_speech_ratio > 0.25 ? '#C94C4C' : '#1e293b' }}>
                     {Math.round(profile.pause_to_speech_ratio * 100)}%
                   </div>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Normative: &lt; 20%</span>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Normative: &lt; 22%</span>
                 </div>
 
                 <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
-                  <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b' }}>ARTICULATION RATE</span>
-                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: profile.articulation_rate_syl_per_sec < 4.0 ? '#D97745' : '#1e293b' }}>
-                    {profile.articulation_rate_syl_per_sec} <span style={{ fontSize: '0.8rem' }}>syl/sec</span>
+                  <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b' }}>SPEECH CADENCE</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: profile.speech_rate_wpm < 100 ? '#D97745' : '#1e293b' }}>
+                    {profile.speech_rate_wpm} <span style={{ fontSize: '0.8rem' }}>WPM</span>
                   </div>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Normative: &gt; 4.5 syl/sec</span>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Normative: &gt; 110 WPM</span>
                 </div>
 
                 <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
-                  <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b' }}>FORMANT DISPERSION (F1/F2)</span>
-                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0F4C4A' }}>
-                    {profile.formant_dispersion_f1_f2_ratio}
+                  <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b' }}>VOICE TRAJECTORY</span>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '800', color: profile.trajectory === 'Stable' ? '#0F4C4A' : '#C94C4C', marginTop: '4px' }}>
+                    {profile.trajectory || 'Stable'}
                   </div>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Vocal tract vowel space ratio</span>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Personal baseline trajectory</span>
                 </div>
               </div>
 
@@ -356,9 +399,14 @@ const prompts = useMemo(() => [
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.76rem', fontWeight: '800', color: '#4338CA' }}>{t.date}</span>
-                        <span style={{ fontSize: '0.72rem', fontWeight: '700', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#E0FCFF', color: '#0F4C4A' }}>
-                          Fluency Score: {t.fluency_score} / 100
-                        </span>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: '700', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#E0FCFF', color: '#0F4C4A' }}>
+                            Fluency Score: {t.fluency_score} / 100
+                          </span>
+                          <span style={{ fontSize: '0.72rem', fontWeight: '700', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#F1F5F9', color: '#475569' }}>
+                            {t.trajectory || 'Monitored'}
+                          </span>
+                        </div>
                       </div>
                       <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: '600', color: '#64748b' }}>Prompt: "{t.prompt}"</p>
                       <p style={{ margin: 0, fontSize: '0.88rem', fontStyle: 'italic', color: '#1e293b', backgroundColor: '#FFFFFF', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #eef2f6' }}>
@@ -398,9 +446,9 @@ const prompts = useMemo(() => [
         )}
         <div style={styles.headerRow}>
           <div>
-            <p style={styles.pageLabel}>SPEECH BIOMARKER ANALYSIS</p>
-            <h1 style={styles.pageTitle}>Voice Journal & Acoustic Screening</h1>
-            <p style={styles.pageSub}>Speak naturally in your preferred language. AI automatically routes to multilingual Whisper model.</p>
+            <p style={styles.pageLabel}>SPEECH & LANGUAGE ANALYSIS</p>
+            <h1 style={styles.pageTitle}>Voice Journal & Early Screening</h1>
+            <p style={styles.pageSub}>Speak naturally in your preferred language. AI measures cadence, pause patterns, and personal baseline trends.</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
             <label style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: '700' }}>SELECT LANGUAGE</label>
@@ -439,9 +487,33 @@ const prompts = useMemo(() => [
 
         {/* Prompt card */}
         <div style={styles.promptCard}>
-          <div style={styles.promptBadge}>TODAY'S PROMPT</div>
+          <div style={styles.promptBadge}>TODAY'S NARRATIVE TASK</div>
           <p style={styles.promptText}>"{prompt}"</p>
         </div>
+
+        {/* Quality Error Notice */}
+        {qualityError && (
+          <div style={{
+            padding: '1.25rem',
+            backgroundColor: '#FEF2F2',
+            border: '1.5px solid #F87171',
+            borderRadius: '14px',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#B91C1C', fontWeight: '800', fontSize: '0.9rem' }}>
+              <span>⚠️</span> Audio Quality Notice
+            </div>
+            <p style={{ margin: 0, color: '#7F1D1D', fontSize: '0.85rem', fontWeight: '600' }}>
+              {qualityError.reason}
+            </p>
+            <p style={{ margin: 0, color: '#991B1B', fontSize: '0.78rem' }}>
+              {qualityError.recommendation}
+            </p>
+          </div>
+        )}
 
         {/* Recorder */}
         {!result && (
@@ -475,7 +547,7 @@ const prompts = useMemo(() => [
                 )}
 
                 {!recording && !audioURL && (
-                  <p style={styles.hintText}>Press the button below and speak clearly</p>
+                  <p style={styles.hintText}>Press the button below and speak continuously for 15-30 seconds</p>
                 )}
 
                 {/* Waveform bars when recording */}
@@ -504,14 +576,14 @@ const prompts = useMemo(() => [
                 </button>
 
                 {timer > 0 && timer < 10 && !recording && (
-                  <p style={styles.tooShortText}>⚠️ Too short — please speak for at least 10 seconds</p>
+                  <p style={styles.tooShortText}>⚠️ Too short — please speak for at least 10 seconds for reliable analysis</p>
                 )}
               </>
             ) : (
               <div style={styles.analysingBox}>
                 <div style={styles.analysingSpinner}>
-                  {['Analysing pause patterns...', 'Measuring fluency...', 'Scoring vocabulary richness...'].map((t, i) => (
-                    <div key={i} style={{ ...styles.analysingStep, animationDelay: `${i * 0.4}s` }}>
+                  {['Validating audio quality...', 'Extracting pause distributions...', 'Computing lexical diversity...', 'Evaluating personal baseline...'].map((t, i) => (
+                    <div key={i} style={{ ...styles.analysingStep, animationDelay: `${i * 0.35}s` }}>
                       <div style={styles.analysingDot} />
                       <span>{t}</span>
                     </div>
@@ -524,89 +596,139 @@ const prompts = useMemo(() => [
 
         {/* Results */}
         {result && (
-          <div style={styles.resultsGrid}>
-            {/* Score card */}
-            <div style={{
-              ...styles.scoreCard,
-              boxShadow: `0 0 40px ${getRiskColor(result.risk)}22`,
-              border: `1px solid ${getRiskColor(result.risk)}22`,
-            }}>
-              <p style={styles.cardLabel}>VOICE SCORE</p>
-              <div style={styles.ringWrapper}>
-                <svg width="120" height="120" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="#1a2540" strokeWidth="8" />
-                  <circle
-                    cx="50" cy="50" r="40"
-                    fill="none"
-                    stroke={getRiskColor(result.risk)}
-                    strokeWidth="8"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={offset}
-                    strokeLinecap="round"
-                    transform="rotate(-90 50 50)"
-                    style={{ transition: 'stroke-dashoffset 1s ease' }}
-                  />
-                </svg>
-                <div style={styles.ringCenter}>
-                  <span style={{ ...styles.scoreNum, color: getRiskColor(result.risk) }}>{result.voiceScore}</span>
-                  <span style={styles.scoreOf}>/100</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={styles.resultsGrid}>
+              {/* Score card */}
+              <div style={{
+                ...styles.scoreCard,
+                boxShadow: `0 0 40px ${getRiskColor(result.risk)}22`,
+                border: `1px solid ${getRiskColor(result.risk)}22`,
+              }}>
+                <p style={styles.cardLabel}>VOICE SCORE</p>
+                <div style={styles.ringWrapper}>
+                  <svg width="120" height="120" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#1a2540" strokeWidth="8" />
+                    <circle
+                      cx="50" cy="50" r="40"
+                      fill="none"
+                      stroke={getRiskColor(result.risk)}
+                      strokeWidth="8"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={offset}
+                      strokeLinecap="round"
+                      transform="rotate(-90 50 50)"
+                      style={{ transition: 'stroke-dashoffset 1s ease' }}
+                    />
+                  </svg>
+                  <div style={styles.ringCenter}>
+                    <span style={{ ...styles.scoreNum, color: getRiskColor(result.risk) }}>{result.voiceScore}</span>
+                    <span style={styles.scoreOf}>/100</span>
+                  </div>
+                </div>
+                <div style={{
+                  ...styles.riskPill,
+                  backgroundColor: getRiskColor(result.risk) + '20',
+                  border: `1px solid ${getRiskColor(result.risk)}44`,
+                  color: getRiskColor(result.risk),
+                }}>
+                  {result.risk === 'Low' ? '✓' : result.risk === 'Moderate' ? '⚡' : '⚠️'} {result.risk} Risk
+                </div>
+                <div style={{ display: 'flex', gap: '8px', fontSize: '0.72rem', color: '#64748b' }}>
+                  <span>Quality: <b>{result.audioQuality}</b></span>
+                  <span>·</span>
+                  <span>Confidence: <b>{result.confidence}</b></span>
                 </div>
               </div>
-              <div style={{
-                ...styles.riskPill,
-                backgroundColor: getRiskColor(result.risk) + '20',
-                border: `1px solid ${getRiskColor(result.risk)}44`,
-                color: getRiskColor(result.risk),
-              }}>
-                {result.risk === 'Low' ? '✓' : result.risk === 'Moderate' ? '⚡' : '⚠️'} {result.risk} Risk
+
+              {/* Metrics */}
+              <div style={styles.metricsCol}>
+                <p style={styles.cardLabel}>BIOMARKER BREAKDOWN</p>
+                <div style={styles.metricsGrid}>
+                  {[
+                    { label: 'Speech Rate', value: `${result.wordsPerMinute} WPM`, icon: '💬' },
+                    { label: 'Pause Ratio', value: result.pauseRatio, icon: '⏸' },
+                    { label: 'Mean Pause Duration', value: result.meanPauseMs, icon: '⏱' },
+                    { label: 'Lexical Diversity', value: result.vocabularyRichness, icon: '📚' },
+                  ].map((m, i) => (
+                    <div key={i} style={styles.metricCard}>
+                      <span style={styles.metricIcon}>{m.icon}</span>
+                      <div>
+                        <p style={styles.metricLabel}>{m.label}</p>
+                        <p style={styles.metricValue}>{m.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {audioURL && (
+                  <div style={styles.audioCard}>
+                    <p style={styles.cardLabel}>YOUR RECORDING</p>
+                    <audio controls src={audioURL} style={styles.audio} />
+                    <p style={{ color: '#475569', fontSize: '0.78rem', lineHeight: 1.5, marginTop: '0.75rem' }}>
+                      {result.transcriptAvailable
+                        ? `Captured transcript (${transcript.split(/\s+/).filter(Boolean).length} words) via ${result.transcriptionEngine}.`
+                        : 'Scored using measured acoustic speech activity and pause distributions.'}
+                    </p>
+                  </div>
+                )}
               </div>
-              <p style={styles.durationText}>Duration: {result.duration}s</p>
             </div>
 
-            {/* Metrics */}
-            <div style={styles.metricsCol}>
-              <p style={styles.cardLabel}>BIOMARKER BREAKDOWN</p>
-              <div style={styles.metricsGrid}>
-                {[
-                  { label: 'Words / Minute', value: result.wordsPerMinute, icon: '💬' },
-                  { label: 'Pause Frequency', value: result.pauseFrequency, icon: '⏸' },
-                  { label: 'Speech Fluency', value: result.fluency, icon: '🔊' },
-                  { label: 'Vocabulary', value: result.vocabularyRichness, icon: '📚' },
-                ].map((m, i) => (
-                  <div key={i} style={styles.metricCard}>
-                    <span style={styles.metricIcon}>{m.icon}</span>
-                    <div>
-                      <p style={styles.metricLabel}>{m.label}</p>
-                      <p style={styles.metricValue}>{m.value}</p>
-                    </div>
+            {/* Personal Baseline Trajectory Card */}
+            {result.baselineData && result.baselineData.deviations_table && (
+              <div style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '16px',
+                border: '1px solid #eef2f6',
+                padding: '1.5rem',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#4338CA', letterSpacing: '0.08em' }}>
+                      PERSONAL VOICE BASELINE
+                    </span>
+                    <h3 style={{ margin: '0.2rem 0 0 0', fontSize: '1.1rem', fontWeight: '800', color: '#1e293b' }}>
+                      Voice Trajectory: <span style={{ color: result.trajectory === 'Stable' ? '#0F4C4A' : '#C94C4C' }}>{result.trajectory}</span>
+                    </h3>
                   </div>
-                ))}
-              </div>
-
-              {audioURL && (
-                <div style={styles.audioCard}>
-                  <p style={styles.cardLabel}>YOUR RECORDING</p>
-                  <audio controls src={audioURL} style={styles.audio} />
-                  <p style={{ color: '#ffffff45', fontSize: '0.76rem', lineHeight: 1.5, marginTop: '0.75rem' }}>
-                    {result.transcriptAvailable
-                      ? `Transcript captured (${transcript.split(/\s+/).filter(Boolean).length} words) via ${result.transcriptionEngine}.`
-                      : 'No browser transcript was available; the score uses measured speech activity and pauses only.'}
-                  </p>
+                  <span style={{ fontSize: '0.75rem', fontWeight: '700', padding: '4px 10px', borderRadius: '8px', backgroundColor: '#F1F5F9', color: '#475569' }}>
+                    {result.baselineData.historical_sessions_count > 1 ? `${result.baselineData.historical_sessions_count} Previous Sessions` : 'Initial Baseline Calibration'}
+                  </span>
                 </div>
-              )}
 
-              <div style={styles.actionRow}>
-                <button style={styles.retryBtn} onClick={() => {
-                  setResult(null); setAudioURL(null); setTimer(0); timerRef.current = 0;
-                  const r = prompts[Math.floor(Math.random() * prompts.length)];
-                  setPrompt(r);
-                }}>
-                  🔄 Record Again
-                </button>
-                <button style={styles.doneBtn} onClick={() => navigate('/dashboard')}>
-                  View Dashboard →
-                </button>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                  {Object.entries(result.baselineData.deviations_table).map(([k, d]) => (
+                    <div key={k} style={{ padding: '0.85rem', backgroundColor: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#64748b' }}>{d.name}</span>
+                      <div style={{ fontSize: '1rem', fontWeight: '800', color: '#1e293b', marginTop: '2px' }}>
+                        {d.current} <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600' }}>(Base: {d.baseline})</span>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: '700', marginTop: '4px', color: Math.abs(d.change_pct) > 15 ? '#D97745' : '#0F4C4A' }}>
+                        {d.change_pct > 0 ? `+${d.change_pct}%` : `${d.change_pct}%`} · {d.direction}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <p style={{ margin: '1rem 0 0 0', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5, fontStyle: 'italic' }}>
+                  "{result.explanation || result.baselineData.trajectory_description}"
+                </p>
               </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={styles.actionRow}>
+              <button style={styles.retryBtn} onClick={() => {
+                setResult(null); setAudioURL(null); setTimer(0); timerRef.current = 0;
+                const r = prompts[Math.floor(Math.random() * prompts.length)];
+                setPrompt(r);
+              }}>
+                🔄 Record Another Entry
+              </button>
+              <button style={styles.doneBtn} onClick={() => navigate('/dashboard')}>
+                View Dashboard →
+              </button>
             </div>
           </div>
         )}
@@ -687,7 +809,6 @@ const styles = {
   scoreNum: { fontSize: '2.2rem', fontWeight: '800', lineHeight: 1 },
   scoreOf: { color: '#94a3b8', fontSize: '0.75rem', fontWeight: '600' },
   riskPill: { padding: '0.4rem 1.2rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700' },
-  durationText: { color: '#94a3b8', fontSize: '0.75rem' },
   metricsCol: { flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '1rem' },
   metricsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' },
   metricCard: {

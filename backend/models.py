@@ -70,6 +70,7 @@ class TestResult(Base):
     test_type = Column(String)
     score = Column(Float)
     duration_seconds = Column(Float)
+    metadata_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class AuditLog(Base):

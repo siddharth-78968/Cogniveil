@@ -1,12 +1,20 @@
 """VoiceAnalysisAgent for CogniVeil.
 
-Decomposes acoustic biomarkers and speech linguistics into explicit subdomains:
-  Speech Rate, Pause Pattern, Vocabulary Richness, Energy Stability, and Semantic Coherence.
-Calculates % baseline comparisons and generates explainable non-diagnostic speech indicators.
+Decomposes acoustic biomarkers, fine-grained pause distributions, and speech linguistics
+into explicit subdomains: Speech Rate, Pause Pattern, Vocabulary Richness, Energy Stability,
+and Semantic Coherence. Calculates % personal baseline comparisons and generates explainable
+non-diagnostic speech indicators for early cognitive-change monitoring.
 """
 
 from typing import Dict, Any, Optional, List
 import re
+from services.voice_analysis import (
+    validate_audio_quality,
+    analyze_detailed_pauses,
+    extract_linguistic_metrics,
+    compute_personal_baseline,
+    evaluate_data_confidence,
+)
 
 
 class VoiceAnalysisAgent:
@@ -15,50 +23,84 @@ class VoiceAnalysisAgent:
     AGENT_NAME = "VoiceAnalysisAgent"
     VERSION = "2026.1"
 
-    def analyze(self, features: Dict[str, Any], transcript: str = "", baseline: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def analyze(
+        self,
+        features: Optional[Dict[str, Any]] = None,
+        transcript: str = "",
+        baseline: Optional[Dict[str, Any]] = None,
+        historical_records: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
         """Reason over acoustic parameters and transcript linguistics with subdomain breakdown.
 
         Returns:
-            Structured speech cognitive indicator dictionary with sub-scores, % deltas, and reasoning.
+            Structured speech cognitive indicator dictionary with sub-scores, % deltas,
+            pause distributions, linguistic metrics, personal baseline, and reasoning.
         """
-        # 1. Parameter Extraction
-        duration = max(1.0, float(features.get("duration_seconds", 30.0)))
-        activity_ratio = min(1.0, max(0.0, float(features.get("speech_activity_ratio", 0.65))))
-        pause_count = int(features.get("pause_count", 6))
-        pause_rate = float(features.get("pause_rate_per_minute", (pause_count / max(duration / 60.0, 0.25))))
-        mean_pause_duration = float(features.get("mean_pause_duration", 0.85))
-        long_pause_frequency = float(features.get("long_pause_frequency", pause_count * 0.3))
-        mean_rms = float(features.get("mean_rms", 0.045))
-        pitch_variability = float(features.get("pitch_variability", 28.5))
+        feats = features or {}
+        duration = max(1.0, float(feats.get("duration_seconds", 30.0)))
+        activity_ratio = min(1.0, max(0.0, float(feats.get("speech_activity_ratio", 0.65))))
+        mean_rms = float(feats.get("mean_rms", 0.045))
+        pitch_variability = float(feats.get("pitch_variability", 28.5))
+        detected_language = str(feats.get("detected_language", "English"))
+        language_code = str(feats.get("language_code", "en"))
 
-        words = re.findall(r"\b[\w']+\b", transcript, flags=re.UNICODE) if transcript else []
-        word_count = len(words)
-        wpm = float(features.get("words_per_minute", round((word_count / duration) * 60, 1) if word_count > 0 else 115.0))
+        # 1. Quality Validation
+        quality_eval = validate_audio_quality(feats, transcript=transcript)
 
-        # Lexical Richness
-        unique_words = set(w.lower() for w in words)
-        lexical_diversity = round(len(unique_words) / max(word_count, 1), 3) if word_count > 0 else 0.72
-        vocabulary_richness = float(features.get("vocabulary_richness", lexical_diversity))
+        # 2. Detailed Pause Analysis
+        pause_analysis = analyze_detailed_pauses(
+            duration_seconds=duration,
+            pause_data=feats,
+            default_pause_count=int(feats.get("pause_count", 6)),
+            default_activity_ratio=activity_ratio,
+        )
+        pause_count = pause_analysis["pause_count"]
+        pause_rate = pause_analysis["pause_rate_per_minute"]
+        mean_pause_duration = pause_analysis["mean_pause_duration_ms"] / 1000.0  # in seconds for backward compatibility
+        long_pause_frequency = pause_analysis["pauses_gt_1000ms"]
 
-        # Word-finding indicators
-        filler_tokens = {"uh", "um", "ah", "er", "erm", "like", "matlab", "yani", "hmm"}
-        filler_count = sum(1 for w in words if w.lower() in filler_tokens)
-        filler_pct = round((filler_count / max(word_count, 1)) * 100.0, 1)
-        word_finding_index = round(min(1.0, (filler_pct / 15.0) * 0.4 + (long_pause_frequency / 10.0) * 0.4), 2)
+        # 3. Linguistic & Lexical Metrics
+        ling_metrics = extract_linguistic_metrics(transcript, duration_seconds=duration, language_code=language_code)
+        word_count = ling_metrics["word_count"]
+        wpm = float(feats.get("words_per_minute", ling_metrics["words_per_minute"] if word_count > 0 else 115.0))
+        lexical_diversity = ling_metrics["lexical_diversity"]
+        vocabulary_richness = float(feats.get("vocabulary_richness", lexical_diversity))
+        filler_pct = ling_metrics["filler_frequency_pct"]
+        word_finding_index = ling_metrics["hesitation_proxy_score"]
 
-        # Baseline References
-        base_wpm = float(baseline.get("wpm", 125.0)) if baseline else 125.0
-        base_pause_rate = float(baseline.get("pause_rate", 8.0)) if baseline else 8.0
-        base_richness = float(baseline.get("vocabulary_richness", 0.70)) if baseline else 0.70
-        base_rms = float(baseline.get("mean_rms", 0.045)) if baseline else 0.045
+        # 4. Personal Baseline Calculation
+        current_metrics_map = {
+            "words_per_minute": wpm,
+            "pause_to_speech_ratio": pause_analysis["pause_to_speech_ratio"],
+            "mean_pause_duration_ms": pause_analysis["mean_pause_duration_ms"],
+            "lexical_diversity": lexical_diversity,
+            "voice_score": 80.0,  # updated after score calculation
+        }
+        
+        if historical_records and len(historical_records) > 0:
+            baseline_result = compute_personal_baseline(historical_records, current_metrics_map)
+            base_wpm = baseline_result["baseline_metrics"]["words_per_minute"]
+            base_pause_rate = round(baseline_result["baseline_metrics"]["pause_to_speech_ratio"] * 60.0 / 2.5, 1)
+            base_richness = baseline_result["baseline_metrics"]["lexical_diversity"]
+            base_rms = 0.045
+            wpm_delta_pct = baseline_result["percentage_changes"]["words_per_minute"]
+            pause_delta_pct = baseline_result["percentage_changes"]["pause_to_speech_ratio"]
+            richness_delta_pct = baseline_result["percentage_changes"]["lexical_diversity"]
+            rms_delta_pct = 0.0
+            trajectory = baseline_result["trajectory"]
+        else:
+            base_wpm = float(baseline.get("wpm", 125.0)) if baseline else 125.0
+            base_pause_rate = float(baseline.get("pause_rate", 8.0)) if baseline else 8.0
+            base_richness = float(baseline.get("vocabulary_richness", 0.70)) if baseline else 0.70
+            base_rms = float(baseline.get("mean_rms", 0.045)) if baseline else 0.045
+            wpm_delta_pct = round(((wpm - base_wpm) / max(base_wpm, 1.0)) * 100.0, 1)
+            pause_delta_pct = round(((pause_rate - base_pause_rate) / max(base_pause_rate, 0.1)) * 100.0, 1)
+            richness_delta_pct = round(((vocabulary_richness - base_richness) / max(base_richness, 0.1)) * 100.0, 1)
+            rms_delta_pct = round(((mean_rms - base_rms) / max(base_rms, 0.001)) * 100.0, 1)
+            baseline_result = compute_personal_baseline([], current_metrics_map)
+            trajectory = "Stable" if (pause_delta_pct <= 15.0 and wpm_delta_pct >= -10.0) else ("Minor Change" if (pause_delta_pct <= 35.0 and wpm_delta_pct >= -18.0) else "Change Detected")
 
-        # Calculate % changes
-        wpm_delta_pct = round(((wpm - base_wpm) / max(base_wpm, 1.0)) * 100.0, 1)
-        pause_delta_pct = round(((pause_rate - base_pause_rate) / max(base_pause_rate, 0.1)) * 100.0, 1)
-        richness_delta_pct = round(((vocabulary_richness - base_richness) / max(base_richness, 0.1)) * 100.0, 1)
-        rms_delta_pct = round(((mean_rms - base_rms) / max(base_rms, 0.001)) * 100.0, 1)
-
-        # Explicit Subdomain Scores (0-100 scale)
+        # 5. Explicit Subdomain Scores (0-100 scale, strictly preserved formula)
         # 1. Speech Rate Score
         speech_rate_score = round(max(0.0, min(100.0, 100.0 - abs(wpm - 120.0) * 0.7)), 1)
         # 2. Pause Pattern Score
@@ -70,7 +112,7 @@ class VoiceAnalysisAgent:
         # 5. Semantic Coherence Score
         coherence_score = round(max(0.0, min(100.0, 100.0 - (word_finding_index * 35.0))), 1)
 
-        # Composite Voice Score (0-100)
+        # Composite Voice Score (0-100, preserved backward-compatible formula)
         voice_score = round(
             0.30 * speech_rate_score +
             0.25 * pause_pattern_score +
@@ -79,6 +121,9 @@ class VoiceAnalysisAgent:
             0.10 * coherence_score,
             1
         )
+
+        # Update baseline result with computed voice score
+        baseline_result["baseline_metrics"]["voice_score"] = voice_score
 
         # Status & Trend
         if pause_delta_pct > 35.0 or wpm_delta_pct < -18.0:
@@ -91,9 +136,16 @@ class VoiceAnalysisAgent:
             speech_status = "normal"
             trend = "stable"
 
-        confidence = round(min(0.96, 0.70 + 0.15 * min(duration / 30.0, 1.0) + 0.10 * float(features.get("transcription_confidence", 0.9))), 2)
+        # Data Confidence
+        data_conf = evaluate_data_confidence(
+            duration_seconds=duration,
+            audio_quality_score=quality_eval["quality_score"],
+            transcript_available=ling_metrics["transcript_available"],
+            transcription_confidence=float(feats.get("transcription_confidence", 0.90)),
+            history_count=baseline_result["historical_sessions_count"],
+        )
+        confidence = data_conf["confidence_score"]
         risk_level = "Low" if voice_score >= 65 else "Moderate" if voice_score >= 40 else "High"
-        detected_language = str(features.get("detected_language", "English"))
 
         # Subdomain Metrics Table
         metrics_table = {
@@ -145,6 +197,7 @@ class VoiceAnalysisAgent:
             "speech_status": speech_status,
             "status": speech_status,
             "trend": trend,
+            "trajectory": trajectory,
             "confidence": confidence,
             "risk_level": risk_level,
             "detected_language": detected_language,
@@ -164,16 +217,58 @@ class VoiceAnalysisAgent:
             "metrics": metrics_table,
             "explanation": reasoning,
             "reasoning": reasoning,
+            "quality_assessment": quality_eval,
+            "pause_analysis": pause_analysis,
+            "linguistic_metrics": ling_metrics,
+            "literature_features": {
+                # 1. TTR (Type-Token Ratio) = unique_words / total_words
+                # Source: Stringer et al. 2018, Int J Geriatr Psychiatry; Jahan et al. 2024, Discover Sustainability
+                "TTR": ling_metrics["ttr"],
+                "type_token_ratio": ling_metrics["ttr"],
+                # 2. content_density = (verb_count + noun_count + adjective_count + adverb_count) / total_words
+                # Source: Stringer et al. 2018, Int J Geriatr Psychiatry; Jahan et al. 2024, Discover Sustainability
+                "content_density": ling_metrics["content_density"],
+                # 3. verb_noun_ratio = verb_count / noun_count
+                # Source: Stringer et al. 2018, Int J Geriatr Psychiatry; Jahan et al. 2024, Discover Sustainability
+                "verb_noun_ratio": ling_metrics["verb_noun_ratio"],
+                # 4. hesitation_word_rate = filler_word_count / total_words
+                # Source: Stringer et al. 2018, Int J Geriatr Psychiatry; Jahan et al. 2024, Discover Sustainability
+                "hesitation_word_rate": ling_metrics["hesitation_word_rate"],
+                "verb_count": ling_metrics["verb_count"],
+                "noun_count": ling_metrics["noun_count"],
+                "adjective_count": ling_metrics["adjective_count"],
+                "adverb_count": ling_metrics["adverb_count"],
+                "filler_word_count": ling_metrics["filler_word_count"],
+                "total_words": ling_metrics["word_count"]
+            },
+            "personal_baseline": baseline_result,
+            "data_confidence": data_conf,
             "acoustic_biomarkers": {
                 "duration_seconds": duration,
                 "words_per_minute": wpm,
                 "pause_rate_per_min": pause_rate,
                 "mean_pause_duration_sec": mean_pause_duration,
+                "mean_pause_duration_ms": pause_analysis["mean_pause_duration_ms"],
+                "median_pause_duration_ms": pause_analysis["median_pause_duration_ms"],
+                "max_pause_duration_ms": pause_analysis["max_pause_duration_ms"],
+                "pauses_gt_500ms": pause_analysis["pauses_gt_500ms"],
+                "pauses_gt_1000ms": pause_analysis["pauses_gt_1000ms"],
+                "pauses_gt_2000ms": pause_analysis["pauses_gt_2000ms"],
+                "pause_to_speech_ratio": pause_analysis["pause_to_speech_ratio"],
+                "speech_to_silence_ratio": pause_analysis["speech_to_silence_ratio"],
                 "long_pause_frequency": long_pause_frequency,
                 "speech_activity_ratio": activity_ratio,
                 "mean_rms_energy": mean_rms,
                 "pitch_variability_hz": pitch_variability,
                 "vocabulary_richness": vocabulary_richness,
-                "transcription_confidence": float(features.get("transcription_confidence", 0.9))
-            }
+                "lexical_diversity_ttr": ling_metrics["type_token_ratio"],
+                "content_density": ling_metrics["content_density"],
+                "verb_noun_ratio": ling_metrics["verb_noun_ratio"],
+                "hesitation_word_rate": ling_metrics["hesitation_word_rate"],
+                "transcription_confidence": float(feats.get("transcription_confidence", 0.90))
+            },
+            "disclaimer": (
+                "This voice and speech pattern evaluation represents an acoustic and lexical screening measurement "
+                "to track personal baseline changes over time. It is not an autonomous medical diagnosis."
+            )
         }

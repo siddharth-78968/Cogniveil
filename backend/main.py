@@ -465,19 +465,69 @@ async def analyse_voice_endpoint(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    """Analyse derived voice biomarkers without retaining raw audio by default."""
+    """Analyse derived voice biomarkers and speech linguistics with audio quality validation and personal baseline tracking."""
     try:
         features = json.loads(features_json)
     except Exception:
         raise HTTPException(status_code=422, detail="features_json must be valid JSON")
+    
+    # 1. Audio quality check before generating scores
+    from services.voice_analysis import validate_audio_quality
+    quality_check = validate_audio_quality(features, transcript=transcript)
+    if not quality_check["is_sufficient"]:
+        mcp_tools.log_audit(db, current_user.id, "analyse_voice_rejected", {
+            "reason": quality_check["reason"],
+            "duration": features.get("duration_seconds", 0.0)
+        }, quality_check)
+        return {
+            "status": "insufficient_audio",
+            "reason": quality_check["reason"],
+            "quality_level": quality_check["quality_level"],
+            "quality_assessment": quality_check,
+            "recommendation": quality_check["recommendation"],
+            "voice_score": None,
+            "duration_seconds": float(features.get("duration_seconds", 0.0))
+        }
+
     audio_bytes = await audio.read() if audio else b""
     if len(audio_bytes) > 15 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Voice sample exceeds the 15 MB upload limit.")
+    
     suffix = os.path.splitext(audio.filename)[1] if audio and audio.filename else ".webm"
     asr_result = transcription.transcribe(audio_bytes, suffix, language_hint) if audio_bytes else {"available": False, "engine": "unavailable", "reason": "No audio sample received."}
     effective_transcript = asr_result.get("transcript") if asr_result.get("available") else transcript
     effective_language = asr_result.get("language_code") if asr_result.get("available") else language_hint
-    result = mcp_tools.analyse_voice(features, effective_transcript, effective_language)
+
+    # 2. Retrieve user's historical voice sessions to compute personal baseline
+    prior_voice_tests = db.query(models.TestResult).filter(
+        models.TestResult.user_id == current_user.id,
+        models.TestResult.test_type == "voice_journal"
+    ).order_by(models.TestResult.created_at.desc()).limit(15).all()
+
+    historical_records = []
+    for vt in prior_voice_tests:
+        rec_data = {"score": vt.score, "voice_score": vt.score, "duration_seconds": vt.duration_seconds}
+        if vt.metadata_json:
+            try:
+                meta = json.loads(vt.metadata_json)
+                if isinstance(meta, dict):
+                    # Extract stored biomarkers if present
+                    if "acoustic_biomarkers" in meta:
+                        rec_data.update(meta["acoustic_biomarkers"])
+                    if "linguistic_metrics" in meta:
+                        rec_data.update(meta["linguistic_metrics"])
+                    rec_data.update(meta)
+            except Exception:
+                pass
+        historical_records.append(rec_data)
+
+    # 3. Analyze voice with dynamic personal baseline and multilingual linguistics
+    result = mcp_tools.analyse_voice(
+        features,
+        effective_transcript,
+        effective_language,
+        historical_records=historical_records
+    )
     result["transcription"] = {
         "engine": asr_result.get("engine", "browser-speech-recognition"),
         "server_side": bool(asr_result.get("available")),
@@ -485,18 +535,41 @@ async def analyse_voice_endpoint(
         "reason": asr_result.get("reason"),
     }
     result["transcript"] = effective_transcript if effective_transcript else None
-    db.add(models.TestResult(
+
+    # 4. Save test result with rich metadata JSON
+    test_rec = models.TestResult(
         user_id=current_user.id,
         test_type="voice_journal",
         score=result["voice_score"],
-        duration_seconds=result["duration_seconds"]
-    ))
+        duration_seconds=result["duration_seconds"],
+        metadata_json=json.dumps({
+            "voice_score": result["voice_score"],
+            "speech_status": result["speech_status"],
+            "trend": result.get("trend"),
+            "trajectory": result.get("trajectory"),
+            "words_per_minute": result["words_per_minute"],
+            "pause_rate_per_minute": result["pause_rate_per_minute"],
+            "speech_activity_ratio": result["speech_activity_ratio"],
+            "vocabulary_richness": result["vocabulary_richness"],
+            "subdomain_scores": result.get("subdomain_scores"),
+            "acoustic_biomarkers": result.get("acoustic_biomarkers"),
+            "pause_analysis": result.get("pause_analysis"),
+            "linguistic_metrics": result.get("linguistic_metrics"),
+            "personal_baseline": result.get("personal_baseline"),
+            "data_confidence": result.get("data_confidence"),
+            "transcript": effective_transcript,
+            "language": effective_language
+        })
+    )
+    db.add(test_rec)
     db.commit()
+
     mcp_tools.log_audit(db, current_user.id, "analyse_voice", {
         "audio_received": audio is not None,
         "server_transcription": result["transcription"]["server_side"],
         "transcript_available": result["transcript_available"],
-        "language_hint": language_hint
+        "language_hint": language_hint,
+        "trajectory": result.get("trajectory")
     }, result)
     return result
 
@@ -1675,34 +1748,81 @@ def get_clinician_patient_voice(
 
     is_dev = bool(latest_score.is_deviating) if latest_score else False
 
-    # Acoustic Biomarker Profile
+    # Parse real recorded voice sessions
+    parsed_sessions = []
+    for vt in voice_tests:
+        meta = {}
+        if vt.metadata_json:
+            try:
+                meta = json.loads(vt.metadata_json)
+            except Exception:
+                pass
+        parsed_sessions.append({"vt": vt, "meta": meta})
+
+    scores = [ps["vt"].score for ps in parsed_sessions]
+    avg_score = round(sum(scores) / len(scores), 1) if scores else (68.0 if is_dev else 86.0)
+
+    # Aggregating pause and speech rate metrics
+    pause_ms_list = []
+    pause_ratio_list = []
+    wpm_list = []
+    ttr_list = []
+    for ps in parsed_sessions:
+        m = ps["meta"]
+        if "pause_analysis" in m and isinstance(m["pause_analysis"], dict):
+            pause_ms_list.append(m["pause_analysis"].get("mean_pause_duration_ms", 500))
+            pause_ratio_list.append(m["pause_analysis"].get("pause_to_speech_ratio", 0.20))
+        elif "acoustic_biomarkers" in m and isinstance(m["acoustic_biomarkers"], dict):
+            pause_ms_list.append(m["acoustic_biomarkers"].get("mean_pause_duration_ms", 500))
+            pause_ratio_list.append(m["acoustic_biomarkers"].get("pause_to_speech_ratio", 0.20))
+        if "words_per_minute" in m:
+            wpm_list.append(m["words_per_minute"])
+        if "linguistic_metrics" in m and isinstance(m["linguistic_metrics"], dict):
+            ttr_list.append(m["linguistic_metrics"].get("type_token_ratio", 0.70))
+
+    mean_pause_ms = round(sum(pause_ms_list) / len(pause_ms_list), 1) if pause_ms_list else (890.0 if is_dev else 480.0)
+    mean_pause_ratio = round(sum(pause_ratio_list) / len(pause_ratio_list), 3) if pause_ratio_list else (0.38 if is_dev else 0.18)
+    mean_wpm = round(sum(wpm_list) / len(wpm_list), 1) if wpm_list else (88.0 if is_dev else 118.0)
+    mean_ttr = round(sum(ttr_list) / len(ttr_list), 2) if ttr_list else (0.54 if is_dev else 0.76)
+
+    latest_meta = parsed_sessions[0]["meta"] if parsed_sessions else {}
+    trajectory = latest_meta.get("trajectory", "Persistent Change" if is_dev else "Stable")
+
+    transcripts_history = []
+    for ps in parsed_sessions[:8]:
+        vt = ps["vt"]
+        m = ps["meta"]
+        transcripts_history.append({
+            "id": f"v_{vt.id}",
+            "date": vt.created_at.strftime('%b %d, %Y - %I:%M %p') if vt.created_at else "Recent",
+            "prompt": m.get("prompt", "Standardized narrative speech task."),
+            "transcript": m.get("transcript") or (f"Speech session recorded ({vt.duration_seconds or 30}s duration, {vt.score} fluency score)."),
+            "duration_seconds": vt.duration_seconds or 30,
+            "pause_count": m.get("pause_analysis", {}).get("pause_count", (9 if is_dev else 4)),
+            "mean_pause_ms": m.get("pause_analysis", {}).get("mean_pause_duration_ms", (890 if is_dev else 480)),
+            "fluency_score": vt.score,
+            "speech_rate": f"{m.get('words_per_minute', (88 if is_dev else 118))} WPM",
+            "trajectory": m.get("trajectory", trajectory)
+        })
+
+    # Acoustic Biomarker Profile with personal baseline
     acoustic_profile = {
-        "overall_voice_score": 68.0 if is_dev else 86.0,
-        "mean_pause_duration_ms": 890 if is_dev else 480,
-        "pause_to_speech_ratio": 0.38 if is_dev else 0.18,
-        "articulation_rate_syl_per_sec": 3.2 if is_dev else 4.6,
+        "overall_voice_score": avg_score,
+        "mean_pause_duration_ms": mean_pause_ms,
+        "pause_to_speech_ratio": mean_pause_ratio,
+        "speech_rate_wpm": mean_wpm,
+        "articulation_rate_syl_per_sec": round(mean_wpm / 25.0, 1) if mean_wpm else (3.2 if is_dev else 4.6),
         "pitch_variability_hz": 11.4 if is_dev else 24.8,
         "formant_dispersion_f1_f2_ratio": 1.42 if is_dev else 1.88,
         "jitter_local": 0.024 if is_dev else 0.009,
         "shimmer_local": 0.052 if is_dev else 0.021,
-        "lexical_diversity_ttr": 0.54 if is_dev else 0.76,
+        "lexical_diversity_ttr": mean_ttr,
         "whisper_model": "faster-whisper-small-int8",
-        "primary_language": "en",
-        "vernacular_support": ["en", "hi", "ta", "te", "bn", "mr", "kn"],
-        "transcripts_history": [
-            {
-                "id": f"v_{vt.id}",
-                "date": vt.created_at.strftime('%b %d, %Y - %I:%M %p') if vt.created_at else "Recent",
-                "prompt": "Vernacular acoustic voice journal entry.",
-                "transcript": "Audio telemetry processed and acoustic features extracted.",
-                "duration_seconds": vt.duration_seconds or 45,
-                "pause_count": 9 if is_dev else 4,
-                "mean_pause_ms": 890 if is_dev else 480,
-                "fluency_score": vt.score,
-                "speech_rate": "3.2 syl/sec" if is_dev else "4.6 syl/sec"
-            }
-            for vt in voice_tests[:5]
-        ]
+        "primary_language": latest_meta.get("language", "en"),
+        "vernacular_support": ["en", "hi", "ta", "te", "bn", "mr", "es"],
+        "trajectory": trajectory,
+        "personal_baseline": latest_meta.get("personal_baseline"),
+        "transcripts_history": transcripts_history
     }
 
     return {
