@@ -84,6 +84,7 @@ export const getClinicianPatientTests = (patientId) => API.get(`/api/clinician/p
 export const getClinicianPatientVoice = (patientId) => API.get(`/api/clinician/patients/${patientId}/voice`);
 export const getClinicianPatientLevel2 = (patientId) => API.get(`/api/clinician/patients/${patientId}/level2`);
 export const getClinicianPatientMRI = (patientId) => API.get(`/api/clinician/patients/${patientId}/mri`);
+export const getClinicianPatientDementiaProfile = (patientId) => API.get(`/api/clinician/patients/${patientId}/dementia-profile`);
 
 // Clinical PDF Export APIs (Binary PDF Blobs)
 export const downloadClinicalReportPDF = (data) => API.post('/api/clinical-report/pdf', data, { responseType: 'blob' });

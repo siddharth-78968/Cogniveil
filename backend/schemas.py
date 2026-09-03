@@ -241,4 +241,38 @@ class ChatResponse(BaseModel):
     sources_used: List[str] = []
     timestamp: str
 
+class PatternProbabilityItem(BaseModel):
+    pattern_key: str
+    pattern_name: str
+    probability: float
+    percentage: str
+
+class PatternSignalItem(BaseModel):
+    feature_key: str
+    signal_name: str
+    domain: str
+    value: str
+    shap_attribution: float
+    impact: str
+
+class DementiaPatternProfileResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    
+    status: str
+    patient_id: int
+    patient_name: Optional[str] = "Patient"
+    most_consistent_pattern: Optional[str] = None
+    confidence_score: Optional[float] = None
+    pattern_probabilities: Optional[List[PatternProbabilityItem]] = None
+    key_contributing_signals: Optional[List[PatternSignalItem]] = None
+    model_version: Optional[str] = "2026.1-dementia-pattern-v1"
+    evaluated_features_count: Optional[int] = 20
+    timestamp: Optional[str] = None
+    message: Optional[str] = None
+    recommended_action: Optional[str] = None
+    disclaimer: str = (
+        "This is a model-estimated pattern profile derived from Level 1 cognitive/behavioral telemetry "
+        "and Level 2 clinical biomarkers to support clinician review. It is not an autonomous medical diagnosis."
+    )
+
 
