@@ -68,6 +68,7 @@ const Login = () => {
     }
   };
 
+  // Cohesive clinical olive/slate hierarchy (no red, yellow, or bright green)
   const demoAccounts = [
     { 
       id: 'riya',
@@ -75,39 +76,39 @@ const Login = () => {
       role: 'Clinical Supervisor & Caregiver Lead', 
       email: 'riyamehta55@gmail.com', 
       code: 'CLINICAL SUPERVISOR',
-      badgeBorder: isDark ? '#4338CA' : '#c7d2fe',
-      badgeColor: isDark ? '#a5b4fc' : '#4338CA',
-      badgeBg: isDark ? 'rgba(67, 56, 202, 0.2)' : '#eef2ff'
+      badgeBorder: isDark ? '#475d41' : '#c9d4c7',
+      badgeColor: isDark ? '#dbe5d8' : '#2b3a27',
+      badgeBg: isDark ? 'rgba(71, 93, 65, 0.25)' : '#eef3ee'
     },
     { 
       id: 'rajan',
       name: 'Rajan Pillai', 
       role: 'Tier 3 MCI · Statistical Drift Trajectory', 
       email: 'rajan@demo.com', 
-      code: 'TIER 3 DRIFT',
-      badgeBorder: isDark ? '#991b1b' : '#fecaca',
-      badgeColor: isDark ? '#f87171' : '#dc2626',
-      badgeBg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2'
+      code: 'TIER 3 · VOLUMETRIC',
+      badgeBorder: isDark ? '#31412e' : '#dbe2d9',
+      badgeColor: isDark ? '#b8c7b4' : '#455641',
+      badgeBg: isDark ? 'rgba(49, 65, 46, 0.2)' : '#f3f6f2'
     },
     { 
       id: 'meena',
       name: 'Meena Krishnan', 
       role: 'Tier 2 · Prodromal Fluency Drift', 
       email: 'meena@demo.com', 
-      code: 'TIER 2 PRODROMAL',
-      badgeBorder: isDark ? '#92400e' : '#fde68a',
-      badgeColor: isDark ? '#fbbf24' : '#d97706',
-      badgeBg: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb'
+      code: 'TIER 2 · BIOMARKER',
+      badgeBorder: isDark ? '#31412e' : '#dbe2d9',
+      badgeColor: isDark ? '#b8c7b4' : '#455641',
+      badgeBg: isDark ? 'rgba(49, 65, 46, 0.2)' : '#f3f6f2'
     },
     { 
       id: 'arjun',
       name: 'Arjun Sharma', 
       role: 'Tier 1 Baseline · Intact Stability', 
       email: 'arjun@demo.com', 
-      code: 'TIER 1 STABLE',
-      badgeBorder: isDark ? '#065f46' : '#a7f3d0',
-      badgeColor: isDark ? '#34d399' : '#059669',
-      badgeBg: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5'
+      code: 'TIER 1 · TELEMETRY',
+      badgeBorder: isDark ? '#31412e' : '#dbe2d9',
+      badgeColor: isDark ? '#b8c7b4' : '#455641',
+      badgeBg: isDark ? 'rgba(49, 65, 46, 0.2)' : '#f3f6f2'
     },
   ];
 
@@ -116,8 +117,8 @@ const Login = () => {
       minHeight: '100vh',
       width: '100vw',
       display: 'flex',
-      backgroundColor: isDark ? '#080c14' : '#FFFFFF',
-      color: isDark ? '#f8fafc' : '#0a0f1d',
+      backgroundColor: isDark ? '#0b100c' : '#FFFFFF',
+      color: isDark ? '#f1f5ee' : '#0e1510',
       fontFamily: "'Mulish', 'Inter', -apple-system, sans-serif",
       overflowX: 'hidden'
     }}>
@@ -132,25 +133,25 @@ const Login = () => {
         justifyContent: 'space-between',
         position: 'relative',
         background: isDark
-          ? 'radial-gradient(ellipse at 10% 20%, rgba(67, 56, 202, 0.22) 0%, transparent 60%), radial-gradient(ellipse at 90% 80%, rgba(15, 23, 42, 0.4) 0%, transparent 60%), #080c14'
-          : '#FAFAFA',
-        borderRight: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#EAEAEA'}`,
+          ? 'radial-gradient(ellipse at 12% 18%, rgba(68, 88, 56, 0.32) 0%, transparent 60%), radial-gradient(ellipse at 88% 82%, rgba(42, 56, 36, 0.25) 0%, transparent 65%), #0b100c'
+          : '#FAFAF9',
+        borderRight: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#E7EAE6'}`,
         boxSizing: 'border-box'
       }}>
         
-        {/* Architectural 3D Minimal Cubes in Background (Monochrome Art) */}
+        {/* Architectural 3D Minimal Cubes (Subtle Olive & Slate Tones) */}
         <div style={{
           position: 'absolute',
           right: '5%',
           bottom: '12%',
           pointerEvents: 'none',
-          opacity: isDark ? 0.25 : 0.08,
+          opacity: isDark ? 0.22 : 0.07,
           zIndex: 0
         }}>
           <svg width="340" height="340" viewBox="0 0 340 340" fill="none">
-            <rect x="90" y="40" width="120" height="120" transform="rotate(45 90 40)" fill={isDark ? '#4338CA' : '#0a0f1d'} fillOpacity="0.8"/>
-            <rect x="190" y="160" width="90" height="90" transform="rotate(45 190 160)" fill={isDark ? '#06b6d4' : '#0a0f1d'} fillOpacity="0.5"/>
-            <rect x="40" y="210" width="70" height="70" transform="rotate(45 40 210)" fill={isDark ? '#ffffff' : '#0a0f1d'} fillOpacity="0.3"/>
+            <rect x="90" y="40" width="120" height="120" transform="rotate(45 90 40)" fill={isDark ? '#3d5236' : '#222f20'} fillOpacity="0.85"/>
+            <rect x="190" y="160" width="90" height="90" transform="rotate(45 190 160)" fill={isDark ? '#2a3826' : '#222f20'} fillOpacity="0.6"/>
+            <rect x="40" y="210" width="70" height="70" transform="rotate(45 40 210)" fill={isDark ? '#536d4b' : '#222f20'} fillOpacity="0.4"/>
           </svg>
         </div>
 
@@ -160,14 +161,14 @@ const Login = () => {
             <div style={{
               width: '32px',
               height: '32px',
-              backgroundColor: isDark ? '#ffffff' : '#0a0f1d',
+              backgroundColor: isDark ? '#e3ece0' : '#1b261a',
               borderRadius: '4px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: '900',
               fontSize: '1rem',
-              color: isDark ? '#080c14' : '#ffffff'
+              color: isDark ? '#0b100c' : '#ffffff'
             }}>
               C
             </div>
@@ -176,7 +177,7 @@ const Login = () => {
                 fontSize: '1.25rem', 
                 fontWeight: '900', 
                 letterSpacing: '-0.02em', 
-                color: isDark ? '#ffffff' : '#0a0f1d' 
+                color: isDark ? '#f1f5ee' : '#141d13' 
               }}>
                 CogniVeil
               </span>
@@ -185,7 +186,7 @@ const Login = () => {
                 fontSize: '0.68rem',
                 fontFamily: "'JetBrains Mono', monospace",
                 fontWeight: '700',
-                color: isDark ? '#64748b' : '#94a3b8',
+                color: isDark ? '#7a8e74' : '#6f8269',
                 letterSpacing: '0.08em'
               }}>
                 CLINICAL INTELLIGENCE
@@ -193,7 +194,7 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Hero Typography — Exactly Matching the Editorial Reference */}
+          {/* Hero Typography with Refined Olive & Editorial Newsreader Italic */}
           <div style={{ marginTop: '4rem', maxWidth: '620px' }}>
             <p style={{
               fontSize: '0.72rem',
@@ -201,7 +202,7 @@ const Login = () => {
               letterSpacing: '0.22em',
               textTransform: 'uppercase',
               fontFamily: "'JetBrains Mono', monospace",
-              color: isDark ? '#94a3b8' : '#64748b',
+              color: isDark ? '#98ab92' : '#576c52',
               margin: '0 0 1.25rem 0'
             }}>
               FROM STRATEGY TO CLINICAL EXECUTION
@@ -213,7 +214,7 @@ const Login = () => {
               lineHeight: '1.14',
               letterSpacing: '-0.035em',
               margin: '0 0 1.5rem 0',
-              color: isDark ? '#ffffff' : '#0a0f1d'
+              color: isDark ? '#f1f5ee' : '#141d13'
             }}>
               Surveillance. Telemetry. Governance. The{' '}
               <span style={{
@@ -221,7 +222,7 @@ const Login = () => {
                 fontStyle: 'italic',
                 fontWeight: '400',
                 letterSpacing: '0.01em',
-                color: isDark ? '#a5b4fc' : '#1e1b4b'
+                color: isDark ? '#cdd8c5' : '#2b3c27'
               }}>
                 Future of Cognitive Care,
               </span>{' '}
@@ -232,7 +233,7 @@ const Login = () => {
               fontSize: '1rem',
               lineHeight: '1.65',
               fontWeight: '500',
-              color: isDark ? '#94a3b8' : '#475569',
+              color: isDark ? '#9ab095' : '#4b5e47',
               margin: '0 0 2.5rem 0',
               maxWidth: '540px'
             }}>
@@ -245,22 +246,22 @@ const Login = () => {
               gridTemplateColumns: 'repeat(3, 1fr)',
               gap: '1.5rem',
               paddingTop: '2rem',
-              borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E5E7EB'}`
+              borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E0E5DF'}`
             }}>
               <div>
                 <div style={{
                   fontSize: '1.85rem',
                   fontWeight: '900',
                   letterSpacing: '-0.03em',
-                  color: isDark ? '#ffffff' : '#0a0f1d',
+                  color: isDark ? '#f1f5ee' : '#141d13',
                   fontFamily: "'Mulish', sans-serif"
                 }}>
                   6–8 Mos
                 </div>
-                <div style={{ fontSize: '0.74rem', fontWeight: '700', color: isDark ? '#cbd5e1' : '#334155', marginTop: '2px' }}>
+                <div style={{ fontSize: '0.74rem', fontWeight: '700', color: isDark ? '#cdd8c5' : '#334330', marginTop: '2px' }}>
                   Clinical Lead Time
                 </div>
-                <div style={{ fontSize: '0.7rem', color: isDark ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                <div style={{ fontSize: '0.7rem', color: isDark ? '#7a8e74' : '#6f8269', marginTop: '2px' }}>
                   Early window gained
                 </div>
               </div>
@@ -270,15 +271,15 @@ const Login = () => {
                   fontSize: '1.85rem',
                   fontWeight: '900',
                   letterSpacing: '-0.03em',
-                  color: isDark ? '#ffffff' : '#0a0f1d',
+                  color: isDark ? '#f1f5ee' : '#141d13',
                   fontFamily: "'Mulish', sans-serif"
                 }}>
                   10 Agents
                 </div>
-                <div style={{ fontSize: '0.74rem', fontWeight: '700', color: isDark ? '#cbd5e1' : '#334155', marginTop: '2px' }}>
+                <div style={{ fontSize: '0.74rem', fontWeight: '700', color: isDark ? '#cdd8c5' : '#334330', marginTop: '2px' }}>
                   Autonomous Pipeline
                 </div>
-                <div style={{ fontSize: '0.7rem', color: isDark ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                <div style={{ fontSize: '0.7rem', color: isDark ? '#7a8e74' : '#6f8269', marginTop: '2px' }}>
                   EWMA change-point
                 </div>
               </div>
@@ -288,15 +289,15 @@ const Login = () => {
                   fontSize: '1.85rem',
                   fontWeight: '900',
                   letterSpacing: '-0.03em',
-                  color: isDark ? '#ffffff' : '#0a0f1d',
+                  color: isDark ? '#f1f5ee' : '#141d13',
                   fontFamily: "'Mulish', sans-serif"
                 }}>
                   Tri-Tier
                 </div>
-                <div style={{ fontSize: '0.74rem', fontWeight: '700', color: isDark ? '#cbd5e1' : '#334155', marginTop: '2px' }}>
+                <div style={{ fontSize: '0.74rem', fontWeight: '700', color: isDark ? '#cdd8c5' : '#334330', marginTop: '2px' }}>
                   Diagnostic Cascade
                 </div>
-                <div style={{ fontSize: '0.7rem', color: isDark ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                <div style={{ fontSize: '0.7rem', color: isDark ? '#7a8e74' : '#6f8269', marginTop: '2px' }}>
                   Passive, ML & MRI
                 </div>
               </div>
@@ -312,10 +313,10 @@ const Login = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingTop: '1.5rem',
-          borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB'}`,
+          borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#E0E5DF'}`,
           fontSize: '0.75rem',
           fontFamily: "'JetBrains Mono', monospace",
-          color: isDark ? '#64748b' : '#94a3b8'
+          color: isDark ? '#7a8e74' : '#6f8269'
         }}>
           <div>COGNIVEIL CLINICAL INTELLIGENCE · ISO/DIS 13485 COMPLIANT</div>
           <div>EST. 2026</div>
@@ -332,7 +333,7 @@ const Login = () => {
         flexDirection: 'column',
         justifyContent: 'center',
         boxSizing: 'border-box',
-        backgroundColor: isDark ? '#080c14' : '#FFFFFF'
+        backgroundColor: isDark ? '#080d09' : '#FFFFFF'
       }}>
         
         <div style={{ maxWidth: '440px', width: '100%', margin: '0 auto' }}>
@@ -345,7 +346,7 @@ const Login = () => {
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
               fontFamily: "'JetBrains Mono', monospace",
-              color: isDark ? '#a5b4fc' : '#4338CA'
+              color: isDark ? '#98ab92' : '#3f5339'
             }}>
               [ AUTHORIZED WORKSTATION ]
             </span>
@@ -353,14 +354,14 @@ const Login = () => {
               onClick={toggleTheme}
               style={{
                 background: 'none',
-                border: `1px solid ${isDark ? '#1e293b' : '#E5E7EB'}`,
+                border: `1px solid ${isDark ? '#233222' : '#DDE3DB'}`,
                 padding: '5px 12px',
                 borderRadius: '4px',
                 fontSize: '0.75rem',
                 fontFamily: "'JetBrains Mono', monospace",
                 fontWeight: '700',
                 cursor: 'pointer',
-                color: isDark ? '#cbd5e1' : '#475569'
+                color: isDark ? '#cdd8c5' : '#475a42'
               }}
             >
               {isDark ? 'LIGHT MODE' : 'DARK MODE'}
@@ -374,13 +375,13 @@ const Login = () => {
               fontWeight: '900',
               letterSpacing: '-0.03em',
               margin: '0 0 0.4rem 0',
-              color: isDark ? '#ffffff' : '#0a0f1d'
+              color: isDark ? '#f1f5ee' : '#141d13'
             }}>
               Sign in to workstation
             </h2>
             <p style={{
               fontSize: '0.88rem',
-              color: isDark ? '#94a3b8' : '#64748b',
+              color: isDark ? '#94a78f' : '#576c52',
               margin: 0,
               lineHeight: '1.5'
             }}>
@@ -399,7 +400,7 @@ const Login = () => {
                 textTransform: 'uppercase',
                 fontFamily: "'JetBrains Mono', monospace",
                 marginBottom: '6px',
-                color: isDark ? '#cbd5e1' : '#475569'
+                color: isDark ? '#cdd8c5' : '#3f5339'
               }}>
                 Email address
               </label>
@@ -413,9 +414,9 @@ const Login = () => {
                   width: '100%',
                   padding: '0.8rem 1rem',
                   borderRadius: '6px',
-                  backgroundColor: isDark ? '#0f172a' : '#FAFAFA',
-                  border: `1px solid ${isDark ? '#1e293b' : '#D1D5DB'}`,
-                  color: isDark ? '#ffffff' : '#0a0f1d',
+                  backgroundColor: isDark ? '#111812' : '#F9FAF8',
+                  border: `1px solid ${isDark ? '#243324' : '#D0D8CF'}`,
+                  color: isDark ? '#f1f5ee' : '#141d13',
                   fontSize: '0.9rem',
                   fontFamily: "'Mulish', sans-serif",
                   outline: 'none',
@@ -433,7 +434,7 @@ const Login = () => {
                   letterSpacing: '0.04em',
                   textTransform: 'uppercase',
                   fontFamily: "'JetBrains Mono', monospace",
-                  color: isDark ? '#cbd5e1' : '#475569'
+                  color: isDark ? '#cdd8c5' : '#3f5339'
                 }}>
                   Password
                 </label>
@@ -443,7 +444,7 @@ const Login = () => {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: isDark ? '#a5b4fc' : '#4338CA',
+                    color: isDark ? '#98ab92' : '#3f5339',
                     fontSize: '0.72rem',
                     fontWeight: '700',
                     fontFamily: "'JetBrains Mono', monospace",
@@ -464,9 +465,9 @@ const Login = () => {
                   width: '100%',
                   padding: '0.8rem 1rem',
                   borderRadius: '6px',
-                  backgroundColor: isDark ? '#0f172a' : '#FAFAFA',
-                  border: `1px solid ${isDark ? '#1e293b' : '#D1D5DB'}`,
-                  color: isDark ? '#ffffff' : '#0a0f1d',
+                  backgroundColor: isDark ? '#111812' : '#F9FAF8',
+                  border: `1px solid ${isDark ? '#243324' : '#D0D8CF'}`,
+                  color: isDark ? '#f1f5ee' : '#141d13',
                   fontSize: '0.9rem',
                   fontFamily: "'Mulish', sans-serif",
                   outline: 'none',
@@ -480,9 +481,9 @@ const Login = () => {
               <div style={{
                 padding: '0.75rem 1rem',
                 borderRadius: '6px',
-                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2',
-                border: '1px solid #DC2626',
-                color: '#DC2626',
+                backgroundColor: isDark ? 'rgba(120, 50, 40, 0.2)' : '#FDF2F0',
+                border: '1px solid #A84236',
+                color: isDark ? '#fca5a5' : '#A84236',
                 fontSize: '0.8rem',
                 fontWeight: '700',
                 fontFamily: "'Mulish', sans-serif"
@@ -498,8 +499,8 @@ const Login = () => {
                 width: '100%',
                 padding: '0.9rem',
                 borderRadius: '6px',
-                backgroundColor: isDark ? '#ffffff' : '#0a0f1d',
-                color: isDark ? '#080c14' : '#ffffff',
+                backgroundColor: isDark ? '#e3ece0' : '#1b261a',
+                color: isDark ? '#0b100c' : '#ffffff',
                 border: 'none',
                 fontSize: '0.82rem',
                 fontWeight: '900',
@@ -515,8 +516,8 @@ const Login = () => {
             </button>
           </form>
 
-          {/* 1-Click Demo Evaluation Roles — Sharp & Free of Emojis */}
-          <div style={{ marginTop: '2.5rem', borderTop: `1px solid ${isDark ? '#1e293b' : '#E5E7EB'}`, paddingTop: '1.5rem' }}>
+          {/* 1-Click Demo Evaluation Roles — Understated Olive/Slate (No Red/Yellow/Green) */}
+          <div style={{ marginTop: '2.5rem', borderTop: `1px solid ${isDark ? '#1e291f' : '#E0E5DF'}`, paddingTop: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
               <span style={{
                 fontSize: '0.72rem',
@@ -524,14 +525,14 @@ const Login = () => {
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 fontFamily: "'JetBrains Mono', monospace",
-                color: isDark ? '#94a3b8' : '#64748b'
+                color: isDark ? '#98ab92' : '#576c52'
               }}>
                 1-CLICK EVALUATION ROLES
               </span>
               <span style={{
                 fontSize: '0.7rem',
                 fontFamily: "'JetBrains Mono', monospace",
-                color: isDark ? '#64748b' : '#94a3b8'
+                color: isDark ? '#6f8269' : '#8a9c84'
               }}>
                 pass: demo1234
               </span>
@@ -551,9 +552,9 @@ const Login = () => {
                       padding: '0.75rem 1rem',
                       borderRadius: '6px',
                       backgroundColor: isSelected 
-                        ? (isDark ? '#1e1b4b' : '#EEF2FF') 
-                        : (isDark ? '#0f172a' : '#FAFAFA'),
-                      border: `1px solid ${isSelected ? (isDark ? '#6366f1' : '#4338CA') : (isDark ? '#1e293b' : '#E5E7EB')}`,
+                        ? (isDark ? 'rgba(71, 93, 65, 0.3)' : '#E9F0E8') 
+                        : (isDark ? '#111812' : '#F9FAF8'),
+                      border: `1px solid ${isSelected ? (isDark ? '#536d4b' : '#3f5339') : (isDark ? '#1f2c20' : '#E0E5DF')}`,
                       cursor: 'pointer',
                       transition: 'all 0.15s'
                     }}
@@ -562,20 +563,20 @@ const Login = () => {
                       <div style={{
                         fontSize: '0.88rem',
                         fontWeight: '800',
-                        color: isDark ? '#ffffff' : '#0a0f1d'
+                        color: isDark ? '#f1f5ee' : '#141d13'
                       }}>
                         {d.name}
                       </div>
                       <div style={{
                         fontSize: '0.74rem',
-                        color: isDark ? '#94a3b8' : '#64748b',
+                        color: isDark ? '#94a78f' : '#576c52',
                         marginTop: '1px'
                       }}>
                         {d.role}
                       </div>
                     </div>
                     <span style={{
-                      padding: '2px 8px',
+                      padding: '3px 8px',
                       borderRadius: '4px',
                       fontSize: '0.66rem',
                       fontWeight: '800',
@@ -601,11 +602,11 @@ const Login = () => {
             fontFamily: "'JetBrains Mono', monospace",
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
-            color: isDark ? '#94a3b8' : '#64748b'
+            color: isDark ? '#94a78f' : '#576c52'
           }}>
             <span>ENROLL NEW PATIENT RECORD? </span>
             <Link to="/register" style={{
-              color: isDark ? '#ffffff' : '#0a0f1d',
+              color: isDark ? '#f1f5ee' : '#141d13',
               fontWeight: '800',
               textDecoration: 'underline'
             }}>
