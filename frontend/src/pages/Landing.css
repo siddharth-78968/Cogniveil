@@ -187,7 +187,7 @@
 }
 
 .cv-hero-container {
-  max-width: 1200px;
+  max-width: 1420px;
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -217,13 +217,13 @@
 
 .cv-hero-title {
   font-family: 'Newsreader', Georgia, serif;
-  font-size: 55px;
+  font-size: clamp(50px, 4.2vw, 72px);
   font-weight: 400;
-  line-height: 1.15;
+  line-height: 1.1;
   letter-spacing: -0.035em;
   color: var(--cv-text);
-  margin: 0 auto 1.6rem auto;
-  max-width: 1260px;
+  margin: 0 auto 1.8rem auto;
+  max-width: 1400px;
   text-align: center;
 }
 
@@ -238,12 +238,11 @@
 }
 
 .cv-hero-sub {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   line-height: 1.6;
   color: var(--cv-text-muted);
-  max-width: 800px;
-  margin: 0 auto 2.8rem auto;
-  text-wrap: balance;
+  max-width: 860px;
+  margin: 0 auto 3rem auto;
 }
 
 .cv-hero-cta-group {
