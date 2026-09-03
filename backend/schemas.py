@@ -17,6 +17,12 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+class GoogleLoginRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+    role: Optional[str] = "patient"
+    credential: Optional[str] = None
+
 class ConsentRequest(BaseModel):
     consent_granted: bool = True
 

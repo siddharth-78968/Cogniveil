@@ -38,6 +38,7 @@ export default API;
 
 export const registerUser = (data) => API.post('/register', data);
 export const loginUser = (data) => API.post('/login', data);
+export const loginWithGoogle = (data) => API.post('/api/auth/google', data);
 export const getProfile = () => API.get('/me');
 export const getCurrentUser = () => API.get('/auth/me');
 export const updateUserProfile = (data) => API.put('/api/user/profile', data);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import GoogleSignInModal, { GoogleIcon } from '../components/GoogleSignInModal';
 
 const SunIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -33,6 +34,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isCaregiver, setIsCaregiver] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
   const { register, login } = useAuth();
   const { isDark, toggleTheme, theme } = useTheme();
   const navigate = useNavigate();
@@ -159,6 +161,62 @@ const Register = () => {
             <p style={{ ...styles.cardSub, color: theme.subtext }}>
               Establish a baseline profile for longitudinal cognitive telemetry and multimodal screening.
             </p>
+          </div>
+
+          {/* 1-Click Fast Enrollment with Google */}
+          <div style={{ marginBottom: '1.4rem' }}>
+            <button
+              type="button"
+              onClick={() => setShowGoogleModal(true)}
+              style={{
+                width: '100%',
+                padding: '0.9rem 1.25rem',
+                borderRadius: '10px',
+                backgroundColor: isDark ? '#19241b' : '#ffffff',
+                border: `1.5px solid ${isDark ? '#364b34' : '#c7d5c4'}`,
+                color: isDark ? '#f4f8f1' : '#141e13',
+                fontSize: '0.94rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                boxShadow: isDark ? '0 4px 14px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = isDark ? '#4ade80' : '#2e7d32';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = isDark ? '#364b34' : '#c7d5c4';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <GoogleIcon size={20} />
+              <span>Continue with Google</span>
+            </button>
+
+            {/* Divider */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              margin: '1.25rem 0 0.4rem 0',
+              gap: '14px'
+            }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
+              <span style={{
+                fontSize: '0.72rem',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: '700',
+                color: theme.subtext,
+                letterSpacing: '0.04em'
+              }}>
+                OR ENROLL WITH EMAIL
+              </span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} style={styles.form}>
@@ -314,6 +372,13 @@ const Register = () => {
 
         </div>
       </div>
+
+      {/* Google Sign-In / Fast Enrollment Modal */}
+      <GoogleSignInModal
+        isOpen={showGoogleModal}
+        onClose={() => setShowGoogleModal(false)}
+        defaultRole="patient"
+      />
     </div>
   );
 };

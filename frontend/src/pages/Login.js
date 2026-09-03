@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { pingBackend } from '../utils/api';
+import GoogleSignInModal, { GoogleIcon } from '../components/GoogleSignInModal';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [activeDemo, setActiveDemo] = useState('riya');
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
   const { login } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -40,8 +41,7 @@ const Login = () => {
     }
   };
 
-  const handleDemoLogin = async (demoEmail, demoPass = 'demo1234', demoId = '') => {
-    setActiveDemo(demoId);
+  const handleDemoLogin = async (demoEmail, demoPass = 'demo1234') => {
     setEmail(demoEmail);
     setPassword(demoPass);
     setLoading(true);
@@ -439,19 +439,55 @@ const Login = () => {
             boxShadow: isDark ? '0 16px 44px rgba(0,0,0,0.4)' : '0 10px 36px rgba(0,0,0,0.05)'
           }}>
 
-            {/* Claude-Style Fast 1-Click Action Button */}
+            {/* Fast 1-Click Action Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Primary Google Sign-In Button */}
+              <button
+                type="button"
+                onClick={() => setShowGoogleModal(true)}
+                style={{
+                  width: '100%',
+                  padding: '0.92rem 1.25rem',
+                  borderRadius: '12px',
+                  backgroundColor: isDark ? '#19241b' : '#ffffff',
+                  border: `1.5px solid ${isDark ? '#364b34' : '#c7d5c4'}`,
+                  color: isDark ? '#f4f8f1' : '#141e13',
+                  fontSize: '0.95rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  boxShadow: isDark ? '0 4px 14px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = isDark ? '#4ade80' : '#2e7d32';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = isDark ? '0 6px 18px rgba(0,0,0,0.45)' : '0 4px 12px rgba(0,0,0,0.09)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = isDark ? '#364b34' : '#c7d5c4';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = isDark ? '0 4px 14px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)';
+                }}
+              >
+                <GoogleIcon size={20} />
+                <span>Continue with Google</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => handleDemoLogin('riyamehta55@gmail.com', 'demo1234', 'riya')}
                 style={{
                   width: '100%',
-                  padding: '0.9rem 1.25rem',
+                  padding: '0.85rem 1.25rem',
                   borderRadius: '12px',
-                  backgroundColor: isDark ? '#1a231b' : '#f0f5ee',
-                  border: `1px solid ${isDark ? '#2e402c' : '#cdd8cb'}`,
-                  color: isDark ? '#f1f5ee' : '#141e13',
-                  fontSize: '0.9rem',
+                  backgroundColor: isDark ? '#141c15' : '#f0f5ee',
+                  border: `1px solid ${isDark ? '#263624' : '#cdd8cb'}`,
+                  color: isDark ? '#dce6d8' : '#2b3b27',
+                  fontSize: '0.88rem',
                   fontWeight: '700',
                   cursor: 'pointer',
                   display: 'flex',
@@ -461,7 +497,7 @@ const Login = () => {
                   transition: 'all 0.15s'
                 }}
               >
-                <span>Continue as Dr. Riya Mehta</span>
+                <span>Demo Supervisor: Dr. Riya Mehta</span>
                 <span style={{
                   fontSize: '0.68rem',
                   padding: '3px 8px',
@@ -673,6 +709,13 @@ const Login = () => {
         </div>
 
       </div>
+
+      {/* Google Sign-In Account Selector Modal */}
+      <GoogleSignInModal
+        isOpen={showGoogleModal}
+        onClose={() => setShowGoogleModal(false)}
+        defaultRole="clinician"
+      />
 
     </div>
   );

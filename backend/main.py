@@ -238,6 +238,61 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         "user": db_user
     }
 
+@app.post("/api/auth/google", response_model=schemas.Token)
+def google_login(req: schemas.GoogleLoginRequest, db: Session = Depends(get_db)):
+    """Single Sign-On endpoint for Google authentication and automatic enrollment."""
+    clean_email = req.email.strip().lower() if req.email else ""
+    if not clean_email or "@" not in clean_email:
+        raise HTTPException(status_code=400, detail="A valid Google email is required.")
+
+    db_user = db.query(models.User).filter(models.User.email == clean_email).first()
+    if not db_user:
+        # Create user automatically with Google identity
+        display_name = req.name.strip() if req.name else clean_email.split("@")[0].replace(".", " ").title()
+        assigned_role = req.role if req.role in ["clinician", "patient"] else "patient"
+        hashed = auth.get_password_hash(f"google_auth_{clean_email}_{datetime.utcnow().timestamp()}")
+        
+        db_user = models.User(
+            name=display_name,
+            email=clean_email,
+            hashed_password=hashed,
+            age=45,
+            gender="Not specified",
+            role=assigned_role,
+            is_caregiver=(assigned_role == "clinician"),
+            consent_granted=True,
+            consent_granted_at=datetime.utcnow(),
+            baseline_status="collecting",
+            level2_status="not_collected",
+            apoe_e4_provenance="self_reported",
+            mri_provenance="self_reported"
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        mcp_tools.log_audit(db, db_user.id, "google_register", {"email": clean_email, "role": assigned_role}, {"status": "enrolled_via_google"}, pipeline_state="baseline_period")
+    else:
+        if not hasattr(db_user, 'role') or not db_user.role:
+            db_user.role = "clinician" if db_user.is_caregiver else "patient"
+            db.commit()
+        mcp_tools.log_audit(db, db_user.id, "google_login", {"email": clean_email, "role": db_user.role}, {"status": "authenticated_via_google"}, pipeline_state="baseline_period")
+
+    token = auth.create_access_token(
+        data={
+            "sub": db_user.email,
+            "role": db_user.role,
+            "user_id": db_user.id,
+            "name": db_user.name
+        },
+        expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": db_user
+    }
+
 @app.get("/me", response_model=schemas.UserOut)
 @app.get("/auth/me", response_model=schemas.UserOut)
 def get_me(current_user: models.User = Depends(auth.get_current_user)):

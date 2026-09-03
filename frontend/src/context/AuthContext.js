@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { loginUser, registerUser, getCurrentUser, getProfile } from '../utils/api';
+import { loginUser, registerUser, getCurrentUser, getProfile, loginWithGoogle } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -100,6 +100,26 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
+  const googleLogin = async (googleData) => {
+    const res = await loginWithGoogle(googleData);
+    const accessToken = res.data.access_token;
+    localStorage.setItem('token', accessToken);
+    setToken(accessToken);
+
+    let userData = res.data.user || {
+      email: googleData.email,
+      name: googleData.name || 'Google User',
+      role: googleData.role || 'patient'
+    };
+    if (!userData.role) {
+      userData.role = userData.is_caregiver ? 'clinician' : 'patient';
+    }
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('userEmail', userData.email);
+    setUser(userData);
+    return res;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -112,7 +132,7 @@ export const AuthProvider = ({ children }) => {
   const isPatient = !isClinician;
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, refreshUser, updateProfile, logout, loading, isClinician, isPatient }}>
+    <AuthContext.Provider value={{ user, token, login, googleLogin, register, refreshUser, updateProfile, logout, loading, isClinician, isPatient }}>
       {children}
     </AuthContext.Provider>
   );
