@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { submitLevel2, generateReferral } from '../utils/api';
+import { submitLevel2, generateReferral, getClinicianPatients, getClinicianPatientLevel2 } from '../utils/api';
 import ReferralReportModal from '../components/ReferralReportModal';
 import VoiceGuideBar from '../components/VoiceGuideBar';
 import DoctorLayout from '../components/DoctorLayout';
 
 const Level2Assessment = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, refreshUser } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -25,43 +26,64 @@ const Level2Assessment = () => {
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [clinicianLevel2Data, setClinicianLevel2Data] = useState(null);
   const [loadingClinician, setLoadingClinician] = useState(false);
+  const [loadingPatients, setLoadingPatients] = useState(false);
+  const [patientsError, setPatientsError] = useState(null);
+  const [level2Error, setLevel2Error] = useState(null);
 
   const isClinician = user?.is_caregiver === true;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isClinician) {
       fetchClinicianLevel2();
     }
   }, [isClinician]); // eslint-disable-line react-hooks/exhaustive-deps
 
-
   const fetchClinicianLevel2 = async () => {
     try {
-      setLoadingClinician(true);
-      const { getClinicianPatients } = await import('../utils/api');
+      setLoadingPatients(true);
+      setPatientsError(null);
       const res = await getClinicianPatients();
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      if (Array.isArray(res.data)) {
         setPatients(res.data);
-        const pId = res.data[0].id;
-        setSelectedPatientId(pId);
-        loadPatientLevel2(pId);
+        
+        // Check query param for deep-linking
+        const params = new URLSearchParams(location.search);
+        const qPid = params.get('patientId');
+        if (qPid) {
+          const targetId = parseInt(qPid, 10);
+          const found = res.data.find(p => p.id === targetId);
+          if (found) {
+            handleSelectPatient(found.id);
+          }
+        }
+      } else {
+        setPatients([]);
       }
     } catch (err) {
-      console.log('Error loading clinician patients for level2:', err.message);
+      console.error('Error loading clinician patients for level2:', err);
+      setPatientsError('Unable to load monitored patients.');
     } finally {
-      setLoadingClinician(false);
+      setLoadingPatients(false);
     }
   };
 
-  const loadPatientLevel2 = async (patientId) => {
+  const handleSelectPatient = async (patientId) => {
+    if (!patientId) {
+      setSelectedPatientId(null);
+      setClinicianLevel2Data(null);
+      setLevel2Error(null);
+      return;
+    }
     try {
       setSelectedPatientId(patientId);
       setLoadingClinician(true);
-      const { getClinicianPatientLevel2 } = await import('../utils/api');
+      setLevel2Error(null);
       const res = await getClinicianPatientLevel2(patientId);
       setClinicianLevel2Data(res.data);
     } catch (err) {
-      console.log('Error loading patient level2:', err.message);
+      console.error('Error loading patient level2:', err);
+      setLevel2Error(err.response?.data?.detail || 'Failed to load patient Tier 2 assessment.');
+      setClinicianLevel2Data(null);
     } finally {
       setLoadingClinician(false);
     }
@@ -178,7 +200,9 @@ const Level2Assessment = () => {
   if (isClinician && !simulateEditForm) {
     const pred = clinicianLevel2Data?.prediction;
     const patForm = clinicianLevel2Data?.form_data;
-    const probPct = pred ? Math.round(pred.probability * 100) : 74;
+    const probPct = pred && typeof pred.probability === 'number' ? Math.round(pred.probability * 100) : null;
+    const selectedPatient = patients.find(p => p.id === selectedPatientId);
+
     return (
       <DoctorLayout activeTitle="Tier 2 Clinical ML">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -217,35 +241,171 @@ const Level2Assessment = () => {
           </div>
 
           {/* Patient Selector Strip */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
-              Select Monitored Patient:
-            </span>
-            {patients.map((p) => (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '1rem 1.25rem',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '12px',
+            border: '1px solid #eef2f6',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', flex: 1 }}>
+              <label htmlFor="tier2-patient-select" style={{ fontSize: '0.8rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                SELECT MONITORED PATIENT:
+              </label>
+
+              {loadingPatients ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#64748b' }}>
+                  <span>⏳ Loading authorized patients...</span>
+                </div>
+              ) : patientsError ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '0.82rem', color: '#ef4444', fontWeight: '600' }}>⚠️ {patientsError}</span>
+                  <button
+                    onClick={fetchClinicianLevel2}
+                    style={{
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      padding: '0.25rem 0.6rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      color: '#0F4C4A'
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : patients.length === 0 ? (
+                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>No monitored patients available.</span>
+              ) : (
+                <select
+                  id="tier2-patient-select"
+                  value={selectedPatientId || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val) {
+                      handleSelectPatient(parseInt(val, 10));
+                    } else {
+                      handleSelectPatient(null);
+                    }
+                  }}
+                  style={{
+                    backgroundColor: '#F8FAFC',
+                    color: '#0F172A',
+                    border: '1.5px solid #CBD5E1',
+                    borderRadius: '8px',
+                    padding: '0.55rem 1rem',
+                    fontSize: '0.88rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    minWidth: '280px',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="">[ Select a patient ▼ ]</option>
+                  {patients.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} (Age {p.age || 65}) {p.is_deviating ? '— ⚠️ Cognitive Shift' : '— Normal Stability'}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {selectedPatient && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#0F4C4A', backgroundColor: '#E8F5EE', padding: '0.35rem 0.75rem', borderRadius: '6px', fontWeight: '700' }}>
+                <span>👤 Active Patient: <strong>{selectedPatient.name}</strong></span>
+                <span>(ID: #{selectedPatient.id})</span>
+              </div>
+            )}
+          </div>
+
+          {/* Main Inspection Viewport */}
+          {!selectedPatientId ? (
+            <div style={{
+              padding: '4rem 2rem',
+              textAlign: 'center',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              border: '1px solid #eef2f6',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem'
+            }}>
+              <div style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: '#F1F5F9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.75rem',
+                color: '#64748b',
+                marginBottom: '0.25rem'
+              }}>
+                👥
+              </div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#1e293b', margin: 0 }}>
+                Select a Monitored Patient
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: '#64748b', maxWidth: '460px', margin: 0, lineHeight: 1.5 }}>
+                Select a monitored patient to view Tier 2 analysis.
+              </p>
+            </div>
+          ) : loadingClinician ? (
+            <div style={{
+              padding: '4rem 2rem',
+              textAlign: 'center',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              border: '1px solid #eef2f6',
+              color: '#0F4C4A',
+              fontWeight: '700',
+              fontSize: '0.92rem'
+            }}>
+              <div style={{ fontSize: '1.8rem', marginBottom: '0.75rem' }}>⏳</div>
+              Calculating TreeSHAP attributions & loading Tier 2 clinical data...
+            </div>
+          ) : level2Error ? (
+            <div style={{
+              padding: '3rem 2rem',
+              textAlign: 'center',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              border: '1px solid #fee2e2'
+            }}>
+              <div style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>⚠️</div>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#b91c1c', fontSize: '1rem', fontWeight: '800' }}>
+                Unable to Load Tier 2 Assessment
+              </h4>
+              <p style={{ margin: '0 0 1rem 0', color: '#7f1d1d', fontSize: '0.85rem' }}>
+                {level2Error}
+              </p>
               <button
-                key={p.id}
-                onClick={() => loadPatientLevel2(p.id)}
+                onClick={() => handleSelectPatient(selectedPatientId)}
                 style={{
-                  border: '1px solid',
-                  borderColor: selectedPatientId === p.id ? '#0F4C4A' : '#e2e8f0',
-                  backgroundColor: selectedPatientId === p.id ? '#E8F5EE' : 'transparent',
-                  color: selectedPatientId === p.id ? '#0F4C4A' : '#1e293b',
-                  borderRadius: '8px',
-                  padding: '0.4rem 0.85rem',
-                  fontSize: '0.78rem',
+                  backgroundColor: '#0F4C4A',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '0.5rem 1.25rem',
+                  fontSize: '0.82rem',
                   fontWeight: '700',
                   cursor: 'pointer'
                 }}
               >
-                {p.name} {p.is_deviating ? '⚠️' : '✓'}
+                Retry
               </button>
-            ))}
-          </div>
-
-          {/* Model Prediction & SHAP Breakdown */}
-          {loadingClinician ? (
-            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>Calculating TreeSHAP attributions...</div>
-          ) : pred ? (
+            </div>
+          ) : pred && pred.probability !== null && pred.probability !== undefined ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1rem' }}>
                 {/* Risk Probability Gauge Card */}
@@ -258,15 +418,15 @@ const Level2Assessment = () => {
                       {probPct}%
                     </div>
                     <span style={{ fontSize: '0.85rem', fontWeight: '800', color: probPct >= 65 ? '#C94C4C' : probPct >= 40 ? '#D97745' : '#2F7D5B' }}>
-                      {pred.risk_level} Risk Category
+                      {pred.risk_level || pred.risk_tier || 'Moderate'} Risk Category
                     </span>
                   </div>
 
                   <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.76rem', color: '#64748b' }}>
-                    <span>🧬 APOE-ε4: <strong>{patForm?.APOE_e4 || 'Negative'}</strong></span>
-                    <span>🩸 Hypertension: <strong>{patForm?.Hypertension || 'No'}</strong></span>
-                    <span>💤 Sleep Quality: <strong>{patForm?.Sleep_Quality || 'Good'}</strong></span>
-                    <span>🏃 Physical Activity: <strong>{patForm?.Physical_Activity || 'Moderate'}</strong></span>
+                    <span>🧬 APOE-ε4: <strong>{patForm?.APOE_e4 || patForm?.apoe4_carrier || 'Negative'}</strong></span>
+                    <span>🩸 Hypertension: <strong>{patForm?.Hypertension || (patForm?.hypertension ? 'Yes' : 'No')}</strong></span>
+                    <span>💤 Sleep Quality: <strong>{patForm?.Sleep_Quality || (patForm?.sleep_hours ? `${patForm.sleep_hours} hrs` : 'Good')}</strong></span>
+                    <span>🏃 Physical Activity: <strong>{patForm?.Physical_Activity || patForm?.physical_activity_level || 'Moderate'}</strong></span>
                   </div>
                 </div>
 
@@ -282,17 +442,20 @@ const Level2Assessment = () => {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                    {pred.top_features?.map((f, idx) => {
-                      const isRisk = f.importance > 0;
+                    {(pred.top_features || pred.shap_features || []).map((f, idx) => {
+                      const featName = f.feature || f.name || `Feature ${idx + 1}`;
+                      const featVal = f.input !== undefined ? String(f.input) : (f.category || (f.value !== undefined ? String(f.value) : ''));
+                      const importance = typeof f.importance === 'number' ? f.importance : (typeof f.value === 'number' ? f.value : (typeof f.shap_value === 'number' ? f.shap_value : 0));
+                      const isRisk = importance > 0;
                       return (
                         <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.82rem' }}>
                           <span style={{ width: '180px', fontWeight: '700', color: '#1e293b' }}>
-                            {f.feature} <span style={{ color: '#64748b', fontSize: '0.74rem' }}>({String(f.value)})</span>
+                            {featName} {featVal ? <span style={{ color: '#64748b', fontSize: '0.74rem' }}>({featVal})</span> : null}
                           </span>
                           <div style={{ flex: 1, height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
                             <div
                               style={{
-                                width: `${Math.min(Math.abs(f.importance) * 120, 100)}%`,
+                                width: `${Math.min(Math.abs(importance) * 120, 100)}%`,
                                 height: '100%',
                                 backgroundColor: isRisk ? '#C94C4C' : '#2F7D5B',
                                 borderRadius: '4px'
@@ -300,7 +463,7 @@ const Level2Assessment = () => {
                             />
                           </div>
                           <span style={{ width: '110px', textAlign: 'right', fontWeight: '800', color: isRisk ? '#C94C4C' : '#2F7D5B' }}>
-                            {isRisk ? `+${f.importance.toFixed(2)} Risk` : `${f.importance.toFixed(2)} Protective`}
+                            {isRisk ? `+${importance.toFixed(2)} Risk` : `${importance.toFixed(2)} Protective`}
                           </span>
                         </div>
                       );
@@ -345,7 +508,15 @@ const Level2Assessment = () => {
               </div>
             </div>
           ) : (
-            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>No Tier 2 model prediction found for selected patient.</div>
+            <div style={{ padding: '4rem 2rem', textAlign: 'center', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6', color: '#64748b' }}>
+              <div style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>📋</div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#1e293b', margin: '0 0 0.5rem 0' }}>
+                No Tier 2 Model Prediction Found
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', maxWidth: '480px', margin: '0 auto' }}>
+                No Tier 2 model prediction found for selected patient.
+              </p>
+            </div>
           )}
         </div>
       </DoctorLayout>

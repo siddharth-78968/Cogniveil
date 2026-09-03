@@ -1871,7 +1871,7 @@ def get_clinician_patient_level2(
         form_data = default_form_data
 
     try:
-        t2_res = mcp_tools.predict_risk(form_data, level2_status="completed")
+        t2_res = mcp_tools.predict_risk(form_data, level2_status="completed", session_id=f"clinician_view_{patient_id}", pipeline_state="tier2_ml")
     except Exception:
         t2_res = {
             "probability": 0.42,
