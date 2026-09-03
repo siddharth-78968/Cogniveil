@@ -217,14 +217,24 @@
 
 .cv-hero-title {
   font-family: 'Newsreader', Georgia, serif;
-  font-size: clamp(3.4rem, 5.4vw, 5rem);
+  font-size: clamp(2.2rem, 3.2vw, 3.35rem);
   font-weight: 400;
-  line-height: 1.08;
+  line-height: 1.18;
   letter-spacing: -0.035em;
   color: var(--cv-text);
-  margin: 0 auto 1.5rem auto;
-  max-width: 1100px;
-  text-wrap: balance;
+  margin: 0 auto 1.6rem auto;
+  max-width: 1260px;
+  text-align: center;
+}
+
+.cv-hero-line-1 {
+  display: block;
+  white-space: nowrap;
+}
+
+.cv-hero-line-2 {
+  display: block;
+  white-space: nowrap;
 }
 
 .cv-hero-sub {

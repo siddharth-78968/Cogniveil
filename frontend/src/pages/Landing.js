@@ -213,7 +213,8 @@ const Landing = () => {
           </div>
 
           <h1 className="cv-hero-title">
-            Precision cognitive drift surveillance, for care teams and patients.
+            <span className="cv-hero-line-1">Precision cognitive drift surveillance,</span>
+            <span className="cv-hero-line-2">for care teams and patients.</span>
           </h1>
 
           <p className="cv-hero-sub">
