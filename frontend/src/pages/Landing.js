@@ -665,49 +665,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── SECTION 3: CLINICAL EVIDENCE & QUOTES ── */}
-      <section className="cv-section">
-        <div className="cv-container">
-          
-          <div className="cv-section-header">
-            <h2 className="cv-section-title">
-              Built in partnership with clinical neurologists and caregivers
-            </h2>
-            <p className="cv-section-sub">
-              Validated on longitudinal cognitive cohorts to turn passive telemetry into actionable clinical interventions.
-            </p>
-          </div>
-
-          <div className="cv-quotes-grid">
-            <div className="cv-quote-card">
-              <p className="cv-quote-text">
-                "The biggest barrier in memory care is that patients present 2 to 3 years after sub-clinical drift begins. Having a continuous, passive surveillance system that flags change-points months earlier fundamentally alters our therapeutic window."
-              </p>
-              <div className="cv-quote-author">
-                <div className="cv-author-avatar">AN</div>
-                <div>
-                  <div className="cv-author-name">Dr. Arvind Natarajan, MD</div>
-                  <div className="cv-author-role">Cognitive Neurologist · Memory Care Clinic</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="cv-quote-card">
-              <p className="cv-quote-text">
-                "CogniVeil doesn't induce panic or spit out generic diagnosis labels. It provides defensible, longitudinal evidence that our family can bring directly into neurologist consultations with complete clarity."
-              </p>
-              <div className="cv-quote-author">
-                <div className="cv-author-avatar">SC</div>
-                <div>
-                  <div className="cv-author-name">Sarah Chen</div>
-                  <div className="cv-author-role">Primary Caregiver & Patient Advocate</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
 
       {/* ── SECTION 4: FREQUENTLY ASKED QUESTIONS (ACCORDION) ── */}
       <section id="faq" className="cv-section">
