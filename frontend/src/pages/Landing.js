@@ -205,14 +205,6 @@ const Landing = () => {
           </div>
 
           <div className="cv-pill-actions">
-            <button 
-              className="cv-pill-theme-btn" 
-              onClick={() => setShowIntro(true)} 
-              title="Watch System Intro Animation"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', letterSpacing: '0.06em', padding: '6px 12px' }}
-            >
-              ▶ INTRO
-            </button>
             <button className="cv-pill-theme-btn" onClick={toggleTheme} title="Toggle theme">
               {isDark ? 'LIGHT' : 'DARK'}
             </button>
@@ -247,13 +239,6 @@ const Landing = () => {
           <div className="cv-hero-cta-group">
             <button className="cv-hero-primary-btn" onClick={() => navigate('/login')}>
               Launch clinical workstation
-            </button>
-            <button 
-              className="cv-hero-secondary-btn" 
-              onClick={() => setShowIntro(true)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}
-            >
-              ▶ Watch system intro
             </button>
             <a href="#challenge" className="cv-hero-secondary-btn">
               Run reaction agility test
