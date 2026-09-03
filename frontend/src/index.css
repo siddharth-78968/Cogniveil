@@ -8,6 +8,10 @@
 
 html, body {
   background-color: var(--cv-ink);
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 36px 36px;
   color: var(--cv-fog);
   font-family: var(--cv-font-grotesk);
   font-size: 15px;
@@ -40,10 +44,14 @@ html[data-font-scale="xl"] {
   font-size: 20.5px !important;
 }
 
-/* Neutral Light Mode Canvas */
+/* Pastel Green Light Mode Background Pattern */
 html.light-mode, body.light-mode, .light-mode {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #f2f6f1;
+  background-image: 
+    linear-gradient(rgba(13, 23, 14, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 23, 14, 0.025) 1px, transparent 1px);
+  background-size: 36px 36px;
+  color: #0d170e;
 }
 
 #root {
@@ -51,92 +59,83 @@ html.light-mode, body.light-mode, .light-mode {
   min-height: 100vh;
 }
 
-/* Restrained Typography Scale */
+/* Editorial Headlines in Newsreader Serif */
 h1, h2, h3 {
   font-family: var(--cv-font-serif);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: -0.015em;
   color: var(--cv-fog);
 }
 
 .light-mode h1, .light-mode h2, .light-mode h3 {
-  color: #0f172a;
+  color: #1C1917;
 }
 
 h4, h5, h6 {
   font-family: var(--cv-font-grotesk);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--cv-fog);
 }
 
 .light-mode h4, .light-mode h5, .light-mode h6 {
-  color: #0f172a;
+  color: #1C1917;
 }
 
-/* Tabular Numerals for Clinical Telemetry */
+/* Tabular Numerals for Telemetry */
 .cv-numeric,
 .tabular-nums,
 [data-numeric] {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   font-family: var(--cv-font-mono);
+  letter-spacing: -0.02em;
 }
 
-/* Narrative Marker Panel */
+/* AI-Provenance Narrative Marker Panel */
 .cv-ai-panel {
-  border-left: 3px solid var(--cv-signal-cyan);
+  border-left: 3px solid var(--cv-signal-cyan) !important;
   background-color: var(--cv-surface-card);
   position: relative;
   border-radius: var(--cv-radius-sm);
-  padding: 16px;
-  border: 1px solid var(--cv-border);
+  padding: 18px;
 }
 
 .light-mode .cv-ai-panel {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-left: 3px solid #0284c7;
+  background-color: #FFFFFF;
+  border: 1px solid #EAE2D8;
+  border-left: 3px solid #0284C7 !important;
 }
 
 .cv-ai-tag {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
   color: var(--cv-signal-cyan);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   font-family: var(--cv-font-mono);
-  text-transform: uppercase;
-}
-
-.light-mode .cv-ai-tag {
-  color: #0284c7;
 }
 
 .cv-ai-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background-color: var(--cv-signal-cyan);
+  box-shadow: 0 0 8px var(--cv-signal-cyan);
 }
 
-.light-mode .cv-ai-dot {
-  background-color: #0284c7;
-}
-
-/* Clinical Tier Badges */
+/* Glowing Level / Tier Indicator Badges */
 .level-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 8px;
-  border-radius: var(--cv-radius-xs);
-  font-size: 11px;
-  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: var(--cv-radius-full);
+  font-size: 12px;
+  font-weight: 700;
   font-family: var(--cv-font-mono);
-  letter-spacing: 0.02em;
 }
 
 .level-badge.level-1 {
@@ -198,57 +197,58 @@ h4, h5, h6 {
 /* Buttons */
 .cv-btn-primary {
   background: var(--cv-btn-primary);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--cv-btn-primary-text);
+  border: none;
   border-radius: var(--cv-radius-sm);
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 700;
   font-family: var(--cv-font-grotesk);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 14px rgba(86, 180, 211, 0.35);
+  transition: all 0.2s ease;
 }
 
 .cv-btn-primary:hover {
-  background: var(--cv-btn-primary-hover);
-  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(86, 180, 211, 0.5);
 }
 
 .cv-btn-secondary {
-  background: var(--cv-surface-card);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--cv-fog);
   border: 1px solid var(--cv-border);
   border-radius: var(--cv-radius-sm);
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 9px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
   font-family: var(--cv-font-grotesk);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .light-mode .cv-btn-secondary {
-  background: #ffffff;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
+  background: #FFFFFF;
+  color: #1C1917;
+  border: 1px solid #EAE2D8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .cv-btn-secondary:hover {
-  background: var(--cv-surface-elevated);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(34, 211, 238, 0.4);
 }
 
 .light-mode .cv-btn-secondary:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: #F4EFEA;
+  border-color: #D6CCC0;
 }
 
 /* Light / Dark Mode Toggle Switch */
 .theme-toggle-switch {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--cv-radius-sm);
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -256,17 +256,19 @@ h4, h5, h6 {
   border: 1px solid var(--cv-border);
   color: var(--cv-fog);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .light-mode .theme-toggle-switch {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  color: #0f172a;
+  background: #FFFFFF;
+  border-color: #EAE2D8;
+  color: #1C1917;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .theme-toggle-switch:hover {
   border-color: var(--cv-signal-cyan);
+  transform: scale(1.05);
 }
 
 /* Custom Scrollbar */
@@ -281,7 +283,7 @@ h4, h5, h6 {
 
 ::-webkit-scrollbar-thumb {
   background: var(--cv-border);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {

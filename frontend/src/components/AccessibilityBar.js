@@ -16,19 +16,24 @@ const AccessibilityBar = () => {
   } = useTheme();
 
   return (
-    <div style={{ ...styles.container, backgroundColor: isDark ? '#0c1322' : '#f8fafc', borderColor: theme.border }}>
+    <div style={{ ...styles.container, backgroundColor: isDark ? '#0b100c' : '#f2f6f1', borderColor: theme.border }}>
       <div style={styles.leftLabel}>
         <span style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '6px',
-          fontSize: '0.7rem',
-          fontWeight: '700',
-          color: isDark ? '#94a3b8' : '#64748b',
-          letterSpacing: '0.04em',
+          gap: '8px',
+          fontSize: '0.72rem',
+          fontWeight: '800',
+          fontFamily: "'JetBrains Mono', monospace",
+          color: theme.subtext,
+          letterSpacing: '0.06em',
           textTransform: 'uppercase'
         }}>
-          <span style={{ fontSize: '0.85rem' }}>♿</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v8" />
+            <path d="M8 12h8" />
+          </svg>
           Clinical Accessibility · WCAG 2.1 AA
         </span>
       </div>
@@ -40,13 +45,13 @@ const AccessibilityBar = () => {
           backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
           border: `1px solid ${theme.borderSubtle || 'rgba(255,255,255,0.08)'}`
         }}>
-          <span style={{ fontSize: '0.7rem', color: isDark ? '#94a3b8' : '#64748b', marginRight: '6px', fontWeight: '600' }}>
+          <span style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: theme.subtext, marginRight: '6px', fontWeight: '700' }}>
             Text Size:
           </span>
           <button 
             style={{ 
               ...styles.btn, 
-              backgroundColor: (fontSizeScale === 'sm' || fontSizeScale === 'xs') ? '#4338CA' : 'transparent', 
+              backgroundColor: (fontSizeScale === 'sm' || fontSizeScale === 'xs') ? (isDark ? '#3d5236' : '#273822') : 'transparent', 
               color: (fontSizeScale === 'sm' || fontSizeScale === 'xs') ? '#ffffff' : theme.text,
               opacity: fontSizeScale === 'xs' ? 0.4 : 1,
               cursor: fontSizeScale === 'xs' ? 'not-allowed' : 'pointer',
@@ -60,19 +65,19 @@ const AccessibilityBar = () => {
           <button 
             style={{ 
               ...styles.btn, 
-              backgroundColor: fontSizeScale === 'md' ? '#4338CA' : 'transparent', 
+              backgroundColor: fontSizeScale === 'md' ? (isDark ? '#3d5236' : '#273822') : 'transparent', 
               color: fontSizeScale === 'md' ? '#ffffff' : theme.text 
             }}
             onClick={resetFontSize}
-            title="Default text size (100%)"
-            aria-label="Reset text size to default"
+            title="Reset text size to standard (100%)"
+            aria-label="Reset text size"
           >
             A
           </button>
           <button 
             style={{ 
               ...styles.btn, 
-              backgroundColor: (fontSizeScale === 'lg' || fontSizeScale === 'xl') ? '#4338CA' : 'transparent', 
+              backgroundColor: (fontSizeScale === 'lg' || fontSizeScale === 'xl') ? (isDark ? '#3d5236' : '#273822') : 'transparent', 
               color: (fontSizeScale === 'lg' || fontSizeScale === 'xl') ? '#ffffff' : theme.text,
               opacity: fontSizeScale === 'xl' ? 0.4 : 1,
               cursor: fontSizeScale === 'xl' ? 'not-allowed' : 'pointer',
@@ -84,13 +89,13 @@ const AccessibilityBar = () => {
             A+
           </button>
           <span style={{ 
-            fontSize: '0.68rem', 
-            fontWeight: '800', 
-            color: '#06b6d4', 
+            fontSize: '0.72rem', 
+            fontWeight: '700', 
+            color: theme.subtext, 
             marginLeft: '6px', 
             minWidth: '32px', 
             textAlign: 'center',
-            fontFamily: 'monospace'
+            fontFamily: "'JetBrains Mono', monospace"
           }}>
             {fontSizePercent || '100%'}
           </span>
@@ -100,14 +105,17 @@ const AccessibilityBar = () => {
         <button 
           style={{ 
             ...styles.toggleBtn, 
-            backgroundColor: reducedMotion ? (isDark ? '#1e1b4b' : '#e0e7ff') : 'transparent', 
-            color: reducedMotion ? '#4338CA' : theme.text, 
-            borderColor: reducedMotion ? '#6366f1' : theme.border 
+            backgroundColor: reducedMotion ? (isDark ? '#1a241b' : '#e8efe6') : 'transparent', 
+            color: reducedMotion ? (isDark ? '#a3b18a' : '#273822') : theme.text, 
+            borderColor: reducedMotion ? (isDark ? '#3d5236' : '#d2ded0') : theme.border,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '0.72rem',
+            fontWeight: '700'
           }}
           onClick={toggleReducedMotion}
           title="Toggle reduced animations"
         >
-          <span>{reducedMotion ? '⏸️ Motion Reduced' : '▶️ Motion Standard'}</span>
+          <span>{reducedMotion ? 'Motion: Reduced' : 'Motion: Standard'}</span>
         </button>
 
         {/* Light / Dark Mode Toggle */}
@@ -116,13 +124,16 @@ const AccessibilityBar = () => {
             ...styles.toggleBtn, 
             backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', 
             color: theme.text, 
-            borderColor: theme.border 
+            borderColor: theme.border,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '0.72rem',
+            fontWeight: '700'
           }}
           onClick={toggleTheme}
           title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
           aria-label="Toggle Theme"
         >
-          <span>{isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}</span>
+          <span>{isDark ? 'Light Theme' : 'Dark Theme'}</span>
         </button>
       </div>
     </div>

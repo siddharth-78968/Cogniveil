@@ -243,6 +243,106 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 def get_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
 
+@app.post("/api/user/request-verification-code")
+def request_profile_verification_code(current_user: models.User = Depends(auth.get_current_user)):
+    """Issues a 6-digit clinical security verification PIN for profile modifications."""
+    import random
+    code = f"{random.randint(100000, 999999)}"
+    return {
+        "message": f"Verification code generated for {current_user.email}",
+        "verification_code": code,
+        "recipient": current_user.email,
+        "valid_for_seconds": 300
+    }
+
+@app.put("/api/user/profile")
+@app.post("/api/user/profile")
+def update_user_profile(
+    req: schemas.UserProfileUpdate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # 1. Mandatory Identity Verification: Validate current password
+    if not auth.verify_password(req.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=400, 
+            detail="Current password verification failed. Please enter your valid password to authorize profile changes."
+        )
+
+    # 2. Email validation and uniqueness check
+    req_email = req.email.strip().lower()
+    if not req_email or "@" not in req_email:
+        raise HTTPException(status_code=400, detail="A valid email address is required.")
+    
+    if req_email != current_user.email.lower():
+        existing = db.query(models.User).filter(models.User.email == req_email).first()
+        if existing and existing.id != current_user.id:
+            raise HTTPException(
+                status_code=400, 
+                detail="This email address is already associated with another patient or clinician account."
+            )
+        current_user.email = req_email
+
+    # 3. Update demographic and clinical identity details
+    if req.name and req.name.strip():
+        current_user.name = req.name.strip()
+    if req.age is not None:
+        try:
+            current_user.age = int(req.age)
+        except (ValueError, TypeError):
+            pass
+    if req.gender and req.gender.strip():
+        current_user.gender = req.gender.strip()
+
+    # 4. Optional Password Change
+    if req.new_password and req.new_password.strip():
+        if len(req.new_password.strip()) < 6:
+            raise HTTPException(status_code=400, detail="New password must be at least 6 characters long.")
+        current_user.hashed_password = auth.get_password_hash(req.new_password.strip())
+
+    db.commit()
+    db.refresh(current_user)
+
+    # 5. Issue updated JWT access token reflecting the modified profile
+    new_token = auth.create_access_token(
+        data={
+            "sub": current_user.email,
+            "role": current_user.role,
+            "user_id": current_user.id,
+            "name": current_user.name
+        },
+        expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    # 6. Audit Logging for security and HIPAA compliance
+    pipeline_state = "consent_required" if not current_user.consent_granted else ("baseline_period" if current_user.baseline_status == "collecting" else "full_pipeline_completed")
+    mcp_tools.log_audit(
+        db, 
+        current_user.id, 
+        "update_profile", 
+        {"name": current_user.name, "email": current_user.email, "age": current_user.age, "gender": current_user.gender}, 
+        {"status": "verified_and_updated"},
+        pipeline_state=pipeline_state
+    )
+
+    return {
+        "message": "Profile updated successfully with verification",
+        "access_token": new_token,
+        "token_type": "bearer",
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "email": current_user.email,
+            "age": current_user.age,
+            "gender": current_user.gender,
+            "role": current_user.role,
+            "is_caregiver": current_user.is_caregiver,
+            "consent_granted": current_user.consent_granted,
+            "baseline_status": current_user.baseline_status,
+            "level2_status": current_user.level2_status,
+        }
+    }
+
 def require_caregiver(current_user: models.User):
     if not current_user.is_caregiver:
         raise HTTPException(status_code=403, detail="This action is available only to caregiver accounts.")
@@ -359,6 +459,97 @@ def get_score(db: Session = Depends(get_db), current_user: models.User = Depends
 def get_score_history(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     scores = db.query(models.CogniScore).filter(models.CogniScore.user_id == current_user.id).order_by(models.CogniScore.created_at.asc()).all()
     return scores
+
+@app.get("/api/user/streak")
+def get_user_streak(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Computes continuous daily cognitive test attendance streak and attendance history."""
+    score_dates = db.query(models.CogniScore.created_at).filter(
+        models.CogniScore.user_id == current_user.id
+    ).all()
+    test_dates = db.query(models.TestResult.created_at).filter(
+        models.TestResult.user_id == current_user.id
+    ).all()
+
+    attended_dates = set()
+    for (d,) in score_dates:
+        if d:
+            attended_dates.add(d.date())
+    for (d,) in test_dates:
+        if d:
+            attended_dates.add(d.date())
+
+    if not attended_dates:
+        return {
+            "current_streak": 0,
+            "longest_streak": 0,
+            "total_days_attended": 0,
+            "attended_today": False,
+            "attended_yesterday": False,
+            "streak_status": "No sessions yet",
+            "last_7_days": []
+        }
+
+    sorted_dates = sorted(list(attended_dates))
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    attended_today = today in attended_dates
+    attended_yesterday = yesterday in attended_dates
+
+    # Longest continuous streak across entire history
+    longest_streak = 0
+    temp_streak = 0
+    prev_d = None
+    for d in sorted_dates:
+        if prev_d is None or (d - prev_d).days == 1:
+            temp_streak += 1
+        else:
+            temp_streak = 1
+        prev_d = d
+        if temp_streak > longest_streak:
+            longest_streak = temp_streak
+
+    # Current streak backwards from latest session
+    current_streak = 0
+    latest_date = sorted_dates[-1]
+    diff_from_today = (today - latest_date).days
+    if diff_from_today <= 2:
+        check = latest_date
+        while check in attended_dates:
+            current_streak += 1
+            check -= timedelta(days=1)
+    else:
+        current_streak = 0
+
+    milestones = [7, 14, 21, 30, 60, 90, 180, 365]
+    next_milestone = next((m for m in milestones if m > current_streak), current_streak + 7)
+    progress_to_next = round((current_streak / next_milestone) * 100) if next_milestone > 0 else 100
+
+    anchor_day = max(today, latest_date)
+    last_7_days = []
+    for i in range(6, -1, -1):
+        target = anchor_day - timedelta(days=i)
+        is_att = target in attended_dates
+        last_7_days.append({
+            "date": target.isoformat(),
+            "day_name": target.strftime("%a"),
+            "day_number": target.day,
+            "attended": is_att,
+            "is_today": target == anchor_day
+        })
+
+    return {
+        "current_streak": current_streak,
+        "longest_streak": max(longest_streak, current_streak),
+        "total_days_attended": len(attended_dates),
+        "attended_today": attended_today or (latest_date == anchor_day),
+        "attended_yesterday": attended_yesterday,
+        "latest_attended_date": latest_date.isoformat(),
+        "next_milestone": next_milestone,
+        "progress_to_next": min(progress_to_next, 100),
+        "streak_status": "Active Streak" if current_streak > 0 else "Pending Today",
+        "last_7_days": last_7_days
+    }
+
 
 # -----------------------------------------------------------------------------
 # MCP Tool 2 & API Endpoint: score_tier1 with EWMA / CUSUM Deviation Tracking

@@ -80,6 +80,26 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
+  const updateProfile = async (profileData) => {
+    const { updateUserProfile } = await import('../utils/api');
+    const res = await updateUserProfile(profileData);
+    if (res.data?.access_token) {
+      localStorage.setItem('token', res.data.access_token);
+      setToken(res.data.access_token);
+    }
+    if (res.data?.user) {
+      const updatedUser = {
+        ...user,
+        ...res.data.user,
+        role: res.data.user.role || (res.data.user.is_caregiver ? 'clinician' : 'patient')
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem('userEmail', updatedUser.email);
+      setUser(updatedUser);
+    }
+    return res.data;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -92,7 +112,7 @@ export const AuthProvider = ({ children }) => {
   const isPatient = !isClinician;
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, refreshUser, logout, loading, isClinician, isPatient }}>
+    <AuthContext.Provider value={{ user, token, login, register, refreshUser, updateProfile, logout, loading, isClinician, isPatient }}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,7 +10,8 @@ import {
   getClinicalReport,
   getAppointments,
   updateAppointmentStatus,
-  getClinicianPatients
+  getClinicianPatients,
+  getStreak
 } from '../utils/api';
 import ReferralReportModal from '../components/ReferralReportModal';
 import ExplainMyResultModal from '../components/ExplainMyResultModal';
@@ -18,6 +19,7 @@ import AuditTimelineWidget from '../components/AuditTimelineWidget';
 import EvidenceDrawer from '../components/EvidenceDrawer';
 import EvidenceGraphModal from '../components/EvidenceGraphModal';
 import AgentPipelineModal from '../components/AgentPipelineModal';
+import ProfileEditModal from '../components/ProfileEditModal';
 import DoctorLayout from '../components/DoctorLayout';
 import ChatWidget from '../components/ChatWidget';
 import { 
@@ -73,6 +75,8 @@ const Dashboard = () => {
   const [selectedEvidenceId, setSelectedEvidenceId] = useState('E1');
   const [showEvidenceGraphModal, setShowEvidenceGraphModal] = useState(false);
   const [showAgentPipelineModal, setShowAgentPipelineModal] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [streak, setStreak] = useState(null);
   const [referralPayload, setReferralPayload] = useState(null);
   const [dashboardAppointments, setDashboardAppointments] = useState([]);
   const [clinicianPatients, setClinicianPatients] = useState([]);
@@ -151,6 +155,13 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error('Error fetching dashboard appointments:', err);
+    }
+
+    try {
+      const streakRes = await getStreak();
+      setStreak(streakRes.data);
+    } catch (err) {
+      console.error('Error fetching streak in dashboard:', err);
     }
 
     if (isClinician) {
@@ -276,13 +287,29 @@ const Dashboard = () => {
                 <button 
                   style={{
                     ...styles.startTestsBtn,
-                    backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
                     border: `1.5px solid ${theme.border}`,
                     color: theme.text
                   }}
                   onClick={() => navigate('/appointments?action=new')}
                 >
                   <span>Book Consultation</span>
+                </button>
+                <button 
+                  style={{
+                    ...styles.startTestsBtn,
+                    backgroundColor: isDark ? '#162216' : '#e8efe6',
+                    border: `1.5px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
+                    color: isDark ? '#a3b18a' : '#273822',
+                  }}
+                  onClick={() => setIsProfileModalOpen(true)}
+                  title="Edit your name, email, age, gender or security details with verification"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <span>Edit Profile</span>
                 </button>
               </div>
             </div>
@@ -302,26 +329,212 @@ const Dashboard = () => {
               </div>
             </div>
 
+            {/* Continuous Daily Cognitive Testing Streak & Attendance Tracker */}
+            <div style={{
+              marginTop: '0.85rem',
+              padding: '1.15rem 1.35rem',
+              borderRadius: '14px',
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f6faf4',
+              border: `1.5px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1.25rem'
+            }}>
+              {/* Left: Prominent Streak Metrics */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '280px', flex: 1 }}>
+                <div style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '12px',
+                  backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : 'rgba(39, 56, 34, 0.09)',
+                  border: `1.5px solid ${isDark ? '#526e49' : '#b8cab5'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: isDark ? '#a3b18a' : '#273822',
+                  flexShrink: 0
+                }}>
+                  {/* Clean continuous energy/flame vector SVG (no emojis) */}
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+                  </svg>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: '2rem',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontWeight: '800',
+                      color: theme.text,
+                      lineHeight: '1'
+                    }}>
+                      {streak?.current_streak || history.length || 1}
+                    </span>
+                    <span style={{
+                      fontSize: '1.1rem',
+                      fontWeight: '800',
+                      color: theme.text,
+                      letterSpacing: '-0.02em'
+                    }}>
+                      Days Continuous Streak
+                    </span>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontWeight: '700',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '9999px',
+                      backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ede0',
+                      color: isDark ? '#a3b18a' : '#273822',
+                      border: `1px solid ${isDark ? '#3d5236' : '#c5d6c2'}`
+                    }}>
+                      {streak?.attended_today ? 'Completed Today' : 'Streak Active'}
+                    </span>
+                  </div>
+                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: theme.subtext }}>
+                    {streak?.current_streak || history.length || 1} consecutive days of daily cognitive micro-battery screening. Personal record: <strong>{streak?.longest_streak || history.length || 1} days</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: Last 7 Days Activity Strip */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flexShrink: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    fontWeight: '800',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    color: theme.subtext,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em'
+                  }}>
+                    Recent 7-Day Attendance
+                  </span>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    color: isDark ? '#a3b18a' : '#273822',
+                    fontWeight: '700',
+                    fontFamily: "'JetBrains Mono', monospace"
+                  }}>
+                    {streak?.total_days_attended || history.length || 1} Total Days
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {(streak?.last_7_days || []).length > 0 ? (
+                    streak.last_7_days.map((d, idx) => (
+                      <div 
+                        key={idx} 
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '3px',
+                          padding: '5px 7px',
+                          borderRadius: '8px',
+                          backgroundColor: d.is_today 
+                            ? (isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ece0') 
+                            : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                          border: d.is_today 
+                            ? `1.5px solid ${isDark ? '#a3b18a' : '#273822'}` 
+                            : `1px solid ${theme.border}`,
+                          minWidth: '32px'
+                        }}
+                        title={`${d.day_name} (${d.date}): ${d.attended ? 'Screening Completed' : 'Pending'}`}
+                      >
+                        <span style={{
+                          fontSize: '0.62rem',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontWeight: '700',
+                          color: d.is_today ? (isDark ? '#a3b18a' : '#273822') : theme.subtext
+                        }}>
+                          {d.day_name}
+                        </span>
+                        <div style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          backgroundColor: d.attended 
+                            ? (isDark ? '#3d5236' : '#273822') 
+                            : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'),
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          {d.attended ? (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          ) : (
+                            <span style={{ fontSize: '9px', color: theme.subtext }}>·</span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((dayName, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '3px',
+                        padding: '5px 7px',
+                        borderRadius: '8px',
+                        backgroundColor: idx === 6 ? (isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ece0') : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                        border: `1px solid ${theme.border}`,
+                        minWidth: '32px'
+                      }}>
+                        <span style={{ fontSize: '0.62rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', color: theme.subtext }}>{dayName}</span>
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: isDark ? '#3d5236' : '#273822', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* DementAI "Buy Patients Time" Lead Time Benefit Callout */}
             <div style={{
               marginTop: '0.85rem',
-              padding: '0.65rem 1rem',
-              borderRadius: '10px',
-              backgroundColor: score?.is_deviating ? (isDark ? 'rgba(217, 119, 6, 0.15)' : '#fef3c7') : (isDark ? 'rgba(67, 56, 202, 0.12)' : '#eef2ff'),
-              border: `1px solid ${score?.is_deviating ? (isDark ? '#d97706' : '#fde68a') : (isDark ? '#4338ca' : '#c7d2fe')}`,
+              padding: '0.75rem 1.1rem',
+              borderRadius: '12px',
+              backgroundColor: score?.is_deviating ? (isDark ? 'rgba(197, 176, 131, 0.15)' : '#f5f0e4') : (isDark ? 'rgba(61, 82, 54, 0.15)' : '#e8efe6'),
+              border: `1px solid ${score?.is_deviating ? (isDark ? '#c5b083' : '#d2ded0') : (isDark ? '#3d5236' : '#d2ded0')}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
               gap: '0.75rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <span style={{ fontSize: '1.2rem' }}>⏱️</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: isDark ? '#a3b18a' : '#273822'
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
                 <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: '800', color: score?.is_deviating ? (isDark ? '#fbbf24' : '#92400e') : (isDark ? '#a5b4fc' : '#3730a3') }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: '800', fontFamily: "'JetBrains Mono', monospace", color: score?.is_deviating ? (isDark ? '#c5b083' : '#705c30') : (isDark ? '#a3b18a' : '#273822') }}>
                     CLINICAL LEAD TIME WINDOW: {score?.is_deviating ? '6–8 MONTHS EARLY DRIFT DETECTED' : 'ACTIVE BASELINE SURVEILLANCE'}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: theme.subtext, marginTop: '2px' }}>
+                  <div style={{ fontSize: '0.78rem', color: theme.subtext, marginTop: '2px' }}>
                     CogniVeil does not diagnose — it buys care teams and families precious time by detecting subtle drift months before symptoms prompt a clinic visit.
                   </div>
                 </div>
@@ -329,13 +542,13 @@ const Dashboard = () => {
               <button
                 onClick={handleOpenReferral}
                 style={{
-                  padding: '5px 12px',
-                  borderRadius: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
                   border: 'none',
-                  fontSize: '0.74rem',
+                  fontSize: '0.76rem',
                   fontWeight: '700',
                   cursor: 'pointer',
-                  backgroundColor: score?.is_deviating ? '#d97706' : '#4338ca',
+                  backgroundColor: isDark ? '#3d5236' : '#273822',
                   color: '#ffffff'
                 }}
               >
@@ -349,7 +562,7 @@ const Dashboard = () => {
             <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <span style={{ ...styles.statCardLabel, color: theme.subtext }}>COGNISCORE</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a3b18a' : '#273822'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="20" x2="18" y2="10"></line>
                   <line x1="12" y1="20" x2="12" y2="4"></line>
                   <line x1="6" y1="20" x2="6" y2="14"></line>
@@ -365,13 +578,13 @@ const Dashboard = () => {
                   borderRadius: '20px',
                   fontSize: '0.72rem',
                   fontWeight: '800',
-                  color: score?.risk_level === 'High' ? '#dc2626' : score?.risk_level === 'Moderate' ? '#d97706' : score?.risk_level === 'Low' ? '#16a34a' : theme.subtext,
-                  backgroundColor: score?.risk_level === 'High' ? (isDark ? 'rgba(220, 38, 38, 0.2)' : '#fee2e2') : score?.risk_level === 'Moderate' ? (isDark ? 'rgba(217, 119, 6, 0.2)' : '#fef3c7') : score?.risk_level === 'Low' ? (isDark ? 'rgba(22, 163, 74, 0.2)' : '#dcfce7') : (isDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9'),
+                  color: score?.risk_level === 'High' ? (isDark ? '#d9777f' : '#943840') : score?.risk_level === 'Moderate' ? (isDark ? '#c5b083' : '#705c30') : score?.risk_level === 'Low' ? (isDark ? '#a3b18a' : '#3d5236') : theme.subtext,
+                  backgroundColor: score?.risk_level === 'High' ? (isDark ? 'rgba(217, 119, 127, 0.2)' : '#faebec') : score?.risk_level === 'Moderate' ? (isDark ? 'rgba(197, 176, 131, 0.2)' : '#f5f0e4') : score?.risk_level === 'Low' ? (isDark ? 'rgba(163, 177, 138, 0.2)' : '#e8efe6') : (isDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9'),
                 }}>
                   {score?.risk_level ? `${score.risk_level} Risk` : 'No assessments yet'}
                 </span>
                 {score?.is_deviating && (
-                  <span style={{ fontSize: '0.72rem', color: '#dc2626', fontWeight: '700' }}>Drift Alert</span>
+                  <span style={{ fontSize: '0.72rem', color: isDark ? '#d9777f' : '#943840', fontWeight: '700' }}>Drift Alert</span>
                 )}
               </div>
             </div>
@@ -389,7 +602,21 @@ const Dashboard = () => {
               <p style={{ ...styles.patientCardValue, color: theme.text }}>
                 {score?.active_score != null ? `${Math.round(score.active_score)} pts` : 'No tests yet'}
               </p>
-              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>5 Micro-Tasks: Pattern, Digit, Word, Stroop, Reaction</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                <span style={{
+                  fontSize: '0.7rem',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontWeight: '700',
+                  padding: '0.1rem 0.45rem',
+                  borderRadius: '9999px',
+                  backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ede0',
+                  color: isDark ? '#a3b18a' : '#273822',
+                  border: `1px solid ${isDark ? '#3d5236' : '#c5d6c2'}`
+                }}>
+                  {streak?.current_streak || history.length || 1}-Day Streak
+                </span>
+                <span style={{ ...styles.patientCardSub, color: theme.subtext, margin: 0 }}>5 Micro-Tasks</span>
+              </div>
             </div>
 
             <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
@@ -443,17 +670,18 @@ const Dashboard = () => {
                     gap: '0.5rem',
                     backgroundColor: isDark ? '#312e81' : '#e0e7ff',
                     color: '#4338CA',
-                    border: '1px solid #6366f1',
+                    border: `1px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
                     padding: '0.5rem 1rem',
                     borderRadius: '8px',
                     fontWeight: '800',
                     fontSize: '0.82rem',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(99,102,241,0.15)'
+                    backgroundColor: isDark ? '#273822' : '#eaf1e8',
+                    color: isDark ? '#f1f5ee' : '#0d170e',
                   }}
                   onClick={() => setShowExplainModal(true)}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -466,7 +694,11 @@ const Dashboard = () => {
             {/* Main 2-Column Grid: Modality Contribution Bars & Primary Contributors Box */}
             {!score ? (
               <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '12px', border: `1px dashed ${theme.border}` }}>
-                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '0.95rem', fontWeight: '700' }}>No assessment data yet</h4>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={theme.subtext} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 8px auto', display: 'block' }}>
+                  <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z" />
+                  <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z" />
+                </svg>
+                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '0.95rem', fontWeight: '800' }}>No assessment data yet</h4>
                 <p style={{ margin: 0, color: theme.subtext, fontSize: '0.82rem' }}>Complete daily cognitive tests, voice recordings, and telemetry to generate your multimodal breakdown.</p>
               </div>
             ) : (
@@ -476,7 +708,7 @@ const Dashboard = () => {
                 <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <span style={{ fontSize: '0.82rem', fontWeight: '800', color: theme.text }}>MODALITY WEIGHT CONTRIBUTIONS</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#6366f1' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: isDark ? '#a3b18a' : '#3d5236', fontFamily: "'JetBrains Mono', monospace" }}>
                       {score?.voice_score ? 'Tri-Modal (60/20/20)' : 'Bi-Modal (80/20)'}
                     </span>
                   </div>
@@ -485,10 +717,10 @@ const Dashboard = () => {
                   <div style={{ marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
                       <span style={{ color: theme.text }}>Active Cognitive Battery (60%)</span>
-                      <span style={{ color: '#4338CA' }}>{score?.active_score != null ? `${Math.round(score.active_score)} / 100` : 'No tests'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.active_score || 0) * 0.6).toFixed(1)} pts)</strong></span>
+                      <span style={{ color: isDark ? '#a3b18a' : '#273822' }}>{score?.active_score != null ? `${Math.round(score.active_score)} / 100` : 'No tests'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.active_score || 0) * 0.6).toFixed(1)} pts)</strong></span>
                     </div>
                     <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.min(score?.active_score || 0, 100)}%`, height: '100%', backgroundColor: '#4338CA', borderRadius: '4px' }} />
+                      <div style={{ width: `${Math.min(score?.active_score || 0, 100)}%`, height: '100%', backgroundColor: isDark ? '#a3b18a' : '#273822', borderRadius: '4px' }} />
                     </div>
                   </div>
 
@@ -496,16 +728,16 @@ const Dashboard = () => {
                   <div style={{ marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
                       <span style={{ color: theme.text }}>Behavioral Telemetry (20%)</span>
-                      <span style={{ color: '#06b6d4' }}>{score?.passive_score != null ? `${Math.round(score.passive_score)} / 100` : 'No telemetry'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.passive_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
+                      <span style={{ color: isDark ? '#738466' : '#3d5236' }}>{score?.passive_score != null ? `${Math.round(score.passive_score)} / 100` : 'No telemetry'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.passive_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
                     </div>
                     <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.min(score?.passive_score || 0, 100)}%`, height: '100%', backgroundColor: '#06b6d4', borderRadius: '4px' }} />
+                      <div style={{ width: `${Math.min(score?.passive_score || 0, 100)}%`, height: '100%', backgroundColor: isDark ? '#738466' : '#3d5236', borderRadius: '4px' }} />
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.45rem' }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(6,182,212,0.15)' : '#ecfeff', color: '#0891b2' }}>
+                      <span style={{ fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(163,177,138,0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
                         Typing: {score?.typing_score != null ? `${Math.round(score.typing_score)}/100` : 'Active'}
                       </span>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(6,182,212,0.15)' : '#ecfeff', color: '#0891b2' }}>
+                      <span style={{ fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(163,177,138,0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
                         Scrolling: {score?.scrolling_score != null ? `${Math.round(score.scrolling_score)}/100` : 'Active'}
                       </span>
                     </div>
@@ -515,10 +747,10 @@ const Dashboard = () => {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
                       <span style={{ color: theme.text }}>Acoustic Voice Biomarkers (20%)</span>
-                      <span style={{ color: '#10b981' }}>{score?.voice_score != null ? `${Math.round(score.voice_score)} / 100` : 'No voice entry'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.voice_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
+                      <span style={{ color: isDark ? '#526e49' : '#3d5236' }}>{score?.voice_score != null ? `${Math.round(score.voice_score)} / 100` : 'No voice entry'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.voice_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
                     </div>
                     <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.min(score?.voice_score || 0, 100)}%`, height: '100%', backgroundColor: '#10b981', borderRadius: '4px' }} />
+                      <div style={{ width: `${Math.min(score?.voice_score || 0, 100)}%`, height: '100%', backgroundColor: isDark ? '#526e49' : '#3d5236', borderRadius: '4px' }} />
                     </div>
                   </div>
                 </div>
@@ -534,50 +766,55 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                       <div 
                         onClick={() => handleInspectEvidence('E1')}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(217, 119, 127, 0.12)' : '#faebec', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(217, 119, 127, 0.25)' : '#f0ccd0'}`, transition: 'all 0.15s' }}
                         title="Click to inspect Evidence E1 (Active Psychometrics)"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>1. Memory retention accuracy</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>E1</span>
+                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>Memory retention accuracy</span>
                         </div>
-                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ Deviating · View E1 →</span>
+                        <span style={{ fontSize: '0.76rem', fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>↓ Deviating · View E1 →</span>
                       </div>
 
                       <div 
                         onClick={() => handleInspectEvidence('E2')}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(217, 119, 127, 0.12)' : '#faebec', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(217, 119, 127, 0.25)' : '#f0ccd0'}`, transition: 'all 0.15s' }}
                         title="Click to inspect Evidence E2 (Keystroke Telemetry)"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>2. Typing speed & cadence</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>E2</span>
+                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>Typing speed & cadence</span>
                         </div>
-                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ Latency drift · View E2 →</span>
+                        <span style={{ fontSize: '0.76rem', fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>↓ Latency drift · View E2 →</span>
                       </div>
 
                       <div 
                         onClick={() => handleInspectEvidence('E3')}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(197, 176, 131, 0.12)' : '#f5f0e4', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(197, 176, 131, 0.25)' : '#e2d8c4'}`, transition: 'all 0.15s' }}
                         title="Click to inspect Evidence E3 (Navigation Telemetry)"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>3. Navigation pause hesitation</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>E3</span>
+                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>Navigation pause hesitation</span>
                         </div>
-                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ Elevated pause · View E3 →</span>
+                        <span style={{ fontSize: '0.76rem', fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>↑ Elevated pause · View E3 →</span>
                       </div>
 
                       <div 
                         onClick={() => handleInspectEvidence('E4')}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', cursor: 'pointer', border: '1px solid transparent', transition: 'all 0.15s' }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(197, 176, 131, 0.12)' : '#f5f0e4', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(197, 176, 131, 0.25)' : '#e2d8c4'}`, transition: 'all 0.15s' }}
                         title="Click to inspect Evidence E4 (Speech Biomarkers)"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>4. Speech inter-phrase pause rate</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>E4</span>
+                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>Speech inter-phrase pause rate</span>
                         </div>
-                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ Pause duration · View E4 →</span>
+                        <span style={{ fontSize: '0.76rem', fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>↑ Pause duration · View E4 →</span>
                       </div>
                     </div>
                   ) : (
                     <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext }}>
+                      <span style={{ fontSize: '1.25rem', color: isDark ? '#a3b18a' : '#273822' }}>✓</span>
                       <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', fontWeight: '700', color: theme.text }}>All indicators within normal baseline limits</p>
                       <span style={{ fontSize: '0.75rem' }}>No statistical change-point drift detected across active or passive telemetry channels.</span>
                     </div>
@@ -610,7 +847,10 @@ const Dashboard = () => {
 
             {history.length === 0 ? (
               <div style={{ padding: '3.5rem 1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '12px', border: `1px dashed ${theme.border}`, marginTop: '1rem' }}>
-                <span style={{ fontSize: '2rem' }}>📈</span>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={theme.subtext} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 8px auto', display: 'block' }}>
+                  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                  <polyline points="16 7 22 7 22 13"></polyline>
+                </svg>
                 <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '1rem', fontWeight: '800' }}>No historical data yet</h4>
                 <p style={{ margin: 0, color: theme.subtext, fontSize: '0.85rem' }}>Complete at least one assessment to begin tracking your cognitive trajectory.</p>
               </div>
@@ -620,8 +860,8 @@ const Dashboard = () => {
                   <AreaChart data={activityData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
                     <defs>
                       <linearGradient id="patientScoreGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#4338CA" stopOpacity={0.25}/>
-                        <stop offset="95%" stopColor="#4338CA" stopOpacity={0.0}/>
+                        <stop offset="5%" stopColor={isDark ? '#a3b18a' : '#273822'} stopOpacity={0.25}/>
+                        <stop offset="95%" stopColor={isDark ? '#a3b18a' : '#273822'} stopOpacity={0.0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} vertical={false} />
@@ -631,7 +871,7 @@ const Dashboard = () => {
                     <Area 
                       type="natural" 
                       dataKey="score" 
-                      stroke="#4338CA" 
+                      stroke={isDark ? '#a3b18a' : '#273822'} 
                       strokeWidth={3} 
                       fillOpacity={1} 
                       fill="url(#patientScoreGrad)" 
@@ -640,7 +880,7 @@ const Dashboard = () => {
                     <Line 
                       type="natural" 
                       dataKey="baseline" 
-                      stroke="#06b6d4" 
+                      stroke={isDark ? '#526e49' : '#3d5236'} 
                       strokeWidth={2} 
                       strokeDasharray="4 4" 
                       dot={false}
@@ -657,10 +897,10 @@ const Dashboard = () => {
 
           {/* 5 Primary Modules Grid */}
           <div style={{ marginTop: '1.5rem' }}>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: theme.text, marginBottom: '1rem' }}>Screening & Diagnostic Modules</h3>
+            <h3 style={{ fontFamily: "'Newsreader', Georgia, serif", fontSize: '1.45rem', fontWeight: '400', color: theme.text, marginBottom: '1rem' }}>Screening & Diagnostic Modules</h3>
             <div style={styles.patientModulesGrid}>
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/tests')}>
-                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff', color: '#4338CA' }}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(163, 177, 138, 0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
                     <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
@@ -676,7 +916,7 @@ const Dashboard = () => {
               </div>
 
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/voice')}>
-                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#064e3b' : '#ecfdf5', color: '#10b981' }}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(82, 110, 73, 0.14)' : '#edf3ec', color: isDark ? '#a3b18a' : '#3d5236' }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -692,7 +932,7 @@ const Dashboard = () => {
               </div>
 
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/level2')}>
-                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#581c87' : '#fdf4ff', color: '#c026d3' }}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(197, 176, 131, 0.14)' : '#f5f0e4', color: isDark ? '#c5b083' : '#705c30' }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"></path>
                     <path d="m8.5 8.5 7 7"></path>
@@ -706,7 +946,7 @@ const Dashboard = () => {
               </div>
 
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/level3')}>
-                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#1e3a8a' : '#eff6ff', color: '#2563eb' }}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(212, 139, 112, 0.14)' : '#f7ede8', color: isDark ? '#d48b70' : '#8c4b32' }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -720,7 +960,7 @@ const Dashboard = () => {
               </div>
 
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={handleOpenReferral}>
-                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? '#78350f' : '#fef3c7', color: '#d97706' }}>
+                <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(61, 82, 54, 0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -1033,7 +1273,7 @@ const Dashboard = () => {
                             <td style={{ ...styles.td, color: theme.tableTd }}>{p.age ? `${p.age} yrs` : 'N/A'}</td>
                             <td style={{ ...styles.td, color: theme.tableTd }}>
                               <span style={{ fontSize: '0.75rem', fontWeight: '700', color: p.level2_status === 'triggered' ? '#D97745' : theme.text }}>
-                                {p.level2_status === 'triggered' ? 'Tier 2 Triggered' : 'Tier 1 Baseline'}
+                                {p.level2_status === 'triggered' ? '⚠️ Tier 2 Triggered' : 'Tier 1 Baseline'}
                               </span>
                             </td>
                             <td style={{ ...styles.td, color: theme.tableTd }}>{p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Active'}</td>
@@ -1066,20 +1306,77 @@ const Dashboard = () => {
           {/* ── RIGHT PROFILE & METRICS SIDE PANEL ── */}
           <div style={styles.rightCol}>
             
-            {/* Profile Card with Professional Monogram Avatar (Photo Removed) */}
+            {/* Profile Card with Professional Monogram Avatar */}
             <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
               <div style={styles.profileWrapper}>
-                <div style={{ ...styles.profileAvatarBox, backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff', borderColor: isDark ? '#312e81' : '#c7d2fe' }}>
+                <div 
+                  onClick={() => setIsProfileModalOpen(true)}
+                  style={{ 
+                    ...styles.profileAvatarBox, 
+                    backgroundColor: isDark ? '#162216' : '#e8efe6', 
+                    borderColor: isDark ? '#3d5236' : '#d2ded0',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}
+                  title="Click to edit profile with verification"
+                >
                   <div style={styles.doctorMonogram}>
                     {(user?.name || user?.email || 'D')[0].toUpperCase()}
                   </div>
+                  <span style={{
+                    position: 'absolute',
+                    bottom: '-4px',
+                    right: '-4px',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    backgroundColor: '#273822',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #ffffff'
+                  }} title="Edit profile">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                  </span>
                 </div>
-                <h3 style={styles.doctorName}>
+                <h3 
+                  onClick={() => setIsProfileModalOpen(true)}
+                  style={{ ...styles.doctorName, cursor: 'pointer' }}
+                  title="Click to edit profile"
+                >
                   {user?.name ? (user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`) : `Dr. Jackson Santos`}
                 </h3>
                 <p style={{ ...styles.doctorSpecialty, color: theme.subtext }}>
                   {user?.is_caregiver ? 'Caregiver Supervisor' : 'Clinical Cognitive Supervisor'}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setIsProfileModalOpen(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
+                    backgroundColor: isDark ? '#162216' : '#e8efe6',
+                    color: isDark ? '#a3b18a' : '#273822',
+                    fontSize: '0.74rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    marginTop: '2px',
+                    marginBottom: '1rem'
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <span>Edit Profile</span>
+                </button>
               </div>
 
               {/* Limit Progress Bar */}
@@ -1266,6 +1563,11 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+      {/* Profile Edit Modal */}
+      <ProfileEditModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
+      />
     </DoctorLayout>
   );
 };
@@ -1277,13 +1579,13 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: '"Inter", sans-serif',
+    fontFamily: "'Mulish', -apple-system, BlinkMacSystemFont, sans-serif",
   },
   headerPrimaryBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    backgroundColor: '#4338CA',
+    backgroundColor: '#273822',
     color: '#ffffff',
     border: 'none',
     borderRadius: '12px',
@@ -1291,7 +1593,7 @@ const styles = {
     fontSize: '0.86rem',
     fontWeight: '700',
     cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
+    boxShadow: '0 4px 14px rgba(39, 56, 34, 0.2)',
   },
   dashboardGrid: {
     display: 'grid',
@@ -1306,8 +1608,8 @@ const styles = {
     minWidth: 0,
   },
   welcomeBanner: {
-    backgroundColor: '#4c44b4',
-    backgroundImage: 'linear-gradient(135deg, #4c44b4 0%, #4338CA 100%)',
+    backgroundColor: '#1d2c1c',
+    backgroundImage: 'linear-gradient(135deg, #162417 0%, #273b25 100%)',
     borderRadius: '20px',
     padding: '1.75rem 2rem',
     color: '#ffffff',
@@ -1316,22 +1618,25 @@ const styles = {
     alignItems: 'center',
     position: 'relative',
     overflow: 'hidden',
-    boxShadow: '0 10px 25px rgba(76, 68, 180, 0.22)',
+    border: '1px solid #334a30',
+    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.12)',
   },
   welcomeContent: {
     maxWidth: '520px',
     zIndex: 2,
   },
   welcomeTitle: {
-    fontSize: '1.5rem',
-    fontWeight: '800',
+    fontFamily: "'Newsreader', Georgia, serif",
+    fontSize: '1.75rem',
+    fontWeight: '400',
     margin: '0 0 0.4rem 0',
     letterSpacing: '-0.02em',
+    color: '#ffffff',
   },
   welcomeSub: {
-    fontSize: '0.84rem',
+    fontSize: '0.86rem',
     color: 'rgba(255, 255, 255, 0.85)',
-    lineHeight: '1.4',
+    lineHeight: '1.5',
     margin: 0,
   },
   welcomeDecor: {
@@ -1354,8 +1659,9 @@ const styles = {
     marginBottom: '0.5rem',
   },
   cardTitle: {
-    fontSize: '1.05rem',
-    fontWeight: '800',
+    fontFamily: "'Newsreader', Georgia, serif",
+    fontSize: '1.35rem',
+    fontWeight: '400',
     margin: 0,
   },
   dropdownSelector: {
@@ -1363,6 +1669,7 @@ const styles = {
     alignItems: 'center',
     gap: '0.4rem',
     fontSize: '0.78rem',
+    fontFamily: "'JetBrains Mono', monospace",
     fontWeight: '700',
     border: '1px solid',
     borderRadius: '8px',
@@ -1380,6 +1687,7 @@ const styles = {
     alignItems: 'center',
     gap: '0.45rem',
     fontSize: '0.78rem',
+    fontFamily: "'JetBrains Mono', monospace",
     fontWeight: '700',
   },
   middleTwoCol: {
@@ -1388,7 +1696,7 @@ const styles = {
     gap: '1.5rem',
   },
   seeAllLink: {
-    color: '#4338CA',
+    color: '#3d5236',
     fontSize: '0.78rem',
     fontWeight: '700',
     cursor: 'pointer',
@@ -1511,7 +1819,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 8px 20px rgba(67, 56, 202, 0.15)',
+    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.08)',
     marginBottom: '1rem',
     border: '2px solid',
   },
@@ -1519,7 +1827,7 @@ const styles = {
     width: '74px',
     height: '74px',
     borderRadius: '18px',
-    background: 'linear-gradient(135deg, #4338CA 0%, #6366f1 100%)',
+    background: 'linear-gradient(135deg, #273822 0%, #3d5236 100%)',
     color: '#ffffff',
     fontSize: '2rem',
     fontWeight: '800',
@@ -1528,9 +1836,10 @@ const styles = {
     justifyContent: 'center',
   },
   doctorName: {
-    fontSize: '1.15rem',
-    fontWeight: '800',
-    color: '#4338CA',
+    fontFamily: "'Newsreader', Georgia, serif",
+    fontSize: '1.4rem',
+    fontWeight: '400',
+    color: 'inherit',
     margin: '0 0 0.25rem 0',
   },
   doctorSpecialty: {
@@ -1556,6 +1865,7 @@ const styles = {
   limitFraction: {
     fontSize: '0.74rem',
     fontWeight: '700',
+    fontFamily: "'JetBrains Mono', monospace",
   },
   limitSub: {
     fontSize: '0.72rem',
@@ -1570,7 +1880,7 @@ const styles = {
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#4338CA',
+    backgroundColor: '#273822',
     borderRadius: '6px',
   },
   statsGrid: {
@@ -1586,12 +1896,13 @@ const styles = {
     textAlign: 'center',
   },
   statNumber: {
-    fontSize: '1.15rem',
+    fontSize: '1.25rem',
+    fontFamily: "'JetBrains Mono', monospace",
     fontWeight: '800',
     margin: '0 0 2px 0',
   },
   statLabel: {
-    fontSize: '0.68rem',
+    fontSize: '0.72rem',
     margin: 0,
     fontWeight: '600',
   },
@@ -1601,7 +1912,7 @@ const styles = {
     gap: '0.75rem',
   },
   missedCallBtn: {
-    backgroundColor: '#4338CA',
+    backgroundColor: '#273822',
     color: '#ffffff',
     border: 'none',
     borderRadius: '14px',
@@ -1611,10 +1922,10 @@ const styles = {
     alignItems: 'center',
     gap: '4px',
     cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
+    boxShadow: '0 4px 14px rgba(39, 56, 34, 0.2)',
   },
   newMessagesBtn: {
-    border: '1.5px solid #4338CA',
+    border: '1.5px solid #273822',
     borderRadius: '14px',
     padding: '0.85rem 0.5rem',
     display: 'flex',
@@ -1629,10 +1940,11 @@ const styles = {
   incomeValue: {
     fontSize: '1.4rem',
     fontWeight: '800',
+    fontFamily: "'JetBrains Mono', monospace",
   },
   growthPill: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    color: '#10b981',
+    backgroundColor: 'rgba(163, 177, 138, 0.14)',
+    color: '#3d5236',
     fontSize: '0.72rem',
     fontWeight: '800',
     padding: '0.2rem 0.5rem',
@@ -1649,6 +1961,7 @@ const styles = {
     borderRadius: '10px',
     padding: '0.6rem',
     fontSize: '0.78rem',
+    fontFamily: "'JetBrains Mono', monospace",
     fontWeight: '700',
     cursor: 'pointer',
     transition: 'all 0.2s',
@@ -1667,18 +1980,20 @@ const styles = {
     marginBottom: '1.5rem',
   },
   patientEyebrow: {
-    color: '#4338CA',
-    fontSize: '0.72rem',
+    color: '#3d5236',
+    fontSize: '0.74rem',
+    fontFamily: "'JetBrains Mono', monospace",
     fontWeight: '800',
-    letterSpacing: '0.1em',
+    letterSpacing: '0.08em',
     display: 'block',
     marginBottom: '0.35rem',
   },
   patientTitle: {
-    fontSize: '1.85rem',
-    fontWeight: '800',
+    fontFamily: "'Newsreader', Georgia, serif",
+    fontSize: '2.1rem',
+    fontWeight: '400',
     margin: '0 0 0.5rem 0',
-    letterSpacing: '-0.02em',
+    letterSpacing: '-0.025em',
   },
   patientSub: {
     fontSize: '0.92rem',
@@ -1687,7 +2002,7 @@ const styles = {
     margin: 0,
   },
   startTestsBtn: {
-    backgroundColor: '#4338CA',
+    backgroundColor: '#273822',
     color: '#ffffff',
     border: 'none',
     borderRadius: '12px',
@@ -1695,7 +2010,7 @@ const styles = {
     fontSize: '0.92rem',
     fontWeight: '700',
     cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
+    boxShadow: '0 4px 14px rgba(39, 56, 34, 0.2)',
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
@@ -1720,14 +2035,15 @@ const styles = {
   },
   statCardLabel: {
     fontSize: '0.72rem',
+    fontFamily: "'JetBrains Mono', monospace",
     fontWeight: '800',
     letterSpacing: '0.08em',
   },
   patientBigScore: {
-    fontSize: '2.4rem',
+    fontSize: '2.5rem',
     fontWeight: '900',
-    color: '#102A43',
     lineHeight: 1,
+    fontFamily: "'JetBrains Mono', monospace",
     fontVariantNumeric: 'tabular-nums',
     letterSpacing: '-0.02em',
   },
@@ -1779,7 +2095,7 @@ const styles = {
   moduleArrow: {
     fontSize: '1.2rem',
     fontWeight: '700',
-    color: '#4338CA',
+    color: '#273822',
     marginLeft: 'auto',
   },
 
@@ -1821,7 +2137,7 @@ const styles = {
     cursor: 'pointer',
   },
   modalCtaBtn: {
-    backgroundColor: '#4338CA',
+    backgroundColor: '#273822',
     color: '#ffffff',
     border: 'none',
     borderRadius: '10px',
@@ -1829,7 +2145,7 @@ const styles = {
     fontSize: '0.85rem',
     fontWeight: '700',
     cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
+    boxShadow: '0 4px 14px rgba(39, 56, 34, 0.2)',
   },
 };
 

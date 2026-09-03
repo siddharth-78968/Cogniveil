@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import ProfileEditModal from './ProfileEditModal';
 
 const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) => {
   const { user, logout, isClinician } = useAuth();
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -279,14 +281,50 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
       {/* User Profile & Sign Out */}
       <div style={styles.userSection}>
         <div style={styles.userCard}>
-          <div style={styles.userAvatar}>
-            {(user?.name || user?.email || 'U')[0].toUpperCase()}
-          </div>
-          <div style={styles.userInfo}>
-            <span style={styles.userName}>{user?.name || user?.email?.split('@')[0]}</span>
-            <span style={styles.userRole}>
-              {isClinician ? 'Clinician / Neurologist' : 'Monitored Patient'}
-            </span>
+          <div
+            onClick={() => setIsProfileModalOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+              flex: 1,
+              cursor: 'pointer',
+              overflow: 'hidden',
+              padding: '0.2rem',
+              borderRadius: '8px',
+              transition: 'background-color 0.15s ease',
+            }}
+            title="Click to edit name, email, or account details with verification"
+          >
+            <div style={{ ...styles.userAvatar, position: 'relative' }}>
+              {(user?.name || user?.email || 'U')[0].toUpperCase()}
+              <span style={{
+                position: 'absolute',
+                bottom: '-2px',
+                right: '-2px',
+                width: '13px',
+                height: '13px',
+                borderRadius: '50%',
+                backgroundColor: '#273822',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1.5px solid #ffffff',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} title="Edit profile">
+                <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+              </span>
+            </div>
+            <div style={styles.userInfo}>
+              <span style={styles.userName}>{user?.name || user?.email?.split('@')[0]}</span>
+              <span style={{ ...styles.userRole, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>{isClinician ? 'Clinician / Neurologist' : 'Monitored Patient'}</span>
+                <span style={{ opacity: 0.6 }}>· Edit</span>
+              </span>
+            </div>
           </div>
           <button 
             onClick={handleLogout} 
@@ -301,6 +339,11 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
           </button>
         </div>
       </div>
+
+      <ProfileEditModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
+      />
     </aside>
   );
 };
