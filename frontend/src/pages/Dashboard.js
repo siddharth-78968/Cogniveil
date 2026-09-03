@@ -10,7 +10,8 @@ import {
   getClinicalReport,
   getAppointments,
   updateAppointmentStatus,
-  getClinicianPatients
+  getClinicianPatients,
+  getStreak
 } from '../utils/api';
 import ReferralReportModal from '../components/ReferralReportModal';
 import ExplainMyResultModal from '../components/ExplainMyResultModal';
@@ -75,6 +76,7 @@ const Dashboard = () => {
   const [showEvidenceGraphModal, setShowEvidenceGraphModal] = useState(false);
   const [showAgentPipelineModal, setShowAgentPipelineModal] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [streak, setStreak] = useState(null);
   const [referralPayload, setReferralPayload] = useState(null);
   const [dashboardAppointments, setDashboardAppointments] = useState([]);
   const [clinicianPatients, setClinicianPatients] = useState([]);
@@ -153,6 +155,13 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error('Error fetching dashboard appointments:', err);
+    }
+
+    try {
+      const streakRes = await getStreak();
+      setStreak(streakRes.data);
+    } catch (err) {
+      console.error('Error fetching streak in dashboard:', err);
     }
 
     if (isClinician) {
@@ -320,6 +329,178 @@ const Dashboard = () => {
               </div>
             </div>
 
+            {/* Continuous Daily Cognitive Testing Streak & Attendance Tracker */}
+            <div style={{
+              marginTop: '0.85rem',
+              padding: '1.15rem 1.35rem',
+              borderRadius: '14px',
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f6faf4',
+              border: `1.5px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1.25rem'
+            }}>
+              {/* Left: Prominent Streak Metrics */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '280px', flex: 1 }}>
+                <div style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '12px',
+                  backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : 'rgba(39, 56, 34, 0.09)',
+                  border: `1.5px solid ${isDark ? '#526e49' : '#b8cab5'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: isDark ? '#a3b18a' : '#273822',
+                  flexShrink: 0
+                }}>
+                  {/* Clean continuous energy/flame vector SVG (no emojis) */}
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+                  </svg>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: '2rem',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontWeight: '800',
+                      color: theme.text,
+                      lineHeight: '1'
+                    }}>
+                      {streak?.current_streak || history.length || 1}
+                    </span>
+                    <span style={{
+                      fontSize: '1.1rem',
+                      fontWeight: '800',
+                      color: theme.text,
+                      letterSpacing: '-0.02em'
+                    }}>
+                      Days Continuous Streak
+                    </span>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontWeight: '700',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '9999px',
+                      backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ede0',
+                      color: isDark ? '#a3b18a' : '#273822',
+                      border: `1px solid ${isDark ? '#3d5236' : '#c5d6c2'}`
+                    }}>
+                      {streak?.attended_today ? 'Completed Today' : 'Streak Active'}
+                    </span>
+                  </div>
+                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: theme.subtext }}>
+                    {streak?.current_streak || history.length || 1} consecutive days of daily cognitive micro-battery screening. Personal record: <strong>{streak?.longest_streak || history.length || 1} days</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: Last 7 Days Activity Strip */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flexShrink: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    fontWeight: '800',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    color: theme.subtext,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em'
+                  }}>
+                    Recent 7-Day Attendance
+                  </span>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    color: isDark ? '#a3b18a' : '#273822',
+                    fontWeight: '700',
+                    fontFamily: "'JetBrains Mono', monospace"
+                  }}>
+                    {streak?.total_days_attended || history.length || 1} Total Days
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {(streak?.last_7_days || []).length > 0 ? (
+                    streak.last_7_days.map((d, idx) => (
+                      <div 
+                        key={idx} 
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '3px',
+                          padding: '5px 7px',
+                          borderRadius: '8px',
+                          backgroundColor: d.is_today 
+                            ? (isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ece0') 
+                            : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                          border: d.is_today 
+                            ? `1.5px solid ${isDark ? '#a3b18a' : '#273822'}` 
+                            : `1px solid ${theme.border}`,
+                          minWidth: '32px'
+                        }}
+                        title={`${d.day_name} (${d.date}): ${d.attended ? 'Screening Completed' : 'Pending'}`}
+                      >
+                        <span style={{
+                          fontSize: '0.62rem',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontWeight: '700',
+                          color: d.is_today ? (isDark ? '#a3b18a' : '#273822') : theme.subtext
+                        }}>
+                          {d.day_name}
+                        </span>
+                        <div style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          backgroundColor: d.attended 
+                            ? (isDark ? '#3d5236' : '#273822') 
+                            : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'),
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          {d.attended ? (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          ) : (
+                            <span style={{ fontSize: '9px', color: theme.subtext }}>·</span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((dayName, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '3px',
+                        padding: '5px 7px',
+                        borderRadius: '8px',
+                        backgroundColor: idx === 6 ? (isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ece0') : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                        border: `1px solid ${theme.border}`,
+                        minWidth: '32px'
+                      }}>
+                        <span style={{ fontSize: '0.62rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', color: theme.subtext }}>{dayName}</span>
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: isDark ? '#3d5236' : '#273822', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* DementAI "Buy Patients Time" Lead Time Benefit Callout */}
             <div style={{
               marginTop: '0.85rem',
@@ -421,7 +602,21 @@ const Dashboard = () => {
               <p style={{ ...styles.patientCardValue, color: theme.text }}>
                 {score?.active_score != null ? `${Math.round(score.active_score)} pts` : 'No tests yet'}
               </p>
-              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>5 Micro-Tasks: Pattern, Digit, Word, Stroop, Reaction</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                <span style={{
+                  fontSize: '0.7rem',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontWeight: '700',
+                  padding: '0.1rem 0.45rem',
+                  borderRadius: '9999px',
+                  backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ede0',
+                  color: isDark ? '#a3b18a' : '#273822',
+                  border: `1px solid ${isDark ? '#3d5236' : '#c5d6c2'}`
+                }}>
+                  {streak?.current_streak || history.length || 1}-Day Streak
+                </span>
+                <span style={{ ...styles.patientCardSub, color: theme.subtext, margin: 0 }}>5 Micro-Tasks</span>
+              </div>
             </div>
 
             <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>

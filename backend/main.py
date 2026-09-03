@@ -460,6 +460,97 @@ def get_score_history(db: Session = Depends(get_db), current_user: models.User =
     scores = db.query(models.CogniScore).filter(models.CogniScore.user_id == current_user.id).order_by(models.CogniScore.created_at.asc()).all()
     return scores
 
+@app.get("/api/user/streak")
+def get_user_streak(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """Computes continuous daily cognitive test attendance streak and attendance history."""
+    score_dates = db.query(models.CogniScore.created_at).filter(
+        models.CogniScore.user_id == current_user.id
+    ).all()
+    test_dates = db.query(models.TestResult.created_at).filter(
+        models.TestResult.user_id == current_user.id
+    ).all()
+
+    attended_dates = set()
+    for (d,) in score_dates:
+        if d:
+            attended_dates.add(d.date())
+    for (d,) in test_dates:
+        if d:
+            attended_dates.add(d.date())
+
+    if not attended_dates:
+        return {
+            "current_streak": 0,
+            "longest_streak": 0,
+            "total_days_attended": 0,
+            "attended_today": False,
+            "attended_yesterday": False,
+            "streak_status": "No sessions yet",
+            "last_7_days": []
+        }
+
+    sorted_dates = sorted(list(attended_dates))
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    attended_today = today in attended_dates
+    attended_yesterday = yesterday in attended_dates
+
+    # Longest continuous streak across entire history
+    longest_streak = 0
+    temp_streak = 0
+    prev_d = None
+    for d in sorted_dates:
+        if prev_d is None or (d - prev_d).days == 1:
+            temp_streak += 1
+        else:
+            temp_streak = 1
+        prev_d = d
+        if temp_streak > longest_streak:
+            longest_streak = temp_streak
+
+    # Current streak backwards from latest session
+    current_streak = 0
+    latest_date = sorted_dates[-1]
+    diff_from_today = (today - latest_date).days
+    if diff_from_today <= 2:
+        check = latest_date
+        while check in attended_dates:
+            current_streak += 1
+            check -= timedelta(days=1)
+    else:
+        current_streak = 0
+
+    milestones = [7, 14, 21, 30, 60, 90, 180, 365]
+    next_milestone = next((m for m in milestones if m > current_streak), current_streak + 7)
+    progress_to_next = round((current_streak / next_milestone) * 100) if next_milestone > 0 else 100
+
+    anchor_day = max(today, latest_date)
+    last_7_days = []
+    for i in range(6, -1, -1):
+        target = anchor_day - timedelta(days=i)
+        is_att = target in attended_dates
+        last_7_days.append({
+            "date": target.isoformat(),
+            "day_name": target.strftime("%a"),
+            "day_number": target.day,
+            "attended": is_att,
+            "is_today": target == anchor_day
+        })
+
+    return {
+        "current_streak": current_streak,
+        "longest_streak": max(longest_streak, current_streak),
+        "total_days_attended": len(attended_dates),
+        "attended_today": attended_today or (latest_date == anchor_day),
+        "attended_yesterday": attended_yesterday,
+        "latest_attended_date": latest_date.isoformat(),
+        "next_milestone": next_milestone,
+        "progress_to_next": min(progress_to_next, 100),
+        "streak_status": "Active Streak" if current_streak > 0 else "Pending Today",
+        "last_7_days": last_7_days
+    }
+
+
 # -----------------------------------------------------------------------------
 # MCP Tool 2 & API Endpoint: score_tier1 with EWMA / CUSUM Deviation Tracking
 # -----------------------------------------------------------------------------

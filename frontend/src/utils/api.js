@@ -42,6 +42,7 @@ export const getProfile = () => API.get('/me');
 export const getCurrentUser = () => API.get('/auth/me');
 export const updateUserProfile = (data) => API.put('/api/user/profile', data);
 export const requestVerificationCode = () => API.post('/api/user/request-verification-code');
+export const getStreak = () => API.get('/api/user/streak');
 export const getScore = () => API.get('/score');
 export const getScoreHistory = () => API.get('/scores/history');
 export const calculateScore = () => API.post('/score/calculate');
