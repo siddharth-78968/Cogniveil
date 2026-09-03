@@ -5,8 +5,6 @@ const AccessibilityBar = () => {
   const { 
     fontSizeScale, 
     setFontSizeScale, 
-    highContrast, 
-    toggleHighContrast, 
     reducedMotion, 
     toggleReducedMotion,
     theme 
@@ -46,15 +44,6 @@ const AccessibilityBar = () => {
             A+
           </button>
         </div>
-
-        {/* High Contrast Toggle */}
-        <button 
-          style={{ ...styles.toggleBtn, backgroundColor: highContrast ? '#0F4C4A' : 'transparent', color: highContrast ? '#ffffff' : theme.text, borderColor: theme.border }}
-          onClick={toggleHighContrast}
-          title="Toggle high contrast for enhanced readability"
-        >
-          <span>👁️ High Contrast {highContrast ? 'ON' : 'OFF'}</span>
-        </button>
 
         {/* Reduced Motion Toggle */}
         <button 
