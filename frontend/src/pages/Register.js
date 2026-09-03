@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -13,6 +14,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [isCaregiver, setIsCaregiver] = useState(false);
   const { register, login } = useAuth();
+  const { isDark, toggleTheme, theme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -52,59 +54,80 @@ const Register = () => {
   };
 
   return (
-    <div style={styles.pageWrapper}>
-      {/* Top Header */}
-      <header style={styles.header}>
+    <div style={{ ...styles.pageWrapper, backgroundColor: theme.bg, color: theme.text }}>
+      {/* Top Navigation */}
+      <header style={{ ...styles.header, backgroundColor: theme.topHeaderBg, borderBottom: `1px solid ${theme.border}` }}>
         <div style={styles.brandBox} onClick={() => navigate('/')}>
-          <div style={styles.brandIconWrapper}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#53B7C5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"></path>
-              <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"></path>
-            </svg>
-          </div>
-          <div style={styles.brandTextGroup}>
-            <span style={styles.brandTitle}>COGNIVEIL</span>
-            <span style={styles.brandSub}>Clinical Intelligence</span>
-          </div>
+          <span style={{ ...styles.brandTitle, color: theme.text }}>CogniVeil</span>
+          <span style={{ ...styles.brandPipe, color: theme.border }}>/</span>
+          <span style={{ ...styles.brandSub, color: theme.subtext }}>Patient onboarding & enrollment</span>
         </div>
 
-        <button style={styles.navLinkBtn} onClick={() => navigate('/login')}>
-          Sign In to Existing Record →
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button 
+            className="theme-toggle-switch" 
+            onClick={toggleTheme}
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            aria-label="Toggle Theme"
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+          <button 
+            style={{ 
+              ...styles.navLinkBtn, 
+              borderColor: theme.border, 
+              color: theme.text,
+              backgroundColor: theme.cardBg 
+            }} 
+            onClick={() => navigate('/login')}
+          >
+            Sign in to existing record
+          </button>
+        </div>
       </header>
 
       {/* Main Registration Card */}
       <div style={styles.centerContainer}>
-        <div style={styles.authCard}>
+        <div style={{ ...styles.authCard, backgroundColor: theme.cardBg, border: `1px solid ${theme.border}` }}>
           
           <div style={styles.cardHeader}>
-            <span style={styles.eyebrow}>PATIENT ONBOARDING & ENROLLMENT</span>
-            <h1 style={styles.cardTitle}>Create Patient Profile</h1>
-            <p style={styles.cardSub}>
+            <span style={{ ...styles.kicker, color: isDark ? '#94a3b8' : '#0284C7' }}>Baseline profile registration</span>
+            <h1 style={{ ...styles.cardTitle, color: theme.text }}>Create Patient Profile</h1>
+            <p style={{ ...styles.cardSub, color: theme.subtext }}>
               Establish a baseline profile for longitudinal cognitive telemetry and multimodal screening.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.inputGroup}>
-              <label style={styles.label}>Full Legal Name</label>
+              <label style={{ ...styles.label, color: theme.text }}>Full legal name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                style={styles.input}
+                style={{ 
+                  ...styles.input, 
+                  backgroundColor: theme.inputBg, 
+                  borderColor: theme.inputBorder,
+                  color: theme.text
+                }}
                 placeholder="Rajan Pillai"
                 required
               />
             </div>
 
             <div style={styles.inputGroup}>
-              <label style={styles.label}>Email Address</label>
+              <label style={{ ...styles.label, color: theme.text }}>Email address</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={styles.input}
+                style={{ 
+                  ...styles.input, 
+                  backgroundColor: theme.inputBg, 
+                  borderColor: theme.inputBorder,
+                  color: theme.text
+                }}
                 placeholder="rajan@example.com"
                 required
               />
@@ -112,23 +135,33 @@ const Register = () => {
 
             <div style={styles.rowGroup}>
               <div style={{ ...styles.inputGroup, flex: 1 }}>
-                <label style={styles.label}>Age (Years)</label>
+                <label style={{ ...styles.label, color: theme.text }}>Age (years)</label>
                 <input
                   type="number"
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
-                  style={styles.input}
+                  style={{ 
+                    ...styles.input, 
+                    backgroundColor: theme.inputBg, 
+                    borderColor: theme.inputBorder,
+                    color: theme.text
+                  }}
                   placeholder="68"
                   required
                 />
               </div>
 
               <div style={{ ...styles.inputGroup, flex: 1 }}>
-                <label style={styles.label}>Biological Sex</label>
+                <label style={{ ...styles.label, color: theme.text }}>Biological sex</label>
                 <select
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
-                  style={styles.input}
+                  style={{ 
+                    ...styles.select, 
+                    backgroundColor: theme.inputBg, 
+                    borderColor: theme.inputBorder,
+                    color: theme.text
+                  }}
                 >
                   <option value="Female">Female</option>
                   <option value="Male">Male</option>
@@ -139,20 +172,25 @@ const Register = () => {
 
             <div style={styles.inputGroup}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={styles.label}>Secure Password</label>
+                <label style={{ ...styles.label, color: theme.text }}>Secure password</label>
                 <button
                   type="button"
-                  style={styles.textBtn}
+                  style={{ ...styles.textBtn, color: theme.subtext }}
                   onClick={() => setShowPass(!showPass)}
                 >
-                  {showPass ? 'Hide' : 'Show'}
+                  {showPass ? 'Hide password' : 'Show password'}
                 </button>
               </div>
               <input
                 type={showPass ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={styles.input}
+                style={{ 
+                  ...styles.input, 
+                  backgroundColor: theme.inputBg, 
+                  borderColor: theme.inputBorder,
+                  color: theme.text
+                }}
                 placeholder="••••••••••••"
                 required
               />
@@ -164,16 +202,15 @@ const Register = () => {
                 id="isCaregiver"
                 checked={isCaregiver}
                 onChange={(e) => setIsCaregiver(e.target.checked)}
-                style={{ width: '16px', height: '16px', accentColor: '#0F4C4A' }}
+                style={{ width: '16px', height: '16px', accentColor: '#0284C7', cursor: 'pointer' }}
               />
-              <label htmlFor="isCaregiver" style={{ fontSize: '0.82rem', color: '#102A43', cursor: 'pointer' }}>
+              <label htmlFor="isCaregiver" style={{ fontSize: '13px', color: theme.subtext, cursor: 'pointer' }}>
                 I am a clinical supervisor / healthcare caregiver enrolling a patient
               </label>
             </div>
 
             {error && (
               <div style={styles.errorBox}>
-                <span>⚠️</span>
                 <span>{error}</span>
               </div>
             )}
@@ -181,15 +218,16 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              style={styles.submitBtn}
+              className="cv-btn-primary"
+              style={{ width: '100%', marginTop: '0.4rem' }}
             >
-              {loading ? 'Enrolling Profile...' : 'Complete Profile Enrollment →'}
+              {loading ? 'Enrolling profile...' : 'Complete profile enrollment'}
             </button>
           </form>
 
-          <div style={styles.footerNote}>
+          <div style={{ ...styles.footerNote, color: theme.subtext }}>
             <span>Already have an active profile? </span>
-            <Link to="/login" style={styles.link}>Sign in to workspace</Link>
+            <Link to="/login" style={{ color: isDark ? '#22d3ee' : '#0284C7', fontWeight: '600' }}>Sign in to workspace</Link>
           </div>
 
         </div>
@@ -201,59 +239,41 @@ const Register = () => {
 const styles = {
   pageWrapper: {
     minHeight: '100vh',
-    backgroundColor: '#F7F9F8',
-    color: '#102A43',
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
     display: 'flex',
     flexDirection: 'column',
+    transition: 'all 0.2s ease',
   },
   header: {
-    height: '72px',
-    padding: '0 2rem',
+    height: '64px',
+    padding: '0 28px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottom: '1px solid #DCE6E4',
-    backgroundColor: '#FFFFFF',
+    transition: 'all 0.2s ease',
   },
   brandBox: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.65rem',
+    gap: '8px',
     cursor: 'pointer',
   },
-  brandIconWrapper: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
-    backgroundColor: '#E0FCFF',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandTextGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
   brandTitle: {
-    fontSize: '0.95rem',
-    fontWeight: '900',
-    color: '#102A43',
-    letterSpacing: '0.08em',
+    fontSize: '15px',
+    fontWeight: '700',
+  },
+  brandPipe: {
+    fontSize: '14px',
   },
   brandSub: {
-    fontSize: '0.65rem',
-    color: '#287C78',
-    fontWeight: '700',
+    fontSize: '13px',
   },
   navLinkBtn: {
-    background: 'none',
-    border: '1px solid #DCE6E4',
-    borderRadius: '8px',
+    border: '1px solid',
+    borderRadius: '6px',
     padding: '6px 14px',
-    fontSize: '0.82rem',
-    fontWeight: '700',
-    color: '#0F4C4A',
+    fontSize: '13px',
+    fontWeight: '500',
     cursor: 'pointer',
   },
   centerContainer: {
@@ -266,40 +286,36 @@ const styles = {
   authCard: {
     width: '100%',
     maxWidth: '540px',
-    backgroundColor: '#FFFFFF',
-    border: '1px solid #DCE6E4',
     borderRadius: '16px',
     padding: '2.25rem',
-    boxShadow: '0 4px 20px rgba(16, 42, 67, 0.05)',
+    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.05)',
   },
   cardHeader: {
-    marginBottom: '1.5rem',
+    marginBottom: '1.75rem',
   },
-  eyebrow: {
-    fontSize: '0.68rem',
-    fontWeight: '800',
-    color: '#0F4C4A',
-    letterSpacing: '0.08em',
+  kicker: {
+    fontSize: '12px',
+    fontFamily: "'JetBrains Mono', monospace",
     display: 'block',
     marginBottom: '4px',
+    fontWeight: '700',
   },
   cardTitle: {
-    fontSize: '1.65rem',
-    fontWeight: '800',
-    color: '#102A43',
-    letterSpacing: '-0.02em',
-    margin: '0 0 6px 0',
+    fontFamily: "'Newsreader', Georgia, serif",
+    fontSize: '2rem',
+    fontWeight: '400',
+    letterSpacing: '-0.015em',
+    margin: '0 0 8px 0',
   },
   cardSub: {
-    fontSize: '0.86rem',
-    color: '#627D98',
-    lineHeight: '1.45',
+    fontSize: '13.5px',
+    lineHeight: '1.55',
     margin: 0,
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem',
+    gap: '1.1rem',
   },
   inputGroup: {
     display: 'flex',
@@ -311,18 +327,25 @@ const styles = {
     gap: '1rem',
   },
   label: {
-    fontSize: '0.78rem',
-    fontWeight: '700',
-    color: '#102A43',
+    fontSize: '12.5px',
+    fontWeight: '600',
   },
   input: {
     width: '100%',
     padding: '0.75rem 1rem',
-    border: '1px solid #DCE6E4',
+    border: '1px solid',
     borderRadius: '8px',
-    fontSize: '0.88rem',
-    color: '#102A43',
-    backgroundColor: '#F0F5F4',
+    fontSize: '14px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    fontFamily: 'inherit',
+  },
+  select: {
+    width: '100%',
+    padding: '0.75rem 1rem',
+    border: '1px solid',
+    borderRadius: '8px',
+    fontSize: '14px',
     outline: 'none',
     boxSizing: 'border-box',
     fontFamily: 'inherit',
@@ -330,52 +353,29 @@ const styles = {
   textBtn: {
     background: 'none',
     border: 'none',
-    color: '#287C78',
-    fontSize: '0.74rem',
-    fontWeight: '700',
+    fontSize: '12px',
     cursor: 'pointer',
     padding: 0,
   },
   checkboxGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
+    gap: '0.65rem',
     padding: '0.25rem 0',
   },
   errorBox: {
-    backgroundColor: '#FFF0E8',
-    border: '1px solid #D97745',
-    borderRadius: '8px',
+    backgroundColor: 'rgba(184, 92, 74, 0.15)',
+    border: '1px solid #B85C4A',
+    borderRadius: '6px',
     padding: '0.75rem',
-    fontSize: '0.8rem',
-    color: '#D97745',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-  },
-  submitBtn: {
-    backgroundColor: '#0F4C4A',
-    color: '#FFFFFF',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '0.85rem',
-    fontSize: '0.92rem',
-    fontWeight: '700',
-    cursor: 'pointer',
-    marginTop: '0.4rem',
-    boxShadow: '0 2px 8px rgba(15, 76, 74, 0.2)',
+    fontSize: '13px',
+    color: '#B85C4A',
   },
   footerNote: {
-    marginTop: '1.5rem',
+    marginTop: '1.75rem',
     textAlign: 'center',
-    fontSize: '0.82rem',
-    color: '#627D98',
+    fontSize: '13px',
   },
-  link: {
-    color: '#0F4C4A',
-    fontWeight: '700',
-    textDecoration: 'none',
-  }
 };
 
 export default Register;

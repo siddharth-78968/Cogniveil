@@ -1,74 +1,87 @@
 :root {
-  /* Base Surfaces */
-  --cv-bg-warm: #F7F9F8;
-  --cv-surface: #FFFFFF;
-  --cv-surface-subtle: #F0F5F4;
-  --cv-border: #DCE6E4;
-  --cv-border-subtle: #E8F0EE;
+  /* Default: Dark Cyber-Blueprint Theme */
+  --cv-ink: #0a0f16;
+  --cv-surface: #101824;
+  --cv-surface-card: #121d2b;
+  --cv-surface-elevated: #162436;
+  --cv-border: rgba(255, 255, 255, 0.08);
+  --cv-border-subtle: rgba(255, 255, 255, 0.04);
+  
+  --cv-fog: #f1f5f9;
+  --cv-fog-muted: #94a3b8;
+  --cv-fog-subtle: #64748b;
 
-  /* Primary Brand & Clinical Typography */
-  --cv-primary-teal: #0F4C4A;
-  --cv-dark-navy: #102A43;
-  --cv-secondary-teal: #287C78;
-  --cv-text-main: #102A43;
-  --cv-text-muted: #627D98;
-  --cv-text-light: #829AB1;
+  /* Level Colors - Dark Mode */
+  --cv-level1-emerald: #10b981;
+  --cv-level1-cyan: #22d3ee;
+  --cv-level1-glow: rgba(16, 185, 129, 0.25);
+  --cv-level1-bg: rgba(16, 185, 129, 0.12);
+  --cv-level1-border: rgba(16, 185, 129, 0.4);
 
-  /* AI Accent & System Markers */
-  --cv-ai-cyan: #53B7C5;
-  --cv-ai-glow: rgba(83, 183, 197, 0.12);
-  --cv-ai-border: #53B7C5;
+  --cv-level2-amber: #f59e0b;
+  --cv-level2-gold: #fbbf24;
+  --cv-level2-glow: rgba(245, 158, 11, 0.25);
+  --cv-level2-bg: rgba(245, 158, 11, 0.12);
+  --cv-level2-border: rgba(245, 158, 11, 0.4);
 
-  /* Clinical Status Signals (Strictly non-decorative) */
-  --cv-status-normal: #2F7D5B;
-  --cv-status-normal-bg: #E8F5EE;
-  --cv-status-monitor: #C8922E;
-  --cv-status-monitor-bg: #FEF7EA;
-  --cv-status-elevated: #D97745;
-  --cv-status-elevated-bg: #FFF0E8;
-  --cv-status-high-risk: #C94C4C;
-  --cv-status-high-risk-bg: #FDE8E8;
-  --cv-status-critical: #A83232;
-  --cv-status-critical-bg: #FBEAEA;
+  --cv-level3-rose: #f43f5e;
+  --cv-level3-coral: #fb7185;
+  --cv-level3-glow: rgba(244, 63, 94, 0.25);
+  --cv-level3-bg: rgba(244, 63, 94, 0.12);
+  --cv-level3-border: rgba(244, 63, 94, 0.4);
+
+  --cv-accent-purple: #818cf8;
+  --cv-signal-cyan: #22d3ee;
+  --cv-btn-primary: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+  --cv-btn-primary-text: #ffffff;
 
   /* Typography Scale */
-  --cv-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --cv-font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
-  --cv-font-title: 28px;
-  --cv-font-section: 20px;
-  --cv-font-card: 16px;
-  --cv-font-body: 14px;
-  --cv-font-meta: 12px;
+  --cv-font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --cv-font-grotesk: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --cv-font-mono: 'JetBrains Mono', 'IBM Plex Mono', Consolas, monospace;
 
-  /* Elevation & Borders */
-  --cv-radius-sm: 8px;
-  --cv-radius-md: 12px;
-  --cv-radius-lg: 16px;
+  /* Geometry & Radius */
+  --cv-radius-xs: 6px;
+  --cv-radius-sm: 10px;
+  --cv-radius-md: 16px;
+  --cv-radius-lg: 20px;
   --cv-radius-full: 9999px;
-  --cv-shadow-sm: 0 1px 3px rgba(16, 42, 67, 0.04);
-  --cv-shadow-md: 0 4px 12px rgba(16, 42, 67, 0.06);
-  --cv-shadow-lg: 0 8px 32px rgba(16, 42, 67, 0.12);
 }
 
-.dark-mode {
-  --cv-bg-warm: #0A141D;
-  --cv-surface: #10202E;
-  --cv-surface-subtle: #162B3D;
-  --cv-border: #1E3A52;
-  --cv-border-subtle: #172D40;
+/* Warm Ivory / Cream / Porcelain Light Theme (Matching Reference Image) */
+.light-mode {
+  --cv-ink: #FAF7F2;                /* Warm ivory-cream base background */
+  --cv-surface: #FFFFFF;            /* Pure white panel background */
+  --cv-surface-card: #FFFFFF;       /* Crisp porcelain card surface */
+  --cv-surface-elevated: #F4EFEA;   /* Soft warm elevated surface */
+  --cv-border: #EAE2D8;             /* Subtle warm border */
+  --cv-border-subtle: #F2EBE1;      /* Delicate divider */
+  
+  --cv-fog: #1C1917;                /* Deep warm charcoal/espresso text */
+  --cv-fog-muted: #78716C;          /* Warm slate-taupe secondary text */
+  --cv-fog-subtle: #A8A29E;         /* Subtle timestamp / unit text */
 
-  --cv-primary-teal: #287C78;
-  --cv-dark-navy: #E0FCFF;
-  --cv-secondary-teal: #53B7C5;
-  --cv-text-main: #F0F4F8;
-  --cv-text-muted: #9FB3C8;
-  --cv-text-light: #627D98;
+  /* Level Colors - Warm Light Mode */
+  --cv-level1-emerald: #15803D;
+  --cv-level1-cyan: #0284C7;
+  --cv-level1-glow: rgba(22, 163, 74, 0.15);
+  --cv-level1-bg: #F0FDF4;
+  --cv-level1-border: #BBF7D0;
 
-  --cv-ai-glow: rgba(83, 183, 197, 0.2);
+  --cv-level2-amber: #B45309;
+  --cv-level2-gold: #D97706;
+  --cv-level2-glow: rgba(217, 119, 6, 0.15);
+  --cv-level2-bg: #FFFBEB;
+  --cv-level2-border: #FDE68A;
 
-  --cv-status-normal-bg: rgba(47, 125, 91, 0.2);
-  --cv-status-monitor-bg: rgba(200, 146, 46, 0.2);
-  --cv-status-elevated-bg: rgba(217, 119, 69, 0.2);
-  --cv-status-high-risk-bg: rgba(201, 76, 76, 0.2);
-  --cv-status-critical-bg: rgba(168, 50, 50, 0.25);
+  --cv-level3-rose: #BE123C;
+  --cv-level3-coral: #E11D48;
+  --cv-level3-glow: rgba(225, 29, 72, 0.15);
+  --cv-level3-bg: #FFF1F2;
+  --cv-level3-border: #FECDD3;
+
+  --cv-accent-purple: #6366F1;
+  --cv-signal-cyan: #0284C7;
+  --cv-btn-primary: #56B4D3;
+  --cv-btn-primary-text: #0F2942;
 }

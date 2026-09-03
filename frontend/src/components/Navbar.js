@@ -13,7 +13,6 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
-    setMenuOpen(false);
   };
 
   const isActive = (path) => location.pathname === path;
@@ -22,52 +21,42 @@ const Navbar = () => {
     switch (path) {
       case '/dashboard':
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" />
+            <rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" />
           </svg>
         );
       case '/tests':
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+            <polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" />
           </svg>
         );
       case '/voice':
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            <line x1="12" y1="19" x2="12" y2="23"></line>
-            <line x1="8" y1="23" x2="16" y2="23"></line>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" />
           </svg>
         );
       case '/care-circle':
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
         );
       case '/level2':
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"></path>
-            <path d="m8.5 8.5 7 7"></path>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
           </svg>
         );
       case '/level3':
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" />
           </svg>
         );
       default:
@@ -76,7 +65,7 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { path: '/dashboard', label: 'Dashboard' },
+    { path: '/dashboard', label: 'Workstation' },
     { path: '/tests', label: 'Daily Tests' },
     { path: '/voice', label: 'Voice Journal' },
     { path: '/care-circle', label: 'Care Circle' },
@@ -89,17 +78,17 @@ const Navbar = () => {
       ...styles.nav,
       backgroundColor: theme.topHeaderBg,
       borderBottom: `1px solid ${theme.topHeaderBorder}`,
-      boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.3)' : '0 2px 12px rgba(0,0,0,0.03)'
+      boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.03)'
     }}>
       <div style={styles.inner}>
         <div style={styles.logo} onClick={() => { navigate('/dashboard'); setMenuOpen(false); }}>
-          <div style={{ ...styles.logoBadge, backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff', borderColor: isDark ? '#312e81' : '#c7d2fe' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ ...styles.logoBadge, backgroundColor: isDark ? '#1e1b4b' : '#E0F2FE', borderColor: isDark ? '#312e81' : '#BAE6FD' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#818cf8' : '#0284C7'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.54Z"></path>
               <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.54Z"></path>
             </svg>
           </div>
-          <span style={{ ...styles.logoText, color: isDark ? '#818cf8' : '#4338CA' }}>CogniVeil</span>
+          <span style={{ ...styles.logoText, color: isDark ? '#818cf8' : '#1C1917' }}>CogniVeil</span>
         </div>
 
         {/* Desktop links */}
@@ -113,8 +102,8 @@ const Navbar = () => {
                   to={item.path} 
                   style={{
                     ...styles.link,
-                    color: active ? (isDark ? '#818cf8' : '#4338CA') : theme.subtext,
-                    backgroundColor: active ? (isDark ? '#1e1b4b' : '#f5f3ff') : 'transparent',
+                    color: active ? (isDark ? '#818cf8' : '#0284C7') : theme.subtext,
+                    backgroundColor: active ? (isDark ? '#1e1b4b' : '#E0F2FE') : 'transparent',
                     fontWeight: active ? '700' : '600',
                   }}
                 >
@@ -132,11 +121,12 @@ const Navbar = () => {
           <button 
             style={{ 
               ...styles.themeToggleBtn, 
-              backgroundColor: isDark ? '#18223a' : '#f8fafc', 
+              backgroundColor: isDark ? '#18223a' : '#FFFFFF', 
               border: `1px solid ${theme.border}`,
             }}
             onClick={toggleTheme}
             title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle Theme"
           >
             {isDark ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -151,7 +141,7 @@ const Navbar = () => {
                 <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
               </svg>
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1C1917" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
               </svg>
             )}
@@ -159,68 +149,61 @@ const Navbar = () => {
 
           {user ? (
             <>
-              <div style={{ ...styles.userBadge, backgroundColor: isDark ? '#18223a' : '#f8fafc', border: `1px solid ${theme.border}` }}>
-                <div style={styles.userAvatar}>{(user.name || user.email)[0].toUpperCase()}</div>
+              <div style={{ ...styles.userBadge, backgroundColor: isDark ? '#18223a' : '#FFFFFF', border: `1px solid ${theme.border}` }}>
+                <div style={{ ...styles.userAvatar, backgroundColor: isDark ? '#4338CA' : '#FED7AA', color: isDark ? '#FFFFFF' : '#9A3412' }}>
+                  {(user.name || user.email)[0].toUpperCase()}
+                </div>
                 <div style={styles.userInfo}>
                   <span style={{ ...styles.userName, color: theme.text }}>{user.name || user.email.split('@')[0]}</span>
-                  <span style={styles.userRole}>{user.is_caregiver ? 'Caregiver' : 'Patient'}</span>
+                  <span style={{ ...styles.userRole, color: theme.subtext }}>{user.is_caregiver ? 'Caregiver' : 'Patient'}</span>
                 </div>
               </div>
               <button onClick={handleLogout} style={styles.logoutBtn}>Sign Out</button>
             </>
           ) : (
             <>
-              <Link to="/login" style={styles.loginLink}>Sign In</Link>
-              <Link to="/register" style={styles.registerLink}>Get Started</Link>
+              <Link to="/login" style={{ ...styles.loginLink, color: isDark ? '#818cf8' : '#0284C7' }}>Sign In</Link>
+              <Link to="/register" style={{ ...styles.registerLink, backgroundColor: isDark ? '#0284C7' : '#56B4D3', color: isDark ? '#FFFFFF' : '#0F2942' }}>
+                Get Started
+              </Link>
             </>
           )}
         </div>
 
         {/* Mobile hamburger */}
         <button className="hamburger-btn" style={styles.hamburger} onClick={() => setMenuOpen(!menuOpen)}>
-          {menuOpen ? '✕' : '☰'}
+          ☰
         </button>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile drawer */}
       {menuOpen && (
-        <div style={{ ...styles.mobileMenu, backgroundColor: theme.cardBg }}>
+        <div style={{ ...styles.mobileMenu, backgroundColor: theme.cardBg, borderTop: `1px solid ${theme.border}` }}>
+          {user && navLinks.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setMenuOpen(false)}
+              style={{
+                ...styles.mobileLink,
+                color: isActive(item.path) ? (isDark ? '#818cf8' : '#0284C7') : theme.subtext,
+                backgroundColor: isActive(item.path) ? (isDark ? '#1e1b4b' : '#E0F2FE') : 'transparent',
+              }}
+            >
+              {renderNavIcon(item.path)}
+              {item.label}
+            </Link>
+          ))}
           {user ? (
-            <>
-              {navLinks.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  style={{
-                    ...styles.mobileLink,
-                    color: isActive(item.path) ? '#4338CA' : theme.text,
-                    backgroundColor: isActive(item.path) ? (isDark ? '#1e1b4b' : '#f5f3ff') : 'transparent',
-                  }}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <span>{renderNavIcon(item.path)}</span> {item.label}
-                </Link>
-              ))}
-              <button onClick={handleLogout} style={styles.mobileLogout}>Sign Out</button>
-            </>
+            <button onClick={handleLogout} style={styles.mobileLogout}>Sign Out</button>
           ) : (
             <>
-              <Link to="/login" style={styles.mobileLink} onClick={() => setMenuOpen(false)}>Sign In</Link>
-              <Link to="/register" style={{ ...styles.mobileLink, color: '#4338CA' }} onClick={() => setMenuOpen(false)}>Get Started</Link>
+              <Link to="/login" onClick={() => setMenuOpen(false)} style={styles.mobileLink}>Sign In</Link>
+              <Link to="/register" onClick={() => setMenuOpen(false)} style={styles.mobileLink}>Get Started</Link>
             </>
           )}
         </div>
       )}
-
-      <style>{`
-        @media (max-width: 860px) {
-          .desktop-links { display: none !important; }
-          .hamburger-btn { display: flex !important; }
-        }
-        @media (min-width: 861px) {
-          .hamburger-btn { display: none !important; }
-        }
-      `}</style>
     </nav>
   );
 };
@@ -230,54 +213,53 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 100,
-    fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
-    transition: 'background-color 0.25s ease, border-color 0.25s ease',
+    width: '100%',
+    backdropFilter: 'blur(12px)',
+    transition: 'all 0.2s ease',
   },
   inner: {
-    maxWidth: '1240px',
+    maxWidth: '1280px',
     margin: '0 auto',
-    padding: '0 1.5rem',
-    height: '64px',
+    padding: '0.65rem 1.5rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '1.5rem',
   },
   logo: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.65rem',
+    gap: '0.75rem',
     cursor: 'pointer',
-    flexShrink: 0,
+    userSelect: 'none',
   },
   logoBadge: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    border: '1px solid',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    border: '1px solid',
   },
   logoText: {
-    fontSize: '1.25rem',
+    fontSize: '1.15rem',
     fontWeight: '800',
     letterSpacing: '-0.02em',
   },
   links: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.35rem',
+    gap: '0.4rem',
   },
   link: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.45rem',
     textDecoration: 'none',
-    fontSize: '0.86rem',
-    padding: '0.5rem 0.85rem',
+    padding: '0.45rem 0.85rem',
     borderRadius: '8px',
-    transition: 'all 0.2s',
+    fontSize: '0.85rem',
+    transition: 'all 0.15s ease',
   },
   linkIcon: {
     display: 'flex',
@@ -309,8 +291,6 @@ const styles = {
     width: '28px',
     height: '28px',
     borderRadius: '50%',
-    backgroundColor: '#4338CA',
-    color: 'white',
     fontSize: '0.78rem',
     fontWeight: '800',
     display: 'flex',
@@ -327,14 +307,13 @@ const styles = {
     lineHeight: 1.2,
   },
   userRole: {
-    color: '#64748b',
     fontSize: '0.68rem',
     fontWeight: '600',
   },
   logoutBtn: {
     backgroundColor: 'transparent',
-    color: '#ef4444',
-    border: '1.5px solid rgba(239, 68, 68, 0.3)',
+    color: '#E11D48',
+    border: '1.5px solid rgba(225, 29, 72, 0.3)',
     padding: '0.45rem 0.9rem',
     borderRadius: '8px',
     fontSize: '0.82rem',
@@ -343,14 +322,11 @@ const styles = {
     transition: 'all 0.2s',
   },
   loginLink: {
-    color: '#4338CA',
     textDecoration: 'none',
     fontSize: '0.88rem',
     fontWeight: '700',
   },
   registerLink: {
-    backgroundColor: '#4338CA',
-    color: 'white',
     textDecoration: 'none',
     padding: '0.5rem 1.1rem',
     borderRadius: '8px',
@@ -360,8 +336,8 @@ const styles = {
   hamburger: {
     display: 'none',
     backgroundColor: 'transparent',
-    border: '1px solid #e2e8f0',
-    color: '#1e293b',
+    border: '1px solid #EAE2D8',
+    color: '#1C1917',
     fontSize: '1.2rem',
     padding: '0.4rem 0.6rem',
     borderRadius: '8px',
@@ -384,8 +360,8 @@ const styles = {
     borderRadius: '8px',
   },
   mobileLogout: {
-    backgroundColor: '#fee2e2',
-    color: '#dc2626',
+    backgroundColor: '#FFE4E6',
+    color: '#BE123C',
     border: 'none',
     padding: '0.75rem',
     borderRadius: '8px',

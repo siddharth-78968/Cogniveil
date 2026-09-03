@@ -5,7 +5,7 @@ const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('cogniveil_theme');
-    return saved ? saved === 'dark' : false;
+    return saved ? saved === 'dark' : true; // default
   });
 
   const [fontSizeScale, setFontSizeScale] = useState(() => {
@@ -24,8 +24,14 @@ export const ThemeProvider = ({ children }) => {
     localStorage.setItem('cogniveil_theme', isDark ? 'dark' : 'light');
     if (isDark) {
       document.documentElement.classList.add('dark-mode');
+      document.documentElement.classList.remove('light-mode');
+      document.body.classList.add('dark-mode');
+      document.body.classList.remove('light-mode');
     } else {
+      document.documentElement.classList.add('light-mode');
       document.documentElement.classList.remove('dark-mode');
+      document.body.classList.add('light-mode');
+      document.body.classList.remove('dark-mode');
     }
   }, [isDark]);
 
@@ -61,31 +67,35 @@ export const ThemeProvider = ({ children }) => {
     highContrast,
     reducedMotion,
     fontSizeScale,
-    bg: isDark ? '#0A141D' : '#F7F9F8',
-    cardBg: isDark ? '#10202E' : '#FFFFFF',
-    cardHeaderBg: isDark ? '#162B3D' : '#FFFFFF',
-    border: isDark ? '#1E3A52' : '#DCE6E4',
-    borderSubtle: isDark ? '#172D40' : '#E8F0EE',
-    text: isDark ? '#F0F4F8' : '#102A43',
-    subtext: isDark ? '#9FB3C8' : '#627D98',
-    statBoxBg: isDark ? '#162B3D' : '#F0F5F4',
-    inputBg: isDark ? '#162B3D' : '#FFFFFF',
-    inputBorder: isDark ? '#1E3A52' : '#DCE6E4',
-    topHeaderBg: isDark ? '#10202E' : '#FFFFFF',
-    topHeaderBorder: isDark ? '#1E3A52' : '#DCE6E4',
-    tableTh: isDark ? '#9FB3C8' : '#627D98',
-    tableTrBorder: isDark ? '#172D40' : '#E8F0EE',
-    tableTd: isDark ? '#E0FCFF' : '#102A43',
-    chartGrid: isDark ? 'rgba(255, 255, 255, 0.05)' : '#E8F0EE',
-    chartText: isDark ? '#9FB3C8' : '#627D98',
-    sidebarBg: isDark ? '#081119' : '#0F4C4A',
-    primaryTeal: '#0F4C4A',
-    secondaryTeal: '#287C78',
-    aiCyan: '#53B7C5',
-    statusNormal: '#2F7D5B',
-    statusMonitor: '#C8922E',
-    statusElevated: '#D97745',
-    statusHighRisk: '#C94C4C',
+    bg: isDark ? '#0a0f16' : '#FAF7F2',
+    cardBg: isDark ? '#121d2b' : '#FFFFFF',
+    cardHeaderBg: isDark ? '#162436' : '#FAF7F2',
+    border: isDark ? 'rgba(255, 255, 255, 0.08)' : '#EAE2D8',
+    borderSubtle: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F2EBE1',
+    text: isDark ? '#f1f5f9' : '#1C1917',
+    subtext: isDark ? '#94a3b8' : '#78716C',
+    statBoxBg: isDark ? '#101824' : '#FFFFFF',
+    inputBg: isDark ? '#0a0f16' : '#FFFFFF',
+    inputBorder: isDark ? 'rgba(255, 255, 255, 0.12)' : '#EAE2D8',
+    topHeaderBg: isDark ? 'rgba(10, 15, 22, 0.95)' : 'rgba(250, 247, 242, 0.95)',
+    topHeaderBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : '#EAE2D8',
+    tableTh: isDark ? '#94a3b8' : '#78716C',
+    tableTrBorder: isDark ? 'rgba(255, 255, 255, 0.06)' : '#EAE2D8',
+    tableTd: isDark ? '#f1f5f9' : '#1C1917',
+    chartGrid: isDark ? 'rgba(255, 255, 255, 0.05)' : '#EAE2D8',
+    chartText: isDark ? '#94a3b8' : '#78716C',
+    sidebarBg: isDark ? '#070d14' : '#FAF7F2',
+    primaryTeal: isDark ? '#0d9488' : '#0284C7',
+    secondaryTeal: isDark ? '#22d3ee' : '#56B4D3',
+    aiCyan: isDark ? '#22d3ee' : '#0284C7',
+    statusNormal: isDark ? '#10b981' : '#15803D',
+    statusNormalBg: isDark ? 'rgba(16, 185, 129, 0.12)' : '#F0FDF4',
+    statusMonitor: isDark ? '#f59e0b' : '#B45309',
+    statusMonitorBg: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFFBEB',
+    statusElevated: isDark ? '#f97316' : '#C2410C',
+    statusElevatedBg: isDark ? 'rgba(249, 115, 22, 0.12)' : '#FFF7ED',
+    statusHighRisk: isDark ? '#f43f5e' : '#BE123C',
+    statusHighRiskBg: isDark ? 'rgba(244, 63, 94, 0.12)' : '#FFF1F2',
   };
 
   return (
