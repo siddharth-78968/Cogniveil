@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './IntroSplash.css';
 
-const TOTAL_DURATION_SEC = 5.5;
+const TOTAL_DURATION_SEC = 5.2;
 
 const MILESTONES = [
   { id: 1, label: 'PASSIVE TELEMETRY' },
@@ -13,21 +13,42 @@ const IntroSplash = ({ isOpen, onClose, onComplete }) => {
   const [elapsed, setElapsed] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
 
+  // Store callbacks in refs to prevent dependency changes from restarting the timer
+  const onCloseRef = useRef(onClose);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    onCompleteRef.current = onComplete;
+  }, [onClose, onComplete]);
+
   const handleClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
-      if (onClose) onClose();
-      if (onComplete) onComplete();
-    }, 550);
-  }, [onClose, onComplete]);
+      if (onCloseRef.current) onCloseRef.current();
+      if (onCompleteRef.current) onCompleteRef.current();
+    }, 500);
+  }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setIsClosing(false);
+      setElapsed(0);
+      return;
+    }
 
     setIsClosing(false);
     setElapsed(0);
 
     const startTime = Date.now();
+    let hasClosed = false;
+
+    const safeClose = () => {
+      if (hasClosed) return;
+      hasClosed = true;
+      handleClose();
+    };
+
     const interval = setInterval(() => {
       const now = Date.now();
       const current = (now - startTime) / 1000;
@@ -35,13 +56,14 @@ const IntroSplash = ({ isOpen, onClose, onComplete }) => {
 
       if (current >= TOTAL_DURATION_SEC) {
         clearInterval(interval);
-        handleClose();
+        safeClose();
       }
     }, 50);
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        handleClose();
+        clearInterval(interval);
+        safeClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -232,8 +254,8 @@ const IntroSplash = ({ isOpen, onClose, onComplete }) => {
           </div>
 
           <h1 className="intro-main-brand">
-            <span>COGNI</span>
-            <span className="intro-brand-highlight">VEIL</span>
+            <span className="intro-brand-text">CogniVeil</span>
+            <span className="intro-brand-dot">.</span>
           </h1>
 
           <div className="intro-sub-statement">

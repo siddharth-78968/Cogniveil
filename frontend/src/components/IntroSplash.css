@@ -256,31 +256,50 @@
   letter-spacing: 0.22em;
   color: var(--cv-fog-subtle, #738466);
   text-transform: uppercase;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.75rem;
   font-weight: 700;
-  animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+  animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
 }
 
 .intro-main-brand {
-  font-size: clamp(2.8rem, 5.5vw, 4.2rem);
+  font-size: clamp(3.2rem, 6.5vw, 4.8rem);
   font-weight: 900;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.025em;
   line-height: 1;
   color: var(--cv-fog, #f1f5ee);
   margin: 0;
   display: flex;
-  align-items: center;
-  font-family: var(--cv-font-grotesk, 'Mulish', sans-serif);
-  animation: zoomFadeIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1.0s both;
+  align-items: baseline;
+  justify-content: center;
+  font-family: var(--cv-font-grotesk, 'Mulish', -apple-system, sans-serif);
+  animation: zoomFadeIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.75s both;
 }
 
-.intro-brand-highlight {
-  font-family: var(--cv-font-serif, 'Newsreader', Georgia, serif);
-  font-style: italic;
-  font-weight: 500;
-  color: #a3b18a;
-  text-shadow: 0 0 24px rgba(163, 177, 138, 0.35);
-  margin-left: 4px;
+.intro-brand-text {
+  color: var(--cv-fog, #f1f5ee);
+  font-family: var(--cv-font-grotesk, 'Mulish', -apple-system, sans-serif);
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+.intro-brand-dot {
+  color: #526e49;
+  font-weight: 900;
+  font-size: 1.15em;
+  margin-left: 2px;
+  line-height: 1;
+}
+
+.cv-theme-light .intro-main-brand,
+.light-mode .intro-main-brand,
+.cv-theme-light .intro-brand-text,
+.light-mode .intro-brand-text {
+  color: #0d170e !important;
+}
+
+.cv-theme-light .intro-brand-dot,
+.light-mode .intro-brand-dot {
+  color: #3d5236 !important;
 }
 
 .intro-sub-statement {
@@ -288,8 +307,75 @@
   color: var(--cv-fog-muted, #a3b18a);
   margin-top: 0.85rem;
   letter-spacing: 0.02em;
-  font-weight: 400;
-  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.2s both;
+  font-weight: 500;
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.95s both;
+}
+
+.cv-theme-light .intro-sub-statement,
+.light-mode .intro-sub-statement {
+  color: #475e43 !important;
+}
+
+.cv-theme-light .intro-kicker-title,
+.light-mode .intro-kicker-title {
+  color: #5d7559 !important;
+}
+
+/* Light mode specific background and HUD styles */
+.cv-theme-light .intro-splash-screen,
+.light-mode .intro-splash-screen {
+  background-color: #f2f6f1 !important;
+  color: #0d170e !important;
+}
+
+.cv-theme-light .intro-hud-left-title,
+.light-mode .intro-hud-left-title,
+.cv-theme-light .intro-hud-right-status,
+.light-mode .intro-hud-right-status {
+  color: #475e43 !important;
+}
+
+.cv-theme-light .intro-hud-right-status.ready,
+.light-mode .intro-hud-right-status.ready {
+  color: #273822 !important;
+}
+
+.cv-theme-light .intro-stepped-milestones,
+.light-mode .intro-stepped-milestones {
+  color: #5d7559 !important;
+}
+
+.cv-theme-light .milestone-item.active,
+.light-mode .milestone-item.active {
+  color: #0d170e !important;
+}
+
+.cv-theme-light .milestone-item.active .milestone-bullet,
+.light-mode .milestone-item.active .milestone-bullet {
+  color: #3d5236 !important;
+}
+
+.cv-theme-light .milestone-item.completed,
+.light-mode .milestone-item.completed {
+  color: #273822 !important;
+}
+
+.cv-theme-light .milestone-item.completed .milestone-bullet,
+.light-mode .milestone-item.completed .milestone-bullet {
+  color: #273822 !important;
+}
+
+.cv-theme-light .intro-skip-btn,
+.light-mode .intro-skip-btn {
+  background: rgba(39, 56, 34, 0.08) !important;
+  border-color: rgba(39, 56, 34, 0.25) !important;
+  color: #273822 !important;
+}
+
+.cv-theme-light .intro-skip-btn:hover,
+.light-mode .intro-skip-btn:hover {
+  background: rgba(39, 56, 34, 0.16) !important;
+  color: #0d170e !important;
 }
 
 @keyframes fadeInDown {
