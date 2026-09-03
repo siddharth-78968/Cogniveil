@@ -301,6 +301,47 @@ const Dashboard = () => {
                 <div style={{ ...styles.progressBarFill, width: `${Math.min((history.length / 7) * 100, 100)}%` }} />
               </div>
             </div>
+
+            {/* DementAI "Buy Patients Time" Lead Time Benefit Callout */}
+            <div style={{
+              marginTop: '0.85rem',
+              padding: '0.65rem 1rem',
+              borderRadius: '10px',
+              backgroundColor: score?.is_deviating ? (isDark ? 'rgba(217, 119, 6, 0.15)' : '#fef3c7') : (isDark ? 'rgba(67, 56, 202, 0.12)' : '#eef2ff'),
+              border: `1px solid ${score?.is_deviating ? (isDark ? '#d97706' : '#fde68a') : (isDark ? '#4338ca' : '#c7d2fe')}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.75rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>⏱️</span>
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: '800', color: score?.is_deviating ? (isDark ? '#fbbf24' : '#92400e') : (isDark ? '#a5b4fc' : '#3730a3') }}>
+                    CLINICAL LEAD TIME WINDOW: {score?.is_deviating ? '6–8 MONTHS EARLY DRIFT DETECTED' : 'ACTIVE BASELINE SURVEILLANCE'}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: theme.subtext, marginTop: '2px' }}>
+                    CogniVeil does not diagnose — it buys care teams and families precious time by detecting subtle drift months before symptoms prompt a clinic visit.
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleOpenReferral}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '0.74rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  backgroundColor: score?.is_deviating ? '#d97706' : '#4338ca',
+                  color: '#ffffff'
+                }}
+              >
+                View Decision Support Dossier
+              </button>
+            </div>
           </div>
 
           {/* 4 Patient Stat Cards */}

@@ -482,7 +482,9 @@ def generate_referral(
             "urgency": "High",
             "timeframe": "Within 2 weeks",
             "recommended_specialist": "Neurologist / Memory Disorders Clinic",
-            "clinical_rationale": "High risk classification or active baseline score deviation detected. Comprehensive diagnostic workup including formal neuropsychological evaluation and neuroimaging is indicated."
+            "clinical_rationale": "High risk classification or active baseline score deviation detected. Comprehensive diagnostic workup including formal neuropsychological evaluation and neuroimaging is indicated.",
+            "estimated_clinical_lead_time": "6–8 months prior to overt clinical symptom presentation",
+            "caregiver_action_item": "Schedule a formal neurological evaluation & memory clinic consult within 2–4 weeks."
         }
     elif risk_level == "Moderate":
         referral_payload = {
@@ -491,7 +493,9 @@ def generate_referral(
             "urgency": "Moderate",
             "timeframe": "Within 30 days",
             "recommended_specialist": "Primary Care Physician / Geriatric Specialist",
-            "clinical_rationale": "Moderate risk signals detected. Recommended to evaluate modifiable vascular and lifestyle risk factors and repeat CogniScore monitoring."
+            "clinical_rationale": "Moderate risk signals detected. Recommended to evaluate modifiable vascular and lifestyle risk factors and repeat CogniScore monitoring.",
+            "estimated_clinical_lead_time": "6–12 months prior to overt clinical symptom presentation",
+            "caregiver_action_item": "Discuss sleep hygiene, cardiovascular metrics, and aerobic activity with Primary Care."
         }
     else:
         referral_payload = {
@@ -500,7 +504,9 @@ def generate_referral(
             "urgency": "Low",
             "timeframe": "Annual Checkup",
             "recommended_specialist": "Primary Care Physician",
-            "clinical_rationale": "Cognitive performance is within expected limits. Continue daily cognitive active/passive screening and maintain healthy lifestyle routines."
+            "clinical_rationale": "Cognitive performance is within expected limits. Continue daily cognitive active/passive screening and maintain healthy lifestyle routines.",
+            "estimated_clinical_lead_time": "Baseline intact (no active drift)",
+            "caregiver_action_item": "Encourage ongoing participation in daily cognitive micro-tasks and healthy lifestyle habits."
         }
 
     referral_payload["session_id"] = session_id
