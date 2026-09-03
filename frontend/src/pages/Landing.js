@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import IntroSplash from '../components/IntroSplash';
@@ -20,6 +20,167 @@ const Landing = () => {
   const [selectedShap, setSelectedShap] = useState('sleep');
   const [activeFaq, setActiveFaq] = useState(null);
   const [trendView, setTrendView] = useState('graph'); // 'graph' or 'json'
+
+  // Interactive Topology Graph State
+  const [selectedTopologyNode, setSelectedTopologyNode] = useState('keystroke'); // 'all' | 'speech' | 'keystroke' | 'psychometrics' | 'hub' | 'neuroimaging' | 'medgemma'
+  const [isTopologyStreaming, setIsTopologyStreaming] = useState(true);
+  const [telemetryTick, setTelemetryTick] = useState(0);
+
+  // Periodic subtle live fluctuation for telemetry stream
+  useEffect(() => {
+    if (!isTopologyStreaming) return;
+    const interval = setInterval(() => {
+      setTelemetryTick((prev) => (prev + 1) % 100);
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [isTopologyStreaming]);
+
+  // Comprehensive Clinical Topology Metadata & Vector Specs
+  const topologyData = {
+    speech: {
+      id: 'speech',
+      name: 'Speech Acoustics',
+      sub: 'Whisper Jitter & Pause Tracking',
+      domain: 'ACOUSTIC SENSOR',
+      status: 'STREAMING · 16 kHz',
+      activePill: '0.82ms Jitter · SNR 28.4dB',
+      score: '18.4',
+      drift: '-2.1%',
+      driftLabel: 'Mild acoustic pause latency',
+      state: 'Tier 1 Nominal',
+      privacy: 'Zero Raw Audio Retained',
+      badgeClass: 'nominal',
+      summary: 'Whisper-derived acoustic feature extraction across spontaneous conversational speech. Evaluates fundamental frequency (F0) micro-tremors, articulation pause ratios, and phonetic latency without storing raw audio.',
+      vectors: [
+        { label: 'Fundamental F0 Jitter', value: `${(0.82 + (telemetryTick % 3) * 0.01).toFixed(2)} ms`, status: 'optimal' },
+        { label: 'Pause-to-Speech Ratio', value: `${(18.4 + (telemetryTick % 4) * 0.1).toFixed(1)}%`, status: 'optimal' },
+        { label: 'Formant Dispersion', value: '2,410 Hz', status: 'optimal' },
+        { label: 'Acoustic SNR', value: '28.4 dB', status: 'high' }
+      ],
+      sparkline: [42, 45, 41, 48, 52, 49, 54, 51, 56]
+    },
+    keystroke: {
+      id: 'keystroke',
+      name: 'Keystroke Dynamics',
+      sub: 'Sub-ms Inter-Key Latency',
+      domain: 'NEUROMOTOR TELEMETRY',
+      status: 'ACTIVE DRIFT · 1,000 Hz',
+      activePill: '114ms Flight · 99.2% Reg',
+      score: '28.6',
+      drift: '-8.4%',
+      driftLabel: 'Longitudinal neuromotor drift',
+      state: 'Tier 2 Escalated',
+      privacy: 'Zero Keylog (Timestamps Only)',
+      badgeClass: 'warning',
+      summary: 'Sub-millisecond passive inter-key timing and hold duration telemetry captured during routine typing. Unmasks fine neuromotor deceleration, hesitations between syllables, and backspace error burst dynamics with complete privacy assurance.',
+      vectors: [
+        { label: 'Mean Inter-Key Flight', value: `${(114.2 + (telemetryTick % 3) * 0.3).toFixed(1)} ms`, status: 'drift' },
+        { label: 'Hold Duration Dispersion', value: '82.4 ms', status: 'drift' },
+        { label: 'Backspace Correction Rate', value: '+6.8%', status: 'warning' },
+        { label: 'Neuromotor Rhythm Entropy', value: '0.91 bit', status: 'optimal' }
+      ],
+      sparkline: [78, 76, 75, 71, 68, 64, 62, 59, 58]
+    },
+    psychometrics: {
+      id: 'psychometrics',
+      name: 'Active Psychometrics',
+      sub: 'Stroop Inhibition Battery',
+      domain: 'COGNITIVE DOMAIN',
+      status: 'MICRO-BATTERY · 60 Hz',
+      activePill: '288ms Stroop · Δ 4.1%',
+      score: '24.2',
+      drift: '-4.9%',
+      driftLabel: 'Executive attention hesitation',
+      state: 'Tier 1 Monitoring',
+      privacy: 'Session Ephemeral Storage',
+      badgeClass: 'info',
+      summary: 'Brief 3-minute calibrated micro-tasks measuring selective attention, executive inhibition, and working memory. The Stroop interference protocol isolates frontal lobe response conflict resolution speed.',
+      vectors: [
+        { label: 'Congruent Latency', value: '284 ms', status: 'optimal' },
+        { label: 'Incongruent Stroop Delay', value: `${(142 + (telemetryTick % 5)).toFixed(0)} ms`, status: 'drift' },
+        { label: 'Digit Span Backwards', value: '5.2 items', status: 'optimal' },
+        { label: 'Accuracy Under Conflict', value: '94.2%', status: 'optimal' }
+      ],
+      sparkline: [85, 82, 84, 80, 77, 76, 74, 72, 71]
+    },
+    hub: {
+      id: 'hub',
+      name: '10-Agent EWMA & CUSUM Core',
+      sub: 'Multi-Agent Active Inference',
+      domain: 'CENTRAL PROCESSING MATRIX',
+      status: '10 AGENTS SYNCHRONIZED',
+      activePill: 'λ=0.20 · h=3.0σ · p<0.001',
+      score: '71.2',
+      drift: '-8.4%',
+      driftLabel: 'Confirmed Change-Point (h=3.2σ)',
+      state: 'Tier 2 Escalated',
+      privacy: 'Zero-Raw Vector Retention',
+      badgeClass: 'core',
+      summary: 'The deterministic 10-Agent processing pipeline performs continuous EWMA noise smoothing and two-sided CUSUM change-point statistical tests across all 3 sensor channels to detect true cognitive decline 6-8 months ahead of standard clinical screens.',
+      vectors: [
+        { label: 'Smoothing Weight (λ)', value: '0.20', status: 'optimal' },
+        { label: 'CUSUM Decision Margin (h)', value: '3.0σ', status: 'optimal' },
+        { label: 'Statistical Significance', value: 'p < 0.001', status: 'warning' },
+        { label: 'Lead Time Advantage', value: '6–8 Months', status: 'high' }
+      ],
+      sparkline: [78, 77, 75, 73, 70, 68, 66, 62, 59]
+    },
+    neuroimaging: {
+      id: 'neuroimaging',
+      name: 'Tier 3 Neuroimaging',
+      sub: 'ResNet-18 OASIS Volumetrics',
+      domain: 'STRUCTURAL MORPHOMETRY',
+      status: 'GATED ESCALATION TRIGGERED',
+      activePill: 'CDR 0.5 · VBR 0.18',
+      score: 'Gated',
+      drift: '-4.1%',
+      driftLabel: 'Hippocampal volume decrement',
+      state: 'Tier 3 Protocol Active',
+      privacy: 'DICOM De-identified (HIPAA)',
+      badgeClass: 'warning',
+      summary: 'Deep convolutional ResNet-18 volumetric neural network trained on the OASIS-3 cohort. Triggered only upon Tier 2 statistical escalation to assess hippocampal parenchymal fraction and ventricle-to-brain ratio with Grad-CAM visual heatmaps.',
+      vectors: [
+        { label: 'CDR Staging Prediction', value: 'CDR 0.5 (Very Mild)', status: 'drift' },
+        { label: 'Hippocampal Volume', value: '3.42 cm³ (-4.1%)', status: 'drift' },
+        { label: 'Ventricle-Brain Ratio', value: '0.18', status: 'warning' },
+        { label: 'Grad-CAM Attention Area', value: 'Medial Temporal', status: 'optimal' }
+      ],
+      sparkline: [90, 89, 87, 85, 82, 79, 75, 73, 70]
+    },
+    medgemma: {
+      id: 'medgemma',
+      name: 'MedGemma Dossier',
+      sub: '12-Section Clinical Synthesis',
+      domain: 'CLINICAL SYNTHESIS',
+      status: 'SYNTHESIS VERIFIED',
+      activePill: '12 Sections · ICD-10 G31.84',
+      score: '100%',
+      drift: 'Actionable',
+      driftLabel: 'Neurology consult recommended',
+      state: 'Tier 2 Escalated',
+      privacy: 'Differential Privacy (ε=0.5)',
+      badgeClass: 'success',
+      summary: 'Fine-tuned medical language model synthesizes multimodal biomarker evidence into an audit-ready 12-section clinical dossier with TreeSHAP feature attributions, ICD-10 billing code mappings, and verifiable citation chains.',
+      vectors: [
+        { label: 'Structured Sections', value: '12 of 12 Validated', status: 'optimal' },
+        { label: 'Mapped ICD-10 Code', value: 'G31.84 (MCI)', status: 'optimal' },
+        { label: 'Safety Guard Verification', value: 'Passed (p < 0.001)', status: 'optimal' },
+        { label: 'Recommended Action', value: '30-Day Referral', status: 'warning' }
+      ],
+      sparkline: [70, 71, 71, 71, 72, 71, 71, 71, 71]
+    }
+  };
+
+  // Smooth scroll with visual highlight for the in-browser reaction test
+  const scrollToChallenge = (e) => {
+    if (e) e.preventDefault();
+    const el = document.getElementById('challenge');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+      el.classList.add('cv-highlight-pulse');
+      setTimeout(() => el.classList.remove('cv-highlight-pulse'), 2500);
+    }
+  };
 
   // Interactive In-Browser Cognitive Reaction Test
   const [challengeState, setChallengeState] = useState('idle');
@@ -240,9 +401,9 @@ const Landing = () => {
             <button className="cv-hero-primary-btn" onClick={() => navigate('/login')}>
               Launch clinical workstation
             </button>
-            <a href="#challenge" className="cv-hero-secondary-btn">
+            <button className="cv-hero-secondary-btn" onClick={scrollToChallenge}>
               Run reaction agility test
-            </a>
+            </button>
           </div>
 
           {/* ── HERO DIAGNOSTIC PIPELINE TOPOLOGY GRAPH SHOWCASE ── */}
@@ -250,68 +411,285 @@ const Landing = () => {
             
             {/* Top Bar of Topology Card */}
             <div className="cv-topology-bar">
-              <div className="cv-topology-status">
-                <span className="cv-status-indicator active" />
-                <span>EVIDENCE TOPOLOGY GRAPH: MULTI-CHANNEL INPUTS & ACTIVE INFERENCE</span>
+              <div className="cv-topology-status-group">
+                <div className="cv-status-pulse-wrapper">
+                  <span className={`cv-status-pulse-ring ${isTopologyStreaming ? 'active' : ''}`} />
+                  <span className="cv-status-indicator active" />
+                </div>
+                <div className="cv-topology-status-text">
+                  <span className="cv-topology-heading">EVIDENCE TOPOLOGY GRAPH: MULTI-CHANNEL ACTIVE INFERENCE</span>
+                  <span className="cv-topology-subheading">
+                    {selectedTopologyNode === 'all' ? 'All Channels Synchronized' : `${topologyData[selectedTopologyNode]?.name} Stream Selected`}
+                  </span>
+                </div>
               </div>
-              <div className="cv-topology-leadtime">
-                <span>ESTIMATED LEAD TIME GAINED: </span>
-                <strong>6–8 MONTHS</strong>
+
+              {/* Channel Filter & Stream Controls */}
+              <div className="cv-topology-controls">
+                <div className="cv-channel-filter-pills">
+                  <button 
+                    className={`cv-filter-pill ${selectedTopologyNode === 'all' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('all')}
+                  >
+                    All Channels
+                  </button>
+                  <button 
+                    className={`cv-filter-pill ${selectedTopologyNode === 'speech' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('speech')}
+                  >
+                    Speech
+                  </button>
+                  <button 
+                    className={`cv-filter-pill ${selectedTopologyNode === 'keystroke' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('keystroke')}
+                  >
+                    Keystroke
+                  </button>
+                  <button 
+                    className={`cv-filter-pill ${selectedTopologyNode === 'psychometrics' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('psychometrics')}
+                  >
+                    Psychometrics
+                  </button>
+                  <button 
+                    className={`cv-filter-pill ${selectedTopologyNode === 'neuroimaging' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('neuroimaging')}
+                  >
+                    Neuroimaging
+                  </button>
+                  <button 
+                    className={`cv-filter-pill ${selectedTopologyNode === 'medgemma' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('medgemma')}
+                  >
+                    MedGemma
+                  </button>
+                </div>
+
+                <div className="cv-topology-meta-actions">
+                  <button 
+                    className={`cv-stream-toggle-btn ${isTopologyStreaming ? 'streaming' : ''}`}
+                    onClick={() => setIsTopologyStreaming(!isTopologyStreaming)}
+                    title={isTopologyStreaming ? 'Pause live stream simulation' : 'Resume live stream simulation'}
+                  >
+                    <span className="cv-stream-dot" />
+                    {isTopologyStreaming ? 'LIVE 120Hz' : 'PAUSED'}
+                  </button>
+                  <div className="cv-topology-leadtime-badge">
+                    <span>LEAD TIME GAINED: </span>
+                    <strong>6–8 MONTHS</strong>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Visual SVG Network DAG Graph */}
-            <div className="cv-topology-network-container">
-              <svg className="cv-topology-svg" viewBox="0 0 920 280" fill="none">
-                {/* Connecting Curved Lines */}
-                <path d="M 180 50 C 270 50, 270 140, 360 140" stroke="currentColor" strokeWidth="1.8" strokeDasharray="4 4" className="cv-svg-edge" />
-                <path d="M 180 140 C 270 140, 270 140, 360 140" stroke="currentColor" strokeWidth="2.2" className="cv-svg-edge active" />
-                <path d="M 180 230 C 270 230, 270 140, 360 140" stroke="currentColor" strokeWidth="1.8" strokeDasharray="4 4" className="cv-svg-edge" />
-                
-                {/* Hub to Outputs */}
-                <path d="M 540 140 C 620 140, 620 80, 710 80" stroke="currentColor" strokeWidth="1.8" className="cv-svg-edge" />
-                <path d="M 540 140 C 620 140, 620 200, 710 200" stroke="currentColor" strokeWidth="2.2" className="cv-svg-edge active" />
+            {/* Visual SVG Network DAG Graph Stage */}
+            <div className="cv-topology-network-stage">
+              <svg className="cv-topology-svg" viewBox="0 0 960 320" fill="none">
+                <defs>
+                  <linearGradient id="cvEdgeActiveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#34d399" />
+                    <stop offset="50%" stopColor="#5eead4" />
+                    <stop offset="100%" stopColor="#34d399" />
+                  </linearGradient>
+                  <filter id="cvGlowFilter" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                </defs>
+
+                {/* Base Structural Edge Tracks */}
+                <path d="M 270 52 C 305 52, 305 160, 340 160" className="cv-svg-track" />
+                <path d="M 270 160 C 305 160, 305 160, 340 160" className="cv-svg-track" />
+                <path d="M 270 268 C 305 268, 305 160, 340 160" className="cv-svg-track" />
+                <path d="M 620 160 C 655 160, 655 100, 690 100" className="cv-svg-track" />
+                <path d="M 620 160 C 655 160, 655 220, 690 220" className="cv-svg-track" />
+
+                {/* Active Dynamic Energy Streams */}
+                <path 
+                  d="M 270 52 C 305 52, 305 160, 340 160" 
+                  className={`cv-svg-edge ${(selectedTopologyNode === 'speech' || selectedTopologyNode === 'all') ? 'active' : ''}`} 
+                />
+                <path 
+                  d="M 270 160 C 305 160, 305 160, 340 160" 
+                  className={`cv-svg-edge ${(selectedTopologyNode === 'keystroke' || selectedTopologyNode === 'all') ? 'active' : ''}`} 
+                />
+                <path 
+                  d="M 270 268 C 305 268, 305 160, 340 160" 
+                  className={`cv-svg-edge ${(selectedTopologyNode === 'psychometrics' || selectedTopologyNode === 'all') ? 'active' : ''}`} 
+                />
+                <path 
+                  d="M 620 160 C 655 160, 655 100, 690 100" 
+                  className={`cv-svg-edge ${(selectedTopologyNode === 'neuroimaging' || selectedTopologyNode === 'all') ? 'active' : ''}`} 
+                />
+                <path 
+                  d="M 620 160 C 655 160, 655 220, 690 220" 
+                  className={`cv-svg-edge ${(selectedTopologyNode === 'medgemma' || selectedTopologyNode === 'all') ? 'active' : ''}`} 
+                />
+
+                {/* Animated Streaming Pulse Beads */}
+                {isTopologyStreaming && (
+                  <>
+                    <circle r="4" fill="#34d399" filter="url(#cvGlowFilter)" opacity="0.9">
+                      <animateMotion 
+                        path={
+                          selectedTopologyNode === 'speech' ? "M 270 52 C 305 52, 305 160, 340 160" :
+                          selectedTopologyNode === 'psychometrics' ? "M 270 268 C 305 268, 305 160, 340 160" :
+                          "M 270 160 C 305 160, 305 160, 340 160"
+                        }
+                        dur="1.8s" 
+                        repeatCount="indefinite" 
+                      />
+                    </circle>
+                    <circle r="4" fill="#34d399" filter="url(#cvGlowFilter)" opacity="0.9">
+                      <animateMotion 
+                        path={
+                          selectedTopologyNode === 'neuroimaging' ? "M 620 160 C 655 160, 655 100, 690 100" :
+                          "M 620 160 C 655 160, 655 220, 690 220"
+                        }
+                        dur="1.8s" 
+                        repeatCount="indefinite" 
+                      />
+                    </circle>
+                  </>
+                )}
               </svg>
 
               <div className="cv-network-grid">
                 
-                {/* Column 1: Tier 1 Sensor Nodes */}
+                {/* Column 1: Tier 1 Multimodal Sensor Nodes */}
                 <div className="cv-net-col col-inputs">
-                  <div className="cv-net-node sensor-node">
-                    <span className="cv-node-pip" />
+                  
+                  {/* Node 1: Speech Acoustics */}
+                  <div 
+                    className={`cv-net-node sensor-node ${selectedTopologyNode === 'speech' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('speech')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="cv-node-icon-wrap">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                      </svg>
+                    </div>
                     <div className="cv-node-content">
-                      <div className="cv-node-name">Speech Acoustics</div>
+                      <div className="cv-node-header">
+                        <span className="cv-node-name">Speech Acoustics</span>
+                        <span className="cv-node-tag-pill">16 kHz</span>
+                      </div>
                       <div className="cv-node-sub">Whisper Jitter & Pause</div>
+                      <div className="cv-node-metrics-bar">
+                        <span className="cv-node-metric-dot" />
+                        <span>0.82ms Jitter · SNR 28dB</span>
+                      </div>
                     </div>
+                    <span className={`cv-node-pip ${selectedTopologyNode === 'speech' || selectedTopologyNode === 'all' ? 'active' : ''}`} />
                   </div>
 
-                  <div className="cv-net-node sensor-node active">
-                    <span className="cv-node-pip active" />
+                  {/* Node 2: Keystroke Dynamics */}
+                  <div 
+                    className={`cv-net-node sensor-node ${selectedTopologyNode === 'keystroke' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('keystroke')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="cv-node-icon-wrap">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                        <line x1="6" y1="8" x2="6" y2="8" />
+                        <line x1="10" y1="8" x2="10" y2="8" />
+                        <line x1="14" y1="8" x2="14" y2="8" />
+                        <line x1="18" y1="8" x2="18" y2="8" />
+                        <line x1="6" y1="12" x2="6" y2="12" />
+                        <line x1="18" y1="12" x2="18" y2="12" />
+                        <line x1="7" y1="16" x2="17" y2="16" />
+                      </svg>
+                    </div>
                     <div className="cv-node-content">
-                      <div className="cv-node-name">Keystroke Dynamics</div>
+                      <div className="cv-node-header">
+                        <span className="cv-node-name">Keystroke Dynamics</span>
+                        <span className="cv-node-tag-pill highlight">DRIFT</span>
+                      </div>
                       <div className="cv-node-sub">Sub-ms Inter-Key Latency</div>
+                      <div className="cv-node-metrics-bar">
+                        <span className="cv-node-metric-dot active" />
+                        <span>114ms Flight · 99.2% Reg</span>
+                      </div>
                     </div>
+                    <span className={`cv-node-pip ${selectedTopologyNode === 'keystroke' || selectedTopologyNode === 'all' ? 'active' : ''}`} />
                   </div>
 
-                  <div className="cv-net-node sensor-node">
-                    <span className="cv-node-pip" />
-                    <div className="cv-node-content">
-                      <div className="cv-node-name">Active Psychometrics</div>
-                      <div className="cv-node-sub">Stroop Inhibition Battery</div>
+                  {/* Node 3: Active Psychometrics */}
+                  <div 
+                    className={`cv-net-node sensor-node ${selectedTopologyNode === 'psychometrics' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('psychometrics')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="cv-node-icon-wrap">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="6" />
+                        <circle cx="12" cy="12" r="2" />
+                      </svg>
                     </div>
+                    <div className="cv-node-content">
+                      <div className="cv-node-header">
+                        <span className="cv-node-name">Active Psychometrics</span>
+                        <span className="cv-node-tag-pill">60 Hz</span>
+                      </div>
+                      <div className="cv-node-sub">Stroop Inhibition Battery</div>
+                      <div className="cv-node-metrics-bar">
+                        <span className="cv-node-metric-dot" />
+                        <span>288ms Stroop · Δ 4.1%</span>
+                      </div>
+                    </div>
+                    <span className={`cv-node-pip ${selectedTopologyNode === 'psychometrics' || selectedTopologyNode === 'all' ? 'active' : ''}`} />
                   </div>
+
                 </div>
 
-                {/* Column 2: Central Core Engine Hub */}
+                {/* Column 2: Central Core 10-Agent Engine Hub */}
                 <div className="cv-net-col col-hub">
-                  <div className="cv-hub-node">
+                  <div 
+                    className={`cv-hub-node ${selectedTopologyNode === 'hub' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('hub')}
+                    role="button"
+                    tabIndex={0}
+                  >
                     <div className="cv-hub-inner">
-                      <div className="cv-hub-badge">CORE AGENT ENGINE</div>
+                      <div className="cv-hub-badge-strip">
+                        <span className="cv-hub-badge">CORE MULTI-AGENT ENGINE</span>
+                        <span className="cv-hub-live-badge">99.4% FUSION CONF</span>
+                      </div>
+
                       <div className="cv-hub-title">10-Agent EWMA & CUSUM Fusion</div>
+                      
+                      {/* Mini 10-Agent Synchronized Status Matrix */}
+                      <div className="cv-hub-agents-strip">
+                        {['DQA', 'SPA', 'KDA', 'PSA', 'EWM', 'CSM', 'NIA', 'SFG', 'SHP', 'MDG'].map((agent, i) => (
+                          <span 
+                            key={agent} 
+                            className={`cv-mini-agent-pip ${(i === 2 && selectedTopologyNode === 'keystroke') || (i === 1 && selectedTopologyNode === 'speech') || (i === 3 && selectedTopologyNode === 'psychometrics') || (i === 6 && selectedTopologyNode === 'neuroimaging') || (i === 9 && selectedTopologyNode === 'medgemma') ? 'highlight' : ''}`}
+                            title={`Agent ${i + 1}: ${agent}`}
+                          >
+                            {agent}
+                          </span>
+                        ))}
+                      </div>
+
                       <div className="cv-hub-params">
                         <span>λ = 0.20</span>
+                        <span className="cv-param-divider">·</span>
                         <span>h = 3.0σ</span>
+                        <span className="cv-param-divider">·</span>
                         <span>p &lt; 0.001</span>
+                      </div>
+
+                      <div className="cv-hub-cta-sub">
+                        <span>Click to inspect active inference matrix →</span>
                       </div>
                     </div>
                   </div>
@@ -319,43 +697,360 @@ const Landing = () => {
 
                 {/* Column 3: Tier Escalation & Dossier Nodes */}
                 <div className="cv-net-col col-outputs">
-                  <div className="cv-net-node decision-node">
-                    <span className="cv-node-pip" />
+                  
+                  {/* Node 4: Tier 3 Neuroimaging */}
+                  <div 
+                    className={`cv-net-node decision-node ${selectedTopologyNode === 'neuroimaging' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('neuroimaging')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <span className={`cv-node-pip-left ${selectedTopologyNode === 'neuroimaging' || selectedTopologyNode === 'all' ? 'active' : ''}`} />
+                    <div className="cv-node-icon-wrap">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2a9 9 0 0 0-9 9c0 3.5 2 6.5 5 8v3h8v-3c3-1.5 5-4.5 5-8a9 9 0 0 0-9-9z"/>
+                        <path d="M9 10a3 3 0 0 1 6 0"/>
+                      </svg>
+                    </div>
                     <div className="cv-node-content">
-                      <div className="cv-node-name">Tier 3 Neuroimaging</div>
+                      <div className="cv-node-header">
+                        <span className="cv-node-name">Tier 3 Neuroimaging</span>
+                        <span className="cv-node-tag-pill conditional">GATED</span>
+                      </div>
                       <div className="cv-node-sub">ResNet-18 OASIS Volumetrics</div>
+                      <div className="cv-node-metrics-bar">
+                        <span className="cv-node-metric-dot active" />
+                        <span>CDR 0.5 · VBR 0.18</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="cv-net-node decision-node active">
-                    <span className="cv-node-pip active" />
+                  {/* Node 5: MedGemma Dossier */}
+                  <div 
+                    className={`cv-net-node decision-node ${selectedTopologyNode === 'medgemma' ? 'active' : ''}`}
+                    onClick={() => setSelectedTopologyNode('medgemma')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <span className={`cv-node-pip-left ${selectedTopologyNode === 'medgemma' || selectedTopologyNode === 'all' ? 'active' : ''}`} />
+                    <div className="cv-node-icon-wrap">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                      </svg>
+                    </div>
                     <div className="cv-node-content">
-                      <div className="cv-node-name">MedGemma Dossier</div>
+                      <div className="cv-node-header">
+                        <span className="cv-node-name">MedGemma Dossier</span>
+                        <span className="cv-node-tag-pill verified">AUDITED</span>
+                      </div>
                       <div className="cv-node-sub">12-Section Clinical Synthesis</div>
+                      <div className="cv-node-metrics-bar">
+                        <span className="cv-node-metric-dot active" />
+                        <span>12 Sections · ICD-10 G31.84</span>
+                      </div>
                     </div>
                   </div>
+
                 </div>
 
               </div>
             </div>
 
-            {/* Live Telemetry Summary Strip */}
+            {/* Precision Telemetry Monitors */}
             <div className="cv-topology-telemetry">
+              
               <div className="cv-telem-item">
-                <span className="cv-telem-label">CALIBRATED COGNISCORE</span>
-                <span className="cv-telem-val">71.2 <small>/ 100</small></span>
+                <div className="cv-telem-top">
+                  <span className="cv-telem-label">CALIBRATED COGNISCORE</span>
+                  <span className="cv-telem-badge">BASELINE: 74.6</span>
+                </div>
+                <div className="cv-telem-val">
+                  {selectedTopologyNode === 'all' ? '71.2' : topologyData[selectedTopologyNode]?.score || '71.2'} 
+                  <small>/ 100</small>
+                </div>
+                {/* Mini Risk Gauge Bar */}
+                <div className="cv-gauge-container">
+                  <div className="cv-gauge-bar">
+                    <span className="cv-gauge-segment normal" title="Normal: 80-100" />
+                    <span className="cv-gauge-segment warning active-zone" title="Mild Drift: 65-79" />
+                    <span className="cv-gauge-segment alert" title="Tier 2 Escalation: <65" />
+                  </div>
+                  <div className="cv-gauge-pointer" style={{ left: '71.2%' }} />
+                </div>
+                <div className="cv-telem-sub">Delta: -3.4 vs 6-mo rolling baseline</div>
               </div>
+
               <div className="cv-telem-item">
-                <span className="cv-telem-label">LONGITUDINAL DRIFT</span>
-                <span className="cv-telem-val highlight">-8.4% drift</span>
+                <div className="cv-telem-top">
+                  <span className="cv-telem-label">LONGITUDINAL DRIFT</span>
+                  <span className="cv-telem-badge alert">CUSUM h=3.2σ</span>
+                </div>
+                <div className="cv-telem-val highlight">
+                  {selectedTopologyNode === 'all' ? '-8.4% drift' : topologyData[selectedTopologyNode]?.drift || '-8.4%'}
+                </div>
+                {/* Mini Inline Sparkline Curve */}
+                <div className="cv-telem-sparkline-wrap">
+                  <svg viewBox="0 0 160 26" className="cv-telem-sparkline">
+                    <line x1="0" y1="14" x2="160" y2="14" stroke="currentColor" strokeDasharray="3 3" opacity="0.3" />
+                    <path
+                      d="M 5,6 L 28,7 L 55,9 L 85,13 L 115,18 L 140,22 L 155,23"
+                      fill="none"
+                      stroke="#f87171"
+                      strokeWidth="2.2"
+                    />
+                    <circle cx="155" cy="23" r="3" fill="#f87171" />
+                  </svg>
+                </div>
+                <div className="cv-telem-sub">{selectedTopologyNode === 'all' ? 'Two-sided CUSUM threshold exceeded' : topologyData[selectedTopologyNode]?.driftLabel}</div>
               </div>
+
               <div className="cv-telem-item">
-                <span className="cv-telem-label">DIAGNOSTIC STATE</span>
-                <span className="cv-telem-val">Tier 2 Escalated</span>
+                <div className="cv-telem-top">
+                  <span className="cv-telem-label">DIAGNOSTIC STATE</span>
+                  <span className="cv-telem-badge gated">AUTOMATED GATE</span>
+                </div>
+                <div className="cv-telem-val">
+                  {selectedTopologyNode === 'all' ? 'Tier 2 Escalated' : topologyData[selectedTopologyNode]?.state}
+                </div>
+                <div className="cv-telem-pill-status">
+                  <span className="cv-status-dot-pulse" />
+                  <span>Conditional Tier 3 MRI Protocol Active</span>
+                </div>
+                <div className="cv-telem-sub">Gated access unlocked via calibrated criteria</div>
               </div>
+
               <div className="cv-telem-item">
-                <span className="cv-telem-label">PRIVACY ASSURANCE</span>
-                <span className="cv-telem-val">Zero-Raw Retention</span>
+                <div className="cv-telem-top">
+                  <span className="cv-telem-label">PRIVACY ASSURANCE</span>
+                  <span className="cv-telem-badge privacy">VERIFIED</span>
+                </div>
+                <div className="cv-telem-val">
+                  {selectedTopologyNode === 'all' ? 'Zero-Raw Retention' : topologyData[selectedTopologyNode]?.privacy}
+                </div>
+                <div className="cv-telem-crypto-digest">
+                  <code>SHA-256: 0x8F4A2C...E7B1</code>
+                </div>
+                <div className="cv-telem-sub">Local edge enclave · No keystroke/audio storage</div>
+              </div>
+
+            </div>
+
+            {/* Interactive Biomarker Inspection Console (Expanded Telemetry Drawer) */}
+            <div className="cv-topology-inspection-drawer">
+              <div className="cv-drawer-header">
+                <div className="cv-drawer-title-group">
+                  <span className="cv-drawer-kicker">LIVE BIOMARKER SIGNAL CONSOLE</span>
+                  <h4 className="cv-drawer-title">
+                    {selectedTopologyNode === 'all' 
+                      ? 'Multi-Channel Synchronized Fusion Stream' 
+                      : `${topologyData[selectedTopologyNode]?.name} — Clinical Vector Inspection`}
+                  </h4>
+                </div>
+                <div className="cv-drawer-tags">
+                  <span className="cv-drawer-tag">{selectedTopologyNode === 'all' ? '10 AGENTS' : topologyData[selectedTopologyNode]?.domain}</span>
+                  <span className="cv-drawer-tag status">{selectedTopologyNode === 'all' ? 'SYNCHRONIZED' : topologyData[selectedTopologyNode]?.status}</span>
+                </div>
+              </div>
+
+              <div className="cv-drawer-body">
+                {/* Left Panel: Signal Visualizer */}
+                <div className="cv-drawer-viz-panel">
+                  <div className="cv-viz-header">
+                    <span>REAL-TIME STREAM TELEMETRY</span>
+                    <span className="cv-viz-rate">120 Hz SAMPLING</span>
+                  </div>
+
+                  {/* Dynamic Visualizer based on selected node */}
+                  {selectedTopologyNode === 'speech' && (
+                    <div className="cv-viz-content acoustic">
+                      <div className="cv-equalizer-bars">
+                        {[35, 60, 45, 80, 55, 90, 70, 40, 65, 85, 50, 75, 60, 40, 30].map((h, i) => (
+                          <div 
+                            key={i} 
+                            className="cv-eq-bar" 
+                            style={{ 
+                              height: `${Math.min(100, h + ((telemetryTick + i * 3) % 25))}%`,
+                              animationDelay: `${i * 0.08}s` 
+                            }} 
+                          />
+                        ))}
+                      </div>
+                      <div className="cv-viz-caption">Whisper Neural Spectrogram: Fundamental F0 Voice Tremor Stability</div>
+                    </div>
+                  )}
+
+                  {selectedTopologyNode === 'keystroke' && (
+                    <div className="cv-viz-content motor">
+                      <div className="cv-histogram-bars">
+                        {[
+                          { label: '<80ms', height: 25 },
+                          { label: '100ms', height: 45 },
+                          { label: '114ms', height: 95, highlight: true },
+                          { label: '140ms', height: 60 },
+                          { label: '180ms', height: 35 },
+                          { label: '220ms', height: 50, warning: true },
+                          { label: '>300ms', height: 20 }
+                        ].map((b, i) => (
+                          <div key={i} className="cv-hist-col">
+                            <div 
+                              className={`cv-hist-bar ${b.highlight ? 'peak' : ''} ${b.warning ? 'warning' : ''}`} 
+                              style={{ height: `${b.height}%` }}
+                            />
+                            <span className="cv-hist-label">{b.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="cv-viz-caption">Inter-Key Flight Latency Distribution: Noticeable Secondary Hesitation Peak at 220ms</div>
+                    </div>
+                  )}
+
+                  {selectedTopologyNode === 'psychometrics' && (
+                    <div className="cv-viz-content stroop">
+                      <div className="cv-stroop-comparison">
+                        <div className="cv-stroop-row">
+                          <span className="cv-stroop-label">Congruent Baseline</span>
+                          <div className="cv-stroop-bar-track">
+                            <div className="cv-stroop-bar baseline" style={{ width: '58%' }}>284 ms</div>
+                          </div>
+                        </div>
+                        <div className="cv-stroop-row">
+                          <span className="cv-stroop-label">Conflict Incongruent</span>
+                          <div className="cv-stroop-bar-track">
+                            <div className="cv-stroop-bar conflict" style={{ width: '88%' }}>426 ms (+142 ms)</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="cv-viz-caption">Stroop Interference Delay: Frontal Response Conflict Latency vs Age-Matched Normals</div>
+                    </div>
+                  )}
+
+                  {selectedTopologyNode === 'neuroimaging' && (
+                    <div className="cv-viz-content imaging">
+                      <div className="cv-imaging-metrics-grid">
+                        <div className="cv-img-metric">
+                          <span className="cv-img-label">Hippocampal Volume</span>
+                          <span className="cv-img-val">3.42 cm³</span>
+                          <span className="cv-img-delta alert">-4.1% vs ADNI Norm</span>
+                        </div>
+                        <div className="cv-img-metric">
+                          <span className="cv-img-label">Ventricle-Brain Ratio</span>
+                          <span className="cv-img-val">0.18</span>
+                          <span className="cv-img-delta warning">Mild Enlargement</span>
+                        </div>
+                        <div className="cv-img-metric">
+                          <span className="cv-img-label">ResNet-18 CDR Score</span>
+                          <span className="cv-img-val">0.50</span>
+                          <span className="cv-img-delta">Very Mild Cognitive Impairment</span>
+                        </div>
+                      </div>
+                      <div className="cv-viz-caption">OASIS-3 Trained Deep Volumetrics: Gated Triggered by Tier 2 Keystroke & Speech Drift</div>
+                    </div>
+                  )}
+
+                  {selectedTopologyNode === 'medgemma' && (
+                    <div className="cv-viz-content dossier">
+                      <div className="cv-dossier-preview-box">
+                        <div className="cv-dossier-header-line">
+                          <span>SECTION 04: LONGITUDINAL TRAJECTORY SYNTHESIS</span>
+                          <span>MEDGEMMA-27B CLINICAL</span>
+                        </div>
+                        <p className="cv-dossier-text">
+                          "Patient exhibits statistically significant downward drift across neuromuscular cadence (-8.4%) and active inhibition response latency (+142 ms, p &lt; 0.001). EWMA trajectory confirms multi-modal coherence. Structural imaging corroborates mild hippocampal volume decrement. Recommending formal neurology consultation under ICD-10 G31.84."
+                        </p>
+                      </div>
+                      <div className="cv-viz-caption">Deterministic Clinical Synthesis: 12-Section Dossier with Auditable Evidence Chains</div>
+                    </div>
+                  )}
+
+                  {selectedTopologyNode === 'hub' && (
+                    <div className="cv-viz-content hub">
+                      <div className="cv-hub-waterfall">
+                        <div className="cv-waterfall-step">
+                          <span className="cv-wf-num">01</span>
+                          <span className="cv-wf-agent">DataQualityAgent</span>
+                          <span className="cv-wf-status pass">SNR 28.4 dB (Pass)</span>
+                        </div>
+                        <div className="cv-waterfall-step">
+                          <span className="cv-wf-num">02</span>
+                          <span className="cv-wf-agent">SpeechAcousticsAgent</span>
+                          <span className="cv-wf-status pass">0.82ms Jitter (Nominal)</span>
+                        </div>
+                        <div className="cv-waterfall-step">
+                          <span className="cv-wf-num">03</span>
+                          <span className="cv-wf-agent">KeystrokeDynamicsAgent</span>
+                          <span className="cv-wf-status flag">114ms Flight (Drift -8.4%)</span>
+                        </div>
+                        <div className="cv-waterfall-step">
+                          <span className="cv-wf-num">05</span>
+                          <span className="cv-wf-agent">EWMA & CUSUM Engine</span>
+                          <span className="cv-wf-status escalate">h = 3.2σ &gt; 3.0σ (Escalate Tier 2)</span>
+                        </div>
+                      </div>
+                      <div className="cv-viz-caption">Deterministic Multi-Agent Execution Pipeline: Zero-Hallucination Sequential Verification</div>
+                    </div>
+                  )}
+
+                  {selectedTopologyNode === 'all' && (
+                    <div className="cv-viz-content all">
+                      <div className="cv-all-channels-stream">
+                        <div className="cv-stream-row">
+                          <span className="cv-sr-name">Speech (16 kHz)</span>
+                          <div className="cv-mini-wave">
+                            <span style={{ width: '60%' }} />
+                          </div>
+                          <span className="cv-sr-val">SNR 28.4 dB</span>
+                        </div>
+                        <div className="cv-stream-row">
+                          <span className="cv-sr-name">Keystroke (1 kHz)</span>
+                          <div className="cv-mini-wave alert">
+                            <span style={{ width: '85%' }} />
+                          </div>
+                          <span className="cv-sr-val alert">-8.4% Drift</span>
+                        </div>
+                        <div className="cv-stream-row">
+                          <span className="cv-sr-name">Psychometrics (60 Hz)</span>
+                          <div className="cv-mini-wave">
+                            <span style={{ width: '70%' }} />
+                          </div>
+                          <span className="cv-sr-val">288 ms Stroop</span>
+                        </div>
+                      </div>
+                      <div className="cv-viz-caption">Simultaneous Multi-Modal Ingestion: Aggregated into Unified Longitudinal CogniScore</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Panel: Clinical Vector Specifications */}
+                <div className="cv-drawer-specs-panel">
+                  <div className="cv-specs-title">CALIBRATED CLINICAL VECTORS</div>
+                  <div className="cv-specs-list">
+                    {(selectedTopologyNode === 'all' ? topologyData.keystroke.vectors : topologyData[selectedTopologyNode]?.vectors || []).map((v, i) => (
+                      <div key={i} className="cv-spec-row">
+                        <div className="cv-spec-name-group">
+                          <span className="cv-spec-name">{v.label}</span>
+                          <span className={`cv-spec-status-pill ${v.status}`}>{v.status.toUpperCase()}</span>
+                        </div>
+                        <span className="cv-spec-value">{v.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="cv-specs-narrative">
+                    {selectedTopologyNode === 'all' 
+                      ? 'Continuous passive telemetry across daily keystrokes and voice cadences flags sub-perceptual motor deceleration months before MMSE or MoCA scores drop.'
+                      : topologyData[selectedTopologyNode]?.summary}
+                  </p>
+
+                  <div className="cv-specs-action-wrap">
+                    <button className="cv-drawer-cta-btn" onClick={() => navigate('/login')}>
+                      Launch Workstation with this Stream →
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -636,43 +1331,101 @@ const Landing = () => {
       {/* ── IN-BROWSER INTERACTIVE COGNITIVE AGILITY TEST ── */}
       <section id="challenge" className="cv-section cv-section-compact">
         <div className="cv-container">
-          <div className="cv-challenge-box">
-            <div>
-              <span className="cv-challenge-kicker">IN-BROWSER CLINICAL DEMONSTRATION</span>
-              <h3 className="cv-challenge-title">Test your cognitive reaction agility</h3>
+          <div className="cv-challenge-card">
+            <div className="cv-challenge-info">
+              <div className="cv-challenge-kicker-wrap">
+                <span className="cv-challenge-kicker-dot" />
+                <span className="cv-challenge-kicker">INTERACTIVE CLINICAL DEMO</span>
+              </div>
+              <h3 className="cv-challenge-title">Sub-Millisecond Psychomotor Agility Test</h3>
               <p className="cv-challenge-sub">
-                Experience how CogniVeil measures sub-millisecond psychomotor reaction speed and executive inhibition during simple stimuli.
+                Experience how CogniVeil's passive algorithms measure microscopic changes in neuromuscular reaction cadence. When you click start, wait for the stimulus pad to turn green, then click as fast as possible.
               </p>
+
+              <div className="cv-challenge-clinical-context">
+                <div className="cv-ctx-item">
+                  <span className="cv-ctx-label">CLINICAL CORRELATION:</span>
+                  <span className="cv-ctx-val">Frontal-subcortical motor initiation</span>
+                </div>
+                <div className="cv-ctx-item">
+                  <span className="cv-ctx-label">HEALTHY BENCHMARK:</span>
+                  <span className="cv-ctx-val">220 ms – 310 ms</span>
+                </div>
+              </div>
             </div>
 
-            <div className="cv-challenge-interactive">
+            <div className="cv-challenge-interactive-stage">
               {challengeState === 'idle' && (
-                <button className="cv-challenge-action-btn" onClick={startChallenge}>
-                  Start 5-Second Reaction Test
-                </button>
+                <div className="cv-challenge-idle-state">
+                  <div className="cv-idle-icon">
+                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                  </div>
+                  <div className="cv-idle-title">Ready to Measure Reaction Cadence?</div>
+                  <p className="cv-idle-sub">Calibrated to 1,000 Hz browser frame timing</p>
+                  <button className="cv-challenge-action-btn" onClick={startChallenge}>
+                    Start Reaction Agility Test →
+                  </button>
+                </div>
               )}
 
               {challengeState === 'waiting' && (
                 <div className="cv-challenge-stimulus waiting" onClick={handleChallengeClick}>
-                  Wait for green box... (Do not click yet)
+                  <div className="cv-stimulus-pulse-ring" />
+                  <span className="cv-stimulus-icon-wait">⏳</span>
+                  <span className="cv-stimulus-main-text">Hold Focus...</span>
+                  <span className="cv-stimulus-hint">Click the instant this box flashes green</span>
                 </div>
               )}
 
               {challengeState === 'ready' && (
                 <div className="cv-challenge-stimulus ready" onClick={handleChallengeClick}>
-                  CLICK NOW!
+                  <div className="cv-stimulus-flash-ring" />
+                  <span className="cv-stimulus-icon-go">⚡</span>
+                  <span className="cv-stimulus-main-text">CLICK NOW — {stimulusWord.text}</span>
+                  <span className="cv-stimulus-hint">Measuring motor flight speed...</span>
                 </div>
               )}
 
               {challengeState === 'result' && (
-                <div className="cv-challenge-result">
-                  <div className="cv-result-ms">{reactionTime} ms</div>
-                  <div className="cv-result-note">
-                    {reactionTime < 320 ? 'Optimal psychomotor latency' : 'Baseline within expected parameters'}
+                <div className="cv-challenge-result-card">
+                  <div className="cv-result-badge">ASSESSMENT RECORDED</div>
+                  <div className="cv-result-ms">
+                    {reactionTime} <span className="cv-unit">ms</span>
                   </div>
-                  <button className="cv-challenge-retry-btn" onClick={startChallenge}>
-                    Test Again
-                  </button>
+                  
+                  {/* Percentile Rating Bar */}
+                  <div className="cv-result-percentile-box">
+                    <div className="cv-pct-track">
+                      <div 
+                        className="cv-pct-fill" 
+                        style={{ 
+                          width: `${Math.min(100, Math.max(10, 100 - (reactionTime - 180) * 0.35))}%` 
+                        }} 
+                      />
+                    </div>
+                    <div className="cv-pct-labels">
+                      <span>400ms (Drift)</span>
+                      <span>280ms (Normal)</span>
+                      <span>200ms (Fast)</span>
+                    </div>
+                  </div>
+
+                  <div className="cv-result-note">
+                    {reactionTime < 260 && 'Superior psychomotor response — 95th percentile neuromuscular agility.'}
+                    {reactionTime >= 260 && reactionTime <= 330 && 'Optimal reaction cadence — Consistent with healthy age-matched baseline.'}
+                    {reactionTime > 330 && 'Mild hesitation latency observed — Within normal variance, continuous longitudinal tracking recommended.'}
+                  </div>
+
+                  <div className="cv-result-actions">
+                    <button className="cv-challenge-retry-btn" onClick={startChallenge}>
+                      ↺ Test Again
+                    </button>
+                    <button className="cv-challenge-portal-btn" onClick={() => navigate('/login')}>
+                      Open Clinician Workstation →
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
