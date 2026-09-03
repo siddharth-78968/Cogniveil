@@ -5,8 +5,14 @@ const AccessibilityBar = () => {
   const { 
     fontSizeScale, 
     setFontSizeScale, 
+    decreaseFontSize,
+    increaseFontSize,
+    resetFontSize,
+    fontSizePercent,
     reducedMotion, 
     toggleReducedMotion,
+    isDark,
+    toggleTheme,
     theme 
   } = useTheme();
 
@@ -23,35 +29,75 @@ const AccessibilityBar = () => {
         <div style={styles.fontScaleBox}>
           <span style={{ fontSize: '0.72rem', color: theme.subtext, marginRight: '4px' }}>Text Size:</span>
           <button 
-            style={{ ...styles.btn, backgroundColor: fontSizeScale === 'sm' ? '#0F4C4A' : 'transparent', color: fontSizeScale === 'sm' ? '#ffffff' : theme.text }}
-            onClick={() => setFontSizeScale('sm')}
-            title="Small text"
+            style={{ 
+              ...styles.btn, 
+              backgroundColor: (fontSizeScale === 'sm' || fontSizeScale === 'xs') ? (isDark ? '#0d9488' : '#0F4C4A') : 'transparent', 
+              color: (fontSizeScale === 'sm' || fontSizeScale === 'xs') ? '#ffffff' : theme.text,
+              opacity: fontSizeScale === 'xs' ? 0.5 : 1,
+              cursor: fontSizeScale === 'xs' ? 'not-allowed' : 'pointer',
+            }}
+            onClick={decreaseFontSize}
+            title={fontSizeScale === 'xs' ? "Minimum text size reached (80%)" : "Decrease text size (A-)"}
+            aria-label="Decrease text size"
           >
             A-
           </button>
           <button 
-            style={{ ...styles.btn, backgroundColor: fontSizeScale === 'md' ? '#0F4C4A' : 'transparent', color: fontSizeScale === 'md' ? '#ffffff' : theme.text }}
-            onClick={() => setFontSizeScale('md')}
-            title="Default text"
+            style={{ 
+              ...styles.btn, 
+              backgroundColor: fontSizeScale === 'md' ? (isDark ? '#0d9488' : '#0F4C4A') : 'transparent', 
+              color: fontSizeScale === 'md' ? '#ffffff' : theme.text 
+            }}
+            onClick={resetFontSize}
+            title="Default text size (100%)"
+            aria-label="Reset text size to default"
           >
             A
           </button>
           <button 
-            style={{ ...styles.btn, backgroundColor: fontSizeScale === 'lg' ? '#0F4C4A' : 'transparent', color: fontSizeScale === 'lg' ? '#ffffff' : theme.text }}
-            onClick={() => setFontSizeScale('lg')}
-            title="Large text"
+            style={{ 
+              ...styles.btn, 
+              backgroundColor: (fontSizeScale === 'lg' || fontSizeScale === 'xl') ? (isDark ? '#0d9488' : '#0F4C4A') : 'transparent', 
+              color: (fontSizeScale === 'lg' || fontSizeScale === 'xl') ? '#ffffff' : theme.text,
+              opacity: fontSizeScale === 'xl' ? 0.5 : 1,
+              cursor: fontSizeScale === 'xl' ? 'not-allowed' : 'pointer',
+            }}
+            onClick={increaseFontSize}
+            title={fontSizeScale === 'xl' ? "Maximum text size reached (135%)" : "Increase text size (A+)"}
+            aria-label="Increase text size"
           >
             A+
           </button>
+          <span style={{ 
+            fontSize: '0.68rem', 
+            fontWeight: '800', 
+            color: isDark ? '#22d3ee' : '#0F4C4A', 
+            marginLeft: '4px', 
+            minWidth: '34px', 
+            textAlign: 'center',
+            fontFamily: 'monospace'
+          }}>
+            {fontSizePercent || '100%'}
+          </span>
         </div>
 
         {/* Reduced Motion Toggle */}
         <button 
-          style={{ ...styles.toggleBtn, backgroundColor: reducedMotion ? '#0F4C4A' : 'transparent', color: reducedMotion ? '#ffffff' : theme.text, borderColor: theme.border }}
+          style={{ ...styles.toggleBtn, backgroundColor: reducedMotion ? '#0F4C4A' : 'transparent', color: theme.text, borderColor: theme.border }}
           onClick={toggleReducedMotion}
           title="Toggle reduced animations"
         >
           <span>⏸️ Reduced Motion {reducedMotion ? 'ON' : 'OFF'}</span>
+        </button>
+
+        {/* Light / Dark Mode Toggle */}
+        <button 
+          style={{ ...styles.toggleBtn, backgroundColor: 'transparent', color: theme.text, borderColor: theme.border }}
+          onClick={toggleTheme}
+          title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          aria-label="Toggle Theme"
+        >
+          <span>{isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}</span>
         </button>
       </div>
     </div>

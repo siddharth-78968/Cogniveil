@@ -3,20 +3,21 @@ import { sendChatMessage } from '../utils/api';
 
 const QUICK_PROMPTS = [
   "How has my score changed this week?",
+  "What's my latest risk level?",
+  "How did I do on my tests?",
   "When is my next check-in?",
-  "Explain my latest screening result",
-  "What are the clinical guidelines for screening?"
+  "Explain my latest screening result"
 ];
 
 export default function ChatWidget({ user }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
       sender: 'assistant',
-      text: `Hello ${user?.name ? user.name.split(' ')[0] : 'there'}! I'm your CogniVeil personal screening assistant.\n\nYou can ask me questions about your CogniScore trends, longitudinal progress (EWMA/CUSUM), scheduled clinical check-ins, or indexed screening guidelines.`,
+      text: `Hello ${user?.name ? user.name.split(' ')[0] : 'there'}! I'm your CogniVeil personal screening assistant.\n\nYou can ask me questions about your CogniScore trends, longitudinal progress, test results, or scheduled clinical check-ins.`,
       sources: ['CogniVeil Personal Assistant'],
       guardrailPassed: true,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -73,68 +74,92 @@ export default function ChatWidget({ user }) {
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000 }}>
-      {/* Floating Toggle Button */}
+    <div style={{ margin: '1.5rem 0', width: '100%' }}>
+      {/* Collapsed Inline Bar */}
       {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
+        <div
           style={{
+            padding: '14px 20px',
+            borderRadius: '14px',
+            background: 'var(--cv-surface-card, #121d2b)',
+            border: '1px solid var(--cv-border, rgba(255, 255, 255, 0.12))',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            padding: '12px 20px',
-            borderRadius: '9999px',
-            background: 'linear-gradient(135deg, #0d9488 0%, #06b6d4 100%)',
-            color: '#ffffff',
-            border: 'none',
-            boxShadow: '0 8px 24px rgba(6, 182, 212, 0.4)',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.92rem',
-            transition: 'all 0.2s ease-in-out'
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0) scale(1)')}
         >
-          <span style={{ fontSize: '1.2rem' }}>💬</span>
-          <span>Ask Assistant</span>
-          <span
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '1.3rem' }}>💬</span>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--cv-fog, #f1f5f9)' }}>Ask Assistant</span>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    background: 'rgba(34, 211, 238, 0.15)',
+                    color: '#22d3ee',
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontWeight: '700',
+                    border: '1px solid rgba(34, 211, 238, 0.3)'
+                  }}
+                >
+                  Read-Only
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--cv-fog-muted, #94a3b8)' }}>
+                Ask questions about your personal CogniScore trajectory, test results, and check-ins
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsOpen(true)}
             style={{
-              fontSize: '0.7rem',
-              background: 'rgba(255,255,255,0.25)',
-              padding: '2px 7px',
-              borderRadius: '10px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 18px',
+              borderRadius: '9999px',
+              background: 'linear-gradient(135deg, #0d9488 0%, #06b6d4 100%)',
+              color: '#ffffff',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.84rem',
+              transition: 'all 0.2s ease'
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
           >
-            Read-Only
-          </span>
-        </button>
+            <span>Open Assistant Q&A</span>
+            <span>↓</span>
+          </button>
+        </div>
       )}
 
-      {/* Main Chat Assistant Modal Panel */}
+      {/* Expanded Inline Chat Assistant Card */}
       {isOpen && (
         <div
           style={{
-            width: '380px',
-            maxWidth: 'calc(100vw - 32px)',
-            height: '540px',
-            maxHeight: 'calc(100vh - 100px)',
+            width: '100%',
+            height: '460px',
             background: 'var(--cv-surface, #101824)',
             borderRadius: '16px',
             border: '1px solid var(--cv-border, rgba(255, 255, 255, 0.12))',
-            boxShadow: '0 20px 48px rgba(0,0,0,0.45)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
-            animation: 'fadeIn 0.2s ease-out'
+            overflow: 'hidden'
           }}
         >
           {/* Header */}
           <div
             style={{
-              padding: '14px 18px',
+              padding: '12px 18px',
               background: 'var(--cv-surface-elevated, #162436)',
               borderBottom: '1px solid var(--cv-border, rgba(255, 255, 255, 0.08))',
               display: 'flex',
@@ -156,14 +181,31 @@ export default function ChatWidget({ user }) {
                   color: '#fff'
                 }}
               >
-                🧠
+                💬
               </div>
               <div>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', color: 'var(--cv-fog, #f1f5f9)' }}>
-                  CogniVeil Assistant
-                </h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', color: 'var(--cv-fog, #f1f5f9)' }}>
+                    Ask Assistant
+                  </h4>
+                  <span
+                    style={{
+                      fontSize: '0.65rem',
+                      background: 'rgba(34, 211, 238, 0.15)',
+                      color: '#22d3ee',
+                      padding: '1px 7px',
+                      borderRadius: '10px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      fontWeight: '700',
+                      border: '1px solid rgba(34, 211, 238, 0.3)'
+                    }}
+                  >
+                    Read-Only
+                  </span>
+                </div>
                 <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cv-fog-muted, #94a3b8)' }}>
-                  Grounded in your screening records & guidelines
+                  Grounded strictly in your personal screening records & test history
                 </p>
               </div>
             </div>
@@ -171,17 +213,20 @@ export default function ChatWidget({ user }) {
               onClick={() => setIsOpen(false)}
               style={{
                 background: 'transparent',
-                border: 'none',
+                border: '1px solid var(--cv-border, rgba(255, 255, 255, 0.12))',
                 color: 'var(--cv-fog-muted, #94a3b8)',
                 cursor: 'pointer',
-                fontSize: '1.2rem',
-                padding: '4px',
+                fontSize: '0.76rem',
+                padding: '4px 10px',
                 borderRadius: '6px',
-                lineHeight: 1
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
               }}
-              title="Close chat"
+              title="Collapse assistant"
             >
-              ✕
+              <span>Collapse</span>
+              <span>✕</span>
             </button>
           </div>
 

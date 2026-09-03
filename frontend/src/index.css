@@ -14,13 +14,34 @@ html, body {
   background-size: 36px 36px;
   color: var(--cv-fog);
   font-family: var(--cv-font-grotesk);
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.6;
   min-height: 100%;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, font-size 0.15s ease;
+}
+
+/* Accessibility Font Scale Levels */
+html[data-font-scale="xs"] {
+  font-size: 12px !important;
+}
+
+html[data-font-scale="sm"] {
+  font-size: 13.5px !important;
+}
+
+html[data-font-scale="md"] {
+  font-size: 15px !important;
+}
+
+html[data-font-scale="lg"] {
+  font-size: 17.5px !important;
+}
+
+html[data-font-scale="xl"] {
+  font-size: 20.5px !important;
 }
 
 /* Warm Ivory / Cream Light Mode Background Pattern */

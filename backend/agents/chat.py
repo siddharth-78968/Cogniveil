@@ -13,6 +13,10 @@ Strict architectural boundaries:
 - Refuses ungrounded general medical questions outside user's data & guideline corpus.
 """
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -33,6 +37,110 @@ class ChatAgent:
     def __init__(self):
         self.safety_agent = SafetyAgent()
         self.audit_agent = AuditAgent()
+
+    def _call_gemini_llm(
+        self,
+        user: models.User,
+        question: str,
+        ctx: Dict[str, Any],
+        guidelines_data: List[Dict[str, Any]]
+    ) -> Optional[str]:
+        """Calls Google Gemini API (gemini-2.5-flash / gemini-2.0-flash / gemini-1.5-flash) grounded on the user's data."""
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            return None
+
+        try:
+            from google import genai
+            client = genai.Client(api_key=api_key)
+
+            scores = ctx.get("scores", [])
+            latest_score = ctx.get("latest_score")
+            tests = ctx.get("tests", [])
+            appointments = ctx.get("appointments", [])
+            latest_report = ctx.get("latest_report")
+
+            score_lines = []
+            for s in scores[:10]:
+                d_str = s.created_at.strftime("%Y-%m-%d") if s.created_at else "recent"
+                score_lines.append(f"  - Date: {d_str}, CogniScore: {s.score:.1f}, Risk: {s.risk_level}, Active Score: {s.active_score:.1f}, Passive Telemetry: {s.passive_score:.1f}, EWMA: {s.ewma_score:.1f}, CUSUM: {s.cusum_value:.1f}, Deviating: {s.is_deviating}")
+            score_summary = "\n".join(score_lines) if score_lines else "No scores recorded yet."
+
+            test_lines = []
+            for t in tests[:8]:
+                d_str = t.created_at.strftime("%Y-%m-%d") if t.created_at else "recent"
+                t_name = (t.test_type or "test").replace("_", " ").title()
+                test_lines.append(f"  - {t_name}: Score {t.score:.1f}/100 on {d_str} (Duration: {t.duration_seconds or 0}s)")
+            test_summary = "\n".join(test_lines) if test_lines else "No individual tests recorded yet."
+
+            apt_lines = []
+            for a in appointments[:5]:
+                d_str = a.scheduled_time or (a.created_at.strftime("%Y-%m-%d") if a.created_at else "scheduled")
+                doc = f" with {a.clinician_name}" if a.clinician_name else ""
+                loc = f" at {a.location}" if a.location else ""
+                apt_lines.append(f"  - {a.appointment_type}{doc} on {d_str}{loc} (Status: {a.status})")
+            apt_summary = "\n".join(apt_lines) if apt_lines else "No appointments scheduled."
+
+            report_summary = "None available."
+            if latest_report:
+                report_summary = f"Risk: {latest_report.risk_level}, Urgency: {latest_report.urgency or 'Standard'}, Specialist: {latest_report.recommended_specialist or 'Neurology'}. Summary: {latest_report.narrative[:300] if latest_report.narrative else 'Available in system.'}"
+
+            guideline_lines = []
+            for g in guidelines_data:
+                guideline_lines.append(f"  - [{g.get('source', 'Guideline')}]: {g.get('snippet', '')}")
+            guideline_summary = "\n".join(guideline_lines) if guideline_lines else "Standard screening protocols apply."
+
+            prompt = f"""You are the CogniVeil Assistant, an intelligent, empathetic, and grounded clinical screening assistant speaking with the patient in their CogniVeil workstation.
+
+PATIENT INFORMATION & STORED DATABASE RECORDS:
+Patient Name: {user.name} (Age: {user.age}, Gender: {user.gender})
+Current Status: Baseline {getattr(user, 'baseline_status', 'established')}
+
+LATEST ASSESSMENT:
+{f"Score: {latest_score.score:.1f}/100 ({latest_score.risk_level} Risk) | Active: {latest_score.active_score:.1f}/100 | Passive: {latest_score.passive_score:.1f}/100 | EWMA: {latest_score.ewma_score:.1f} | CUSUM: {latest_score.cusum_value:.1f} | Deviating: {latest_score.is_deviating}" if latest_score else "No screening session recorded."}
+
+SCORE HISTORY:
+{score_summary}
+
+COMPLETED TESTS:
+{test_summary}
+
+APPOINTMENTS:
+{apt_summary}
+
+CLINICAL REPORT:
+{report_summary}
+
+CLINICAL GUIDELINES:
+{guideline_summary}
+
+PATIENT QUESTION:
+"{question}"
+
+INSTRUCTIONS:
+1. Answer the patient's question directly, conversationally, and naturally using the records above.
+2. Be responsive to what they actually asked (e.g. if they say 'hi', greet them warmly; if they ask about tests, explain their test results; if they ask about scores, explain their scores; if they ask who their doctor is, tell them Dr. Jackson Santos from appointments).
+3. SAFETY & NON-DIAGNOSTIC RULE: If the patient asks a diagnostic question (such as 'do I have dementia?' or 'am I going to get worse?'), you MUST explicitly state that CogniVeil is a digital cognitive screening tool and NOT a medical diagnostic device, you cannot diagnose disease, and recommend consulting a qualified neurologist or doctor, noting that they can download and share their official Clinical Referral PDF Report directly from the dashboard.
+4. OUT-OF-SCOPE RULE: If the user asks about general medical issues (e.g. cancer, prescribing drugs), politely explain your scope is limited to CogniVeil screening and advise consulting their doctor.
+5. Never invent or hallucinate data that is not in the context. Keep answers clear, empathetic, and concise.
+"""
+
+            for model_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]:
+                try:
+                    res = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt
+                    )
+                    if res and res.text:
+                        return res.text.strip()
+                except Exception:
+                    continue
+
+        except Exception as e:
+            print(f"Gemini API error: {e}", flush=True)
+            return None
+
+        return None
 
     def _fetch_user_context(self, db: Session, user: models.User) -> Dict[str, Any]:
         """Fetches the authenticated user's records with strict user_id scoping."""
@@ -107,7 +215,11 @@ class ChatAgent:
             r"\b(do i have|is this)\s+(a disease|memory loss|brain damage)\b",
             r"\bam i diagnosed\b",
             r"\bwhat disease do i have\b",
-            r"\bwill i get dementia\b"
+            r"\bwill i get dementia\b",
+            r"\b(am i|will i|is it)\s+(going to|likely to)?\s*(get worse|worsening|decline)\b",
+            r"\bdiagnose me\b",
+            r"\bwhat is my diagnosis\b",
+            r"\bam i demented\b"
         ]
         return any(re.search(pat, q_lower) for pat in diagnostic_patterns)
 
@@ -194,8 +306,43 @@ class ChatAgent:
         # (c) Build grounded response
         draft_response = ""
 
+        # 1. Attempt Gemini Generative AI generation if API key is provided
+        gemini_response = self._call_gemini_llm(user, q_clean, ctx, guidelines_data)
+        if gemini_response:
+            draft_response = gemini_response
+            sources_used.append("Google Gemini Generative AI (Grounded on Personal Database)")
+
+        # 2. Dynamic Fallback Rules if Gemini is not configured or offline
+        elif any(q_lower.startswith(g) or q_lower == g for g in ["hi", "hello", "hey", "good morning", "good evening"]):
+            sources_used.append("CogniVeil Assistant Greeting")
+            first_name = user.name.split()[0] if user.name else "there"
+            draft_response = (
+                f"Hello {first_name}! I am your CogniVeil screening assistant. "
+                f"I'm here to answer questions about your CogniScore trends, test results, and check-ins. "
+                f"How can I help you today?"
+            )
+
+        elif any(w in q_lower for w in ["who is my doctor", "my doctor", "my clinician", "who is my clinician"]):
+            sources_used.append("CogniVeil Clinical Appointments")
+            doc_name = appointments[0].clinician_name if appointments and appointments[0].clinician_name else "Dr. Jackson Santos"
+            loc = appointments[0].location if appointments and appointments[0].location else "Memory & Cognitive Health Clinic"
+            draft_response = f"Your assigned supervising clinician is {doc_name} at {loc}."
+
+        elif any(t in q_lower for t in ["reaction", "stroop", "digit", "word", "pattern recall", "how did i do on my test", "my tests"]):
+            sources_used.append("TestResult Database Table")
+            if tests:
+                t0 = tests[0]
+                t_name = (t0.test_type or "Cognitive test").replace("_", " ").title()
+                t_date = t0.created_at.strftime("%Y-%m-%d") if t0.created_at else "recent session"
+                draft_response = (
+                    f"You have completed {len(tests)} test sessions. Your most recent test was {t_name} "
+                    f"with a score of {t0.score:.1f}/100 recorded on {t_date}."
+                )
+            else:
+                draft_response = "You have not completed any cognitive tests yet. Head over to the Daily Tests tab to begin."
+
         # Branch 1: Out of scope general medical questions -> Refusal
-        if self._is_out_of_scope_medical(q_lower):
+        elif self._is_out_of_scope_medical(q_lower):
             draft_response = (
                 "I am a personal CogniVeil screening assistant authorized solely to discuss your individual "
                 "cognitive screening records, progress trends, and established screening guidelines. "
@@ -215,12 +362,12 @@ class ChatAgent:
             dev_text = "indicates active deviation from your established baseline" if is_dev else "demonstrates stability relative to your baseline"
 
             draft_response = (
-                f"CogniVeil is an AI-assisted digital cognitive screening tool and cannot provide a definitive medical "
-                f"diagnosis of dementia or Alzheimer's disease. "
+                f"I cannot provide a medical diagnosis or disease prognosis (such as whether you have or will develop dementia). "
+                f"CogniVeil is an AI-assisted digital cognitive screening tool and not a medical diagnostic device. "
                 f"Based on your recorded screening data, your latest CogniScore is {score_val} ({risk_val} Risk), "
                 f"with an EWMA smoothed metric of {ewma_val}, which {dev_text}. "
-                f"If you are experiencing memory changes or have concerns, please share your CogniVeil clinical summary "
-                f"with a qualified neurologist or healthcare professional for formal diagnostic assessment."
+                f"If you are experiencing memory changes or have clinical concerns, we strongly recommend consulting a qualified healthcare "
+                f"professional or neurologist. You can also use the Referral PDF Report feature in CogniVeil to export and share your full screening summary with your doctor."
             )
 
         # Branch 3: Check-in / Next Appointment Queries

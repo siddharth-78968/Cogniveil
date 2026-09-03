@@ -2,6 +2,24 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
+const FONT_SCALES = ['xs', 'sm', 'md', 'lg', 'xl'];
+
+const FONT_SIZES_PX = {
+  xs: 12,
+  sm: 13.5,
+  md: 15,
+  lg: 17.5,
+  xl: 20.5
+};
+
+const FONT_PERCENTAGES = {
+  xs: '80%',
+  sm: '90%',
+  md: '100%',
+  lg: '115%',
+  xl: '135%'
+};
+
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('cogniveil_theme');
@@ -11,6 +29,29 @@ export const ThemeProvider = ({ children }) => {
   const [fontSizeScale, setFontSizeScale] = useState(() => {
     return localStorage.getItem('cogniveil_font_scale') || 'md';
   });
+
+  const decreaseFontSize = () => {
+    setFontSizeScale(prev => {
+      const idx = FONT_SCALES.indexOf(prev);
+      if (idx > 0) return FONT_SCALES[idx - 1];
+      return FONT_SCALES[0];
+    });
+  };
+
+  const increaseFontSize = () => {
+    setFontSizeScale(prev => {
+      const idx = FONT_SCALES.indexOf(prev);
+      if (idx !== -1 && idx < FONT_SCALES.length - 1) return FONT_SCALES[idx + 1];
+      if (idx === -1) return 'lg';
+      return FONT_SCALES[FONT_SCALES.length - 1];
+    });
+  };
+
+  const resetFontSize = () => {
+    setFontSizeScale('md');
+  };
+
+  const fontSizePercent = FONT_PERCENTAGES[fontSizeScale] || '100%';
 
   const [highContrast, setHighContrast] = useState(() => {
     return localStorage.getItem('cogniveil_high_contrast') === 'true';
@@ -38,6 +79,10 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('cogniveil_font_scale', fontSizeScale);
     document.documentElement.setAttribute('data-font-scale', fontSizeScale);
+    const targetPx = FONT_SIZES_PX[fontSizeScale] || 15;
+    document.documentElement.style.fontSize = `${targetPx}px`;
+    document.body.style.fontSize = `${targetPx}px`;
+    document.documentElement.style.setProperty('--cv-base-font-size', `${targetPx}px`);
   }, [fontSizeScale]);
 
   useEffect(() => {
@@ -135,6 +180,10 @@ export const ThemeProvider = ({ children }) => {
       toggleTheme,
       fontSizeScale,
       setFontSizeScale,
+      decreaseFontSize,
+      increaseFontSize,
+      resetFontSize,
+      fontSizePercent,
       highContrast,
       toggleHighContrast,
       reducedMotion,

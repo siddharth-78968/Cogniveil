@@ -617,6 +617,9 @@ const Dashboard = () => {
             )}
           </div>
 
+          {/* Ask Assistant — Inline Read-Only Q&A Results Widget */}
+          <ChatWidget user={user} />
+
           {/* 5 Primary Modules Grid */}
           <div style={{ marginTop: '1.5rem' }}>
             <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: theme.text, marginBottom: '1rem' }}>Screening & Diagnostic Modules</h3>
@@ -1305,7 +1308,6 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-      <ChatWidget user={user} />
     </DoctorLayout>
   );
 };
