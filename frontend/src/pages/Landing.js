@@ -16,10 +16,16 @@ const Landing = () => {
   };
 
   // Active states for interactive components
-  const [activeStep, setActiveStep] = useState(5); // Default to LongitudinalTrendAgent (index 5)
-  const [selectedShap, setSelectedShap] = useState('sleep');
   const [activeFaq, setActiveFaq] = useState(null);
-  const [trendView, setTrendView] = useState('graph'); // 'graph' or 'json'
+
+  // ── SECTION 2: PROACTIVE LEAD-TIME & RESILIENCE STATE ──
+  const [activeTimelineMonth, setActiveTimelineMonth] = useState('m2');
+  const [activeHabits, setActiveHabits] = useState({
+    sleep: true,
+    exercise: true,
+    nutrition: false,
+    training: true,
+  });
 
   // Interactive Topology Graph State
   const [selectedTopologyNode, setSelectedTopologyNode] = useState('keystroke'); // 'all' | 'speech' | 'keystroke' | 'psychometrics' | 'hub' | 'neuroimaging' | 'medgemma'
@@ -328,79 +334,130 @@ const Landing = () => {
   // ── CARD 4: TIER 3 NEUROIMAGING ATROPHY COMPARISON ──
   const [mriCohortMode, setMriCohortMode] = useState('healthy'); // 'healthy' | 'atrophy'
 
-  // ── SECTION 2: LONGITUDINAL TRAJECTORY POINT SELECTION ──
-  const [selectedTrajectoryNode, setSelectedTrajectoryNode] = useState('detected');
-  const trajectoryPointsData = {
-    m8: {
-      id: 'm8',
-      month: 'Month -8',
-      label: 'Baseline Calibration',
-      score: '76.4',
-      cusum: '0.3σ',
-      leadTime: '8.2 Mo Window',
-      status: 'Tier 1 Nominal',
-      badgeClass: 'optimal',
-      desc: 'Multimodal personal baseline established across everyday keystrokes and audio journals. Variance within 95% individual confidence interval.'
-    },
-    m6: {
-      id: 'm6',
-      month: 'Month -6',
-      label: 'Homeostasis Maintained',
-      score: '75.8',
-      cusum: '0.8σ',
-      leadTime: '7.8 Mo Window',
-      status: 'Tier 1 Nominal',
-      badgeClass: 'optimal',
-      desc: 'No persistent deviation. Daily keystroke dwell times remain centered at 82ms with zero backspace error bursts.'
-    },
-    m4: {
-      id: 'm4',
-      month: 'Month -4',
-      label: 'Micro-Drift Inception',
-      score: '74.1',
-      cusum: '1.7σ',
-      leadTime: '7.1 Mo Window',
-      status: 'Sub-Clinical Hesitation',
-      badgeClass: 'info',
-      desc: 'Inter-key flight times lengthen subtly (+14ms) during multi-syllable word transitions. MMSE remains 30/30 (undetected in routine screens).'
+  // ── SECTION 2: EARLY DETECTION TIMELINE & BRAIN RESILIENCE SIMULATOR ──
+  const timelineMilestones = {
+    m0: {
+      id: 'm0',
+      month: 'Month 0',
+      shortLabel: 'Baseline',
+      phaseName: 'Healthy Baseline Calibration',
+      metricDelta: '0 ms deviation',
+      traditionalTitle: 'Annual Checkup: "Normal"',
+      traditionalDesc: 'Standard MMSE score is 30/30. Sub-clinical micro-hesitations are completely invisible in annual clinic visits.',
+      traditionalBadge: 'No Concern Detected',
+      traditionalStatus: 'neutral',
+      cogniveilTitle: 'Continuous Passive Calibration',
+      cogniveilDesc: 'Personal multimodal baseline calibrated across everyday keystrokes and voice audio journals without any clinic visits or anxiety.',
+      cogniveilBadge: 'Baseline Established',
+      cogniveilStatus: 'nominal',
+      leadTimeSaved: '8+ Months Future Lead Time'
     },
     m2: {
       id: 'm2',
-      month: 'Month -2',
-      label: 'Drift Coherence',
-      score: '72.9',
-      cusum: '2.4σ',
-      leadTime: '6.9 Mo Window',
-      status: 'Accumulator Accelerating',
-      badgeClass: 'warning',
-      desc: 'Speech pause-to-vocalization ratio rises to 18.4%. CUSUM sequential statistic accelerates towards formal decision boundary.'
+      month: 'Month 2',
+      shortLabel: 'Micro-Drift',
+      phaseName: 'Sub-Clinical Inception',
+      metricDelta: '+18 ms keystroke latency',
+      traditionalTitle: 'Completely Unnoticed',
+      traditionalDesc: 'Patient and family notice nothing. Minor latency in word retrieval and typing speed remains completely undiagnosed.',
+      traditionalBadge: 'No Intervention Window',
+      traditionalStatus: 'warning',
+      cogniveilTitle: 'Gentle Change-Point Flagged',
+      cogniveilDesc: 'CogniVeil algorithms flag an 18ms latency shift in keystroke flight and speech pause cadence. Care circle alerted months early.',
+      cogniveilBadge: 'Early Drift Intercepted',
+      cogniveilStatus: 'actionable',
+      leadTimeSaved: '6–8 Months Critical Head Start'
     },
-    detected: {
-      id: 'detected',
-      month: 'Detection Point',
-      label: '🚨 Change-Point Confirmed',
-      score: '71.2',
-      cusum: '3.2σ > 3.0σ (Breached)',
-      leadTime: '6–8 Mo Lead Time Gained',
-      status: 'Tier 2 Escalation Triggered',
-      badgeClass: 'alert',
-      desc: 'Two-sided sequential CUSUM crosses critical margin (h=3.0σ, p<0.001). Care team alerted 6–8 months ahead of standard clinical MMSE/MoCA drops.'
+    m4: {
+      id: 'm4',
+      month: 'Month 4',
+      shortLabel: 'Action Taken',
+      phaseName: 'Early Habit Action',
+      metricDelta: 'Neuro-vascular recovery active',
+      traditionalTitle: 'Drift Silently Compounding',
+      traditionalDesc: 'Sleep fragmentation and vascular stress continue eroding neural reserve with zero lifestyle intervention or support.',
+      traditionalBadge: 'Silent Accumulation',
+      traditionalStatus: 'alert',
+      cogniveilTitle: 'Targeted Lifestyle Plan Activated',
+      cogniveilDesc: 'Physician and patient initiate restorative sleep hygiene and 30-minute daily aerobic conditioning to reverse neuro-fatigue.',
+      cogniveilBadge: 'Protection Activated',
+      cogniveilStatus: 'success',
+      leadTimeSaved: '4–6 Months Lead Time Maintained'
     },
-    current: {
-      id: 'current',
-      month: 'Current Follow-up',
-      label: 'Longitudinal Stabilization',
-      score: '71.2',
-      cusum: '3.1σ (Halted)',
-      leadTime: 'Lead Time Preserved',
-      status: 'Targeted Care Plan Active',
-      badgeClass: 'success',
-      desc: 'Targeted sleep architecture hygiene and cognitive remediation initiated. Biomarker slope stabilized with zero further decline.'
+    m8: {
+      id: 'm8',
+      month: 'Month 8',
+      shortLabel: 'Divergence',
+      phaseName: 'Outcome Divergence',
+      metricDelta: 'Trajectory fully stabilized',
+      traditionalTitle: 'Late Hospital / Memory Clinic Visit',
+      traditionalDesc: 'Noticeable forgetfulness finally forces a doctor visit. Diagnosis occurs late, after substantial neural tissue loss has occurred.',
+      traditionalBadge: 'Reactive Intervention',
+      traditionalStatus: 'severe',
+      cogniveilTitle: 'Longitudinal Cognitive Stability Maintained',
+      cogniveilDesc: 'Continuous telemetry verifies biomarker trajectory has stabilized back to baseline. Cognitive independence preserved for years.',
+      cogniveilBadge: 'Decline Prevented',
+      cogniveilStatus: 'protected',
+      leadTimeSaved: 'Independence Preserved'
     }
   };
 
-  // ── SECTION 3: TREESHAP THERAPEUTIC SIMULATION ──
-  const [isSimulatingIntervention, setIsSimulatingIntervention] = useState(false);
+  const habitFactors = [
+    {
+      id: 'sleep',
+      icon: '🛌',
+      title: 'Deep Restorative Sleep (>7.5h)',
+      mechanism: 'Clears neurotoxic metabolic waste via the glymphatic drainage system during slow-wave sleep.',
+      points: 12,
+      tag: 'Glymphatic Cleansing'
+    },
+    {
+      id: 'exercise',
+      icon: '🏃',
+      title: 'Daily Aerobic Conditioning (30m)',
+      mechanism: 'Stimulates hippocampal BDNF release and cerebral blood flow to promote neurogenesis.',
+      points: 10,
+      tag: 'Cerebral Oxygenation'
+    },
+    {
+      id: 'nutrition',
+      icon: '🥗',
+      title: 'Vascular & Blood Pressure Care',
+      mechanism: 'Protects delicate cerebral micro-capillaries against ischemic white matter hyperintensities.',
+      points: 8,
+      tag: 'Capillary Defense'
+    },
+    {
+      id: 'training',
+      icon: '🧩',
+      title: 'Active Cognitive Agility Tasks',
+      mechanism: 'Builds dense cognitive reserve and synaptic plasticity through novel problem-solving challenges.',
+      points: 6,
+      tag: 'Synaptic Plasticity'
+    }
+  ];
+
+  const calculateResilienceScore = () => {
+    let score = 58;
+    if (activeHabits.sleep) score += 12;
+    if (activeHabits.exercise) score += 10;
+    if (activeHabits.nutrition) score += 8;
+    if (activeHabits.training) score += 6;
+    return score;
+  };
+
+  const toggleHabit = (id) => {
+    setActiveHabits(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      const newScore = 58 + 
+        (next.sleep ? 12 : 0) + 
+        (next.exercise ? 10 : 0) + 
+        (next.nutrition ? 8 : 0) + 
+        (next.training ? 6 : 0);
+      playTone(newScore >= 80 ? 660 : 520, 'sine', 0.12);
+      return next;
+    });
+  };
 
   // ── IN-BROWSER REACTION AGILITY TEST STATE ──
   const [challengeState, setChallengeState] = useState('idle');
@@ -444,82 +501,6 @@ const Landing = () => {
       setReactionTime(elapsed);
       setChallengeState('result');
       playTone(660, 'sine', 0.2);
-    }
-  };
-
-  // 10-Agent Pipeline Steps
-  const pipelineSteps = [
-    { num: '01', name: 'DataQualityAgent', model: 'SNR & volume validation', desc: 'Validates keystroke volume (>30 samples), audio SNR, and session duration thresholds.', output: '{\n  "status": "VALID",\n  "keystroke_samples": 45,\n  "snr_db": 28.4,\n  "duration_s": 64.2\n}' },
-    { num: '02', name: 'CognitiveTestAgent', model: 'Psychometric decomposition', desc: 'Decomposes active micro-task scores into Memory, Reaction, and Speed subdomains.', output: '{\n  "memory_score": 36.5,\n  "stroop_inhibition": 45.0,\n  "reaction_decay": "-14.2%"\n}' },
-    { num: '03', name: 'BehaviorAnalysisAgent', model: 'Motor dynamics engine', desc: 'Computes typing and scrolling sub-scores with non-diagnostic clinical reasoning.', output: '{\n  "typing_score": 81.6,\n  "scroll_hesitation_idx": 2.8,\n  "motor_stability": "Normal"\n}' },
-    { num: '04', name: 'VoiceAnalysisAgent', model: 'Whisper multi-lingual', desc: 'Extracts acoustic biomarkers across 7 vernacular languages with privacy guarantees.', output: '{\n  "speech_rate_wpm": 77.6,\n  "mean_pause_s": 1.45,\n  "pitch_jitter_rms": 0.038\n}' },
-    { num: '05', name: 'SignalFusionEngine', model: 'Calibrated EWMA fusion', desc: 'Computes exact 60/20/20 weighted contributions and ranks primary delta drivers.', output: '{\n  "cogni_score": 71.2,\n  "weights": {\n    "cognitive": 0.60,\n    "behavioral": 0.20,\n    "voice": 0.20\n  }\n}' },
-    { num: '06', name: 'LongitudinalTrendAgent', model: 'CUSUM drift accumulator', desc: 'Applies EWMA smoothing and CUSUM accumulation to detect persistent trajectory drift.', output: '{\n  "cusum_val": 14.8,\n  "drift_detected": true,\n  "trend_direction": "declining",\n  "lead_time_gained": "6-8 months"\n}' },
-    { num: '07', name: 'RiskOrchestrator', model: 'Gated state machine', desc: 'Governs conditional state-aware tier escalation (Tier 1 -> Tier 2 -> Tier 3).', output: '{\n  "current_tier": 2,\n  "trigger_condition": "EWMA_CUSUM_CONFIRMED",\n  "status": "ESCALATED"\n}' },
-    { num: '08', name: 'CatBoost + TreeSHAP', model: 'Gradient boosted trees', desc: 'Evaluates 24 clinical features with modifiable vs non-modifiable risk attributions.', output: '{\n  "multivariate_risk": 0.68,\n  "primary_factor": "Poor Sleep (<5h)",\n  "shap_delta": "+0.28"\n}' },
-    { num: '09', name: 'ResNet-18 + Grad-CAM', model: 'Volumetric morphometry', desc: 'Performs volumetric brain morphometry and visual attention localization.', output: '{\n  "cdr_staging": "Mild CDR-1",\n  "bpf_ratio": 0.742,\n  "hippocampal_atrophy": "Detected"\n}' },
-    { num: '10', name: 'MedGemma + Safety', model: 'Deterministic guardrails', desc: 'Synthesizes grounded 12-section evidence dossier with deterministic guardrails.', output: '{\n  "dossier_sections": 12,\n  "guardrails_passed": true,\n  "non_diagnostic_certified": true\n}' },
-  ];
-
-  // TreeSHAP Scenarios (dynamically altered by isSimulatingIntervention)
-  const shapScenarios = {
-    sleep: isSimulatingIntervention ? {
-      id: 'sleep',
-      label: 'Sleep architecture restored (>7.5 hrs/night)',
-      shap: '+0.04',
-      rawVal: 0.04,
-      type: 'INTERVENTION BENEFIT',
-      color: '#34d399',
-      impact: 'Stabilizes glymphatic clearance and resolves daytime cognitive fatigue',
-      note: 'Restorative slow-wave sleep restores hippocampal memory consolidation and eliminates neuromuscular morning hesitation.'
-    } : {
-      id: 'sleep',
-      label: 'Poor sleep architecture (<5 hrs/night)',
-      shap: '+0.28',
-      rawVal: 0.28,
-      type: 'MODIFIABLE ACCELERATOR',
-      color: '#e57373',
-      impact: 'Accelerates trajectory risk by reducing glymphatic amyloid clearance',
-      note: 'Chronic sleep fragmentation impairs hippocampal memory consolidation and amplifies daytime motor hesitation.'
-    },
-    apoe: {
-      id: 'apoe',
-      label: 'APOE-e4 carrier (heterozygous)',
-      shap: '+0.22',
-      rawVal: 0.22,
-      type: 'NON-MODIFIABLE GENETIC',
-      color: '#d4a373',
-      impact: 'Shifts baseline statistical deviation threshold downwards',
-      note: 'Genetic susceptibility marker used strictly for baseline calibration without altering non-diagnostic posture.'
-    },
-    vascular: {
-      id: 'vascular',
-      label: 'Stage 1 hypertension (systolic >135 mmHg)',
-      shap: isSimulatingIntervention ? '+0.08' : '+0.16',
-      rawVal: isSimulatingIntervention ? 0.08 : 0.16,
-      type: 'MODIFIABLE VASCULAR',
-      color: '#e09f3e',
-      impact: 'Increases microvascular cerebral resistance',
-      note: 'Elevated systolic pressure correlates with sub-second executive hesitation and neuromotor slowing.'
-    },
-    exercise: isSimulatingIntervention ? {
-      id: 'exercise',
-      label: 'Aerobic conditioning + resistance (180 min/wk)',
-      shap: '-0.33',
-      rawVal: -0.33,
-      type: 'HIGH PROTECTIVE BUFFER',
-      color: '#34d399',
-      impact: 'Maximizes hippocampal BDNF neurotrophic release',
-      note: 'Cardiovascular fitness directly enhances microvascular brain perfusion and anchors longitudinal neuromotor speed.'
-    } : {
-      id: 'exercise',
-      label: 'Regular aerobic conditioning (150 min/wk)',
-      shap: '-0.19',
-      rawVal: -0.19,
-      type: 'MODIFIABLE PROTECTIVE',
-      color: '#52b788',
-      impact: 'Provides neuroprotective buffering against baseline drift',
-      note: 'Sustained cardiovascular fitness improves cerebral perfusion and stabilizes longitudinal motor latency.'
     }
   };
 
@@ -584,8 +565,8 @@ const Landing = () => {
           <div className="cv-pill-links">
             <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'topology')}>Architecture</button>
             <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'vectors')}>Biomarkers</button>
-            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'pipeline')}>Multi-Agent</button>
-            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'attribution')}>TreeSHAP</button>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'pipeline')}>Early Detection</button>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'attribution')}>Resilience</button>
             <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'faq')}>Governance</button>
           </div>
 
@@ -1614,335 +1595,253 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── SECTION 2: 10-AGENT PIPELINE & EXPLAINABILITY WITH GRAPH NODES ── */}
-      <section id="pipeline" className="cv-section">
+      {/* ── SECTION 2: EARLY DETECTION LEAD-TIME & BRAIN HEALTH RESILIENCE ── */}
+      <section id="pipeline" className="cv-section cv-section-early-care">
         <div className="cv-container">
           
-          <div className="cv-section-header">
+          <div className="cv-section-header cv-header-centered">
+            <div className="cv-section-badge-pill">
+              <span className="cv-badge-glow-dot" />
+              <span>THE PROACTIVE INTERVENTION ADVANTAGE</span>
+            </div>
             <h2 className="cv-section-title">
-              Deterministic multi-agent sequence with explainable clinical attribution
+              Catch subtle cognitive drift months earlier—while simple habits can still protect your brain
             </h2>
             <p className="cv-section-sub">
-              Every screening session executes a fixed, verifiable sequence of 10 specialized agent tools with zero hallucinations.
+              Continuous, gentle monitoring buys 6 to 8 months of critical lead time, empowering individuals and clinicians to take proactive, evidence-based lifestyle action before clinical decline sets in.
             </p>
           </div>
 
-          <div className="cv-wide-2-grid">
+          <div className="cv-proactive-2-grid">
             
-            {/* Left Card: LongitudinalTrendAgent & Multi-Agent Graph */}
-            <div className="cv-wide-card">
-              <div className="cv-wide-card-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="cv-wide-tag">LONGITUDINAL TREND ENGINE</span>
-                  <span className="cv-wide-status">EWMA & CUSUM DRIFT</span>
+            {/* Left Card: The Lead-Time Advantage (Interactive Timeline) */}
+            <div className="cv-proactive-card cv-timeline-card">
+              <div className="cv-card-top-bar">
+                <div className="cv-card-badge-group">
+                  <span className="cv-proactive-tag">EARLY DETECTION ADVANTAGE</span>
+                  <span className="cv-proactive-pill-lead">⚡ 6–8 MONTHS LEAD TIME</span>
                 </div>
-                <div className="cv-view-toggle">
-                  <button 
-                    onClick={() => setTrendView('graph')} 
-                    className={`cv-view-btn ${trendView === 'graph' ? 'active' : ''}`}
-                  >
-                    Drift Graph
-                  </button>
-                  <button 
-                    onClick={() => setTrendView('json')} 
-                    className={`cv-view-btn ${trendView === 'json' ? 'active' : ''}`}
-                  >
-                    Agent Payload
-                  </button>
+                <div className="cv-live-badge-glow">
+                  <span className="cv-pulse-pip" />
+                  <span>Continuous Monitoring</span>
                 </div>
               </div>
 
-              {/* Multi-Agent Selector Bar */}
-              <div className="cv-agent-stepper">
-                {pipelineSteps.map((st, idx) => (
-                  <button
-                    key={st.num}
-                    onClick={() => setActiveStep(idx)}
-                    className={`cv-step-pill ${activeStep === idx ? 'active' : ''}`}
-                  >
-                    {st.num} {st.name}
-                  </button>
-                ))}
+              <div className="cv-card-heading-group">
+                <h3 className="cv-card-h3">The Longitudinal Lead-Time Advantage</h3>
+                <p className="cv-card-p">
+                  Select a milestone to contrast how continuous biometric surveillance protects cognitive health compared to traditional episodic visits.
+                </p>
               </div>
 
-              {/* View 1: Interactive SVG Longitudinal Trend Drift Graph */}
-              {trendView === 'graph' ? (
-                <div className="cv-drift-graph-card">
-                  <div className="cv-graph-legend-bar">
-                    <span className="cv-leg-item"><span className="cv-leg-line baseline" /> Normal Baseline Zone (±1.5σ)</span>
-                    <span className="cv-leg-item"><span className="cv-leg-line trajectory" /> Patient EWMA Trajectory</span>
-                    <span className="cv-leg-item"><span className="cv-leg-line threshold" /> CUSUM Threshold (h=3.0)</span>
-                  </div>
-
-                  <div className="cv-svg-graph-wrapper">
-                    <svg viewBox="0 0 540 225" className="cv-chart-svg">
-                      {/* Grid Lines */}
-                      <line x1="40" y1="30" x2="520" y2="30" stroke="currentColor" strokeOpacity="0.1" />
-                      <line x1="40" y1="80" x2="520" y2="80" stroke="currentColor" strokeOpacity="0.1" />
-                      <line x1="40" y1="130" x2="520" y2="130" stroke="currentColor" strokeOpacity="0.1" />
-                      <line x1="40" y1="180" x2="520" y2="180" stroke="currentColor" strokeOpacity="0.1" />
-
-                      {/* Baseline Green Zone */}
-                      <rect x="40" y="30" width="480" height="50" fill="currentColor" fillOpacity="0.06" />
-
-                      {/* CUSUM Decision Threshold Line (Dashed) */}
-                      <line x1="40" y1="140" x2="520" y2="140" stroke="#f87171" strokeWidth="1.5" strokeDasharray="5 5" />
-                      <text x="430" y="134" fill="#f87171" fontSize="10" fontFamily="'JetBrains Mono', monospace">h = 3.0σ Threshold</text>
-
-                      {/* Patient EWMA Trend Curve */}
-                      <path
-                        d="M 60 45 Q 140 48, 220 62 T 340 105 T 440 152 T 500 168"
-                        fill="none"
-                        stroke="#a3b18a"
-                        strokeWidth="3"
-                      />
-
-                      {/* Interactive Graph Nodes along Trajectory */}
-                      <g className="cv-svg-interactive-nodes">
-                        {/* Node M-8 */}
-                        {selectedTrajectoryNode === 'm8' && (
-                          <circle cx="60" cy="45" r="9" fill="none" stroke="#34d399" strokeWidth="1.5" className="cv-pulse-halo" />
-                        )}
-                        <circle 
-                          cx="60" cy="45" r={selectedTrajectoryNode === 'm8' ? 6 : 4.5} 
-                          fill={selectedTrajectoryNode === 'm8' ? '#34d399' : '#f1f5ee'} 
-                          stroke="#3d5236" strokeWidth="2" 
-                          className="cv-chart-node-clickable"
-                          onClick={() => { setSelectedTrajectoryNode('m8'); playTone(400, 'sine', 0.08); }}
-                        >
-                          <title>Month -8: Baseline Calibration</title>
-                        </circle>
-
-                        {/* Node M-6 */}
-                        {selectedTrajectoryNode === 'm6' && (
-                          <circle cx="140" cy="50" r="9" fill="none" stroke="#34d399" strokeWidth="1.5" className="cv-pulse-halo" />
-                        )}
-                        <circle 
-                          cx="140" cy="50" r={selectedTrajectoryNode === 'm6' ? 6 : 4.5} 
-                          fill={selectedTrajectoryNode === 'm6' ? '#34d399' : '#f1f5ee'} 
-                          stroke="#3d5236" strokeWidth="2" 
-                          className="cv-chart-node-clickable"
-                          onClick={() => { setSelectedTrajectoryNode('m6'); playTone(460, 'sine', 0.08); }}
-                        >
-                          <title>Month -6: Homeostasis Maintained</title>
-                        </circle>
-
-                        {/* Node M-4 */}
-                        {selectedTrajectoryNode === 'm4' && (
-                          <circle cx="220" cy="62" r="9" fill="none" stroke="#eab308" strokeWidth="1.5" className="cv-pulse-halo" />
-                        )}
-                        <circle 
-                          cx="220" cy="62" r={selectedTrajectoryNode === 'm4' ? 6 : 4.5} 
-                          fill={selectedTrajectoryNode === 'm4' ? '#eab308' : '#f1f5ee'} 
-                          stroke="#3d5236" strokeWidth="2" 
-                          className="cv-chart-node-clickable"
-                          onClick={() => { setSelectedTrajectoryNode('m4'); playTone(520, 'sine', 0.08); }}
-                        >
-                          <title>Month -4: Micro-Drift Inception</title>
-                        </circle>
-
-                        {/* Node M-2 */}
-                        {selectedTrajectoryNode === 'm2' && (
-                          <circle cx="340" cy="105" r="9" fill="none" stroke="#f59e0b" strokeWidth="1.5" className="cv-pulse-halo" />
-                        )}
-                        <circle 
-                          cx="340" cy="105" r={selectedTrajectoryNode === 'm2' ? 6 : 4.5} 
-                          fill={selectedTrajectoryNode === 'm2' ? '#f59e0b' : '#f1f5ee'} 
-                          stroke="#3d5236" strokeWidth="2" 
-                          className="cv-chart-node-clickable"
-                          onClick={() => { setSelectedTrajectoryNode('m2'); playTone(580, 'sine', 0.08); }}
-                        >
-                          <title>Month -2: Drift Coherence</title>
-                        </circle>
-                        
-                        {/* Critical Deviation Change-Point Node (Detected) */}
-                        {selectedTrajectoryNode === 'detected' && (
-                          <circle cx="440" cy="152" r="12" fill="none" stroke="#f87171" strokeWidth="1.8" className="cv-pulse-halo" />
-                        )}
-                        <circle 
-                          cx="440" cy="152" r={selectedTrajectoryNode === 'detected' ? 8.5 : 7} 
-                          fill="#f87171" stroke="#ffffff" strokeWidth="2" 
-                          className="cv-chart-node-clickable"
-                          onClick={() => { setSelectedTrajectoryNode('detected'); playTone(660, 'sine', 0.08); }}
-                        >
-                          <title>Detected: Change-Point Confirmed (h=3.2σ)</title>
-                        </circle>
-
-                        {/* Node Current */}
-                        {selectedTrajectoryNode === 'current' && (
-                          <circle cx="500" cy="168" r="9" fill="none" stroke="#34d399" strokeWidth="1.5" className="cv-pulse-halo" />
-                        )}
-                        <circle 
-                          cx="500" cy="168" r={selectedTrajectoryNode === 'current' ? 6.5 : 5} 
-                          fill={selectedTrajectoryNode === 'current' ? '#34d399' : '#f87171'} 
-                          stroke="#ffffff" strokeWidth="1.5"
-                          className="cv-chart-node-clickable"
-                          onClick={() => { setSelectedTrajectoryNode('current'); playTone(740, 'sine', 0.08); }}
-                        >
-                          <title>Current: Longitudinal Stabilization</title>
-                        </circle>
-                      </g>
-
-                      {/* Change Point Floating Callout (Positioned neatly above change-point) */}
-                      <g className="cv-drift-callout-group">
-                        <line x1="440" y1="140" x2="440" y2="114" stroke="#f87171" strokeWidth="1" strokeDasharray="2 2" />
-                        <rect x="350" y="80" width="168" height="34" rx="6" fill="#152116" stroke="#f87171" strokeWidth="1.2" />
-                        <text x="360" y="94" fill="#f1f5ee" fontSize="10" fontWeight="bold" fontFamily="'Mulish', sans-serif">🚨 DRIFT DETECTED</text>
-                        <text x="360" y="106" fill="#34d399" fontSize="9" fontFamily="'JetBrains Mono', monospace">6–8 Mo Lead Time Gained</text>
-                      </g>
-
-                      {/* X-Axis Clickable Milestone Labels */}
-                      <text x="60" y="212" fill={selectedTrajectoryNode === 'm8' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm8' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'm8' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m8')}>M-8</text>
-                      <text x="140" y="212" fill={selectedTrajectoryNode === 'm6' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm6' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'm6' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m6')}>M-6</text>
-                      <text x="220" y="212" fill={selectedTrajectoryNode === 'm4' ? '#eab308' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm4' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'm4' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m4')}>M-4</text>
-                      <text x="340" y="212" fill={selectedTrajectoryNode === 'm2' ? '#f59e0b' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm2' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'm2' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m2')}>M-2</text>
-                      <text x="440" y="212" fill="#f87171" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('detected')}>Detected</text>
-                      <text x="500" y="212" fill={selectedTrajectoryNode === 'current' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'current' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'current' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('current')}>Current</text>
-                    </svg>
-                  </div>
-
-                  {/* Interactive Trajectory Point Telemetry Pill */}
-                  <div className="cv-trajectory-inspector">
-                    <div className="cv-ti-top">
-                      <div className="cv-ti-title-wrap">
-                        <span className="cv-ti-month">{trajectoryPointsData[selectedTrajectoryNode]?.month}:</span>
-                        <strong className="cv-ti-label">{trajectoryPointsData[selectedTrajectoryNode]?.label}</strong>
-                      </div>
-                      <div className="cv-ti-badges">
-                        <span className="cv-ti-badge score">CogniScore: <strong>{trajectoryPointsData[selectedTrajectoryNode]?.score}</strong></span>
-                        <span className="cv-ti-badge cusum">CUSUM: <strong>{trajectoryPointsData[selectedTrajectoryNode]?.cusum}</strong></span>
-                        <span className="cv-ti-badge lead">{trajectoryPointsData[selectedTrajectoryNode]?.leadTime}</span>
-                      </div>
-                    </div>
-                    <p className="cv-ti-desc">{trajectoryPointsData[selectedTrajectoryNode]?.desc}</p>
-                    <div className="cv-ti-timeline-bar">
-                      <span className="cv-ti-timeline-hint">Click any milestone along the 8-month curve:</span>
-                      <div className="cv-ti-pills">
-                        {['m8', 'm6', 'm4', 'm2', 'detected', 'current'].map((k) => (
-                          <button
-                            key={k}
-                            className={`cv-ti-pill ${selectedTrajectoryNode === k ? 'active' : ''}`}
-                            onClick={() => {
-                              setSelectedTrajectoryNode(k);
-                              playTone(420 + (['m8', 'm6', 'm4', 'm2', 'detected', 'current'].indexOf(k)) * 60, 'sine', 0.08);
-                            }}
-                          >
-                            {k === 'detected' ? '🚨 Detected' : k.toUpperCase()}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="cv-drift-footer">
-                    <span>CUSUM C+ Accumulator: <strong>14.8 &gt; 12.0</strong></span>
-                    <span>Persistent negative trajectory confirmed</span>
-                  </div>
-                </div>
-              ) : (
-                /* View 2: Agent Detail Code View */
-                <div className="cv-agent-detail-box">
-                  <div className="cv-agent-detail-meta">
-                    <div className="cv-agent-step-name">{pipelineSteps[activeStep].name}</div>
-                    <div className="cv-agent-step-model">{pipelineSteps[activeStep].model}</div>
-                  </div>
-                  <p className="cv-agent-step-desc">{pipelineSteps[activeStep].desc}</p>
-                  
-                  <div className="cv-agent-code-block">
-                    <div className="cv-code-bar">output_payload.json</div>
-                    <pre>{pipelineSteps[activeStep].output}</pre>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right Card: TreeSHAP Feature Attribution Waterfall Graph & Nodes */}
-            <div id="attribution" className="cv-wide-card">
-              <div className="cv-wide-card-header">
-                <span className="cv-wide-tag">TREESHAP RISK ATTRIBUTION NODES</span>
-                <div className="cv-shap-header-actions">
-                  <button
-                    className={`cv-shap-simulate-btn ${isSimulatingIntervention ? 'active' : ''}`}
-                    onClick={() => {
-                      setIsSimulatingIntervention(!isSimulatingIntervention);
-                      playTone(isSimulatingIntervention ? 440 : 660, 'sine', 0.12);
-                    }}
-                  >
-                    <span className="cv-sim-icon">⚡</span>
-                    <span>{isSimulatingIntervention ? 'Simulating Lifestyle Intervention' : 'Simulate Lifestyle Intervention'}</span>
-                  </button>
-                  <span className="cv-wide-status">24-FEATURE CASCADE</span>
-                </div>
-              </div>
-
-              {/* Interactive SHAP Factor Nodes Graph */}
-              <div className="cv-shap-network-box">
-                {isSimulatingIntervention && (
-                  <div className="cv-shap-simulation-banner">
-                    <span>Active Simulation: Targeted Sleep Hygiene (+2.5h) & Aerobic Conditioning</span>
-                    <strong>-0.47 Net Risk Shift</strong>
-                  </div>
-                )}
-
-                <div className="cv-shap-waterfall-header">
-                  <span>CLINICAL BIOMARKER FACTOR</span>
-                  <span>SHAP IMPACT DELTA</span>
-                </div>
-
-                <div className="cv-shap-factors-list">
-                  {Object.keys(shapScenarios).map((key) => {
-                    const sc = shapScenarios[key];
-                    const isSelected = selectedShap === key;
-                    const isPositive = sc.rawVal > 0;
-                    const barWidth = Math.min(100, Math.abs(sc.rawVal) * 280);
+              {/* Milestone Scrubber Bar */}
+              <div className="cv-timeline-scrubber-wrap">
+                <div className="cv-scrubber-pills">
+                  {Object.keys(timelineMilestones).map((key) => {
+                    const m = timelineMilestones[key];
+                    const isActive = activeTimelineMonth === key;
                     return (
-                      <div
+                      <button
                         key={key}
                         onClick={() => {
-                          setSelectedShap(key);
-                          playTone(500 + Object.keys(shapScenarios).indexOf(key) * 50, 'sine', 0.06);
+                          setActiveTimelineMonth(key);
+                          playTone(isActive ? 520 : 640, 'sine', 0.1);
                         }}
-                        className={`cv-shap-factor-row ${isSelected ? 'selected' : ''}`}
+                        className={`cv-scrubber-pill ${isActive ? 'active' : ''}`}
                       >
-                        <div className="cv-factor-label-col">
-                          <span className={`cv-factor-pip ${isPositive ? 'risk' : 'protective'}`} />
-                          <div>
-                            <div className="cv-factor-name">{sc.label.split(' (')[0]}</div>
-                            <div className="cv-factor-type">{sc.type}</div>
-                          </div>
-                        </div>
-
-                        {/* Waterfall Visual Bar */}
-                        <div className="cv-factor-bar-col">
-                          <div className="cv-bar-track">
-                            <div 
-                              className={`cv-bar-fill ${isPositive ? 'risk' : 'protective'}`}
-                              style={{ width: `${barWidth}%` }}
-                            />
-                          </div>
-                          <span className="cv-factor-val">{sc.shap}</span>
-                        </div>
-                      </div>
+                        <span className="cv-scrubber-month">{m.month}</span>
+                        <span className="cv-scrubber-short">{m.shortLabel}</span>
+                      </button>
                     );
                   })}
                 </div>
 
-                {/* Selected Node Detailed Clinical Breakdown */}
-                <div className="cv-shap-selected-card">
-                  <div className="cv-selected-top">
-                    <div>
-                      <span className="cv-selected-badge">{shapScenarios[selectedShap].type}</span>
-                      <h4 className="cv-selected-title">{shapScenarios[selectedShap].label}</h4>
+                {/* Progress bar line connecting milestones */}
+                <div className="cv-scrubber-track-line">
+                  <div 
+                    className="cv-scrubber-track-progress" 
+                    style={{
+                      width: activeTimelineMonth === 'm0' ? '12%' :
+                             activeTimelineMonth === 'm2' ? '38%' :
+                             activeTimelineMonth === 'm4' ? '65%' : '100%'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Dual-Path Comparison: Traditional vs CogniVeil */}
+              {(() => {
+                const currentMilestone = timelineMilestones[activeTimelineMonth];
+                return (
+                  <div className="cv-dual-path-box">
+                    
+                    {/* Path 1: Traditional Healthcare */}
+                    <div className={`cv-path-column traditional ${currentMilestone.traditionalStatus}`}>
+                      <div className="cv-path-col-header">
+                        <div className="cv-path-icon-title">
+                          <span className="cv-path-status-icon">⏳</span>
+                          <div>
+                            <span className="cv-path-kind">TRADITIONAL ROUTE</span>
+                            <h4 className="cv-path-title">{currentMilestone.traditionalTitle}</h4>
+                          </div>
+                        </div>
+                        <span className={`cv-path-badge ${currentMilestone.traditionalStatus}`}>
+                          {currentMilestone.traditionalBadge}
+                        </span>
+                      </div>
+                      <p className="cv-path-narrative">
+                        {currentMilestone.traditionalDesc}
+                      </p>
+                      <div className="cv-path-footer-note">
+                        <span className="cv-path-caution-icon">⚠️</span>
+                        <span>Standard care relies on annual memory recall tests after symptoms appear.</span>
+                      </div>
                     </div>
-                    <div className="cv-selected-delta">
-                      <span className="delta-num">{shapScenarios[selectedShap].shap}</span>
-                      <span className="delta-label">TreeSHAP value</span>
+
+                    {/* Path 2: CogniVeil Continuous Early Radar */}
+                    <div className={`cv-path-column proactive ${currentMilestone.cogniveilStatus}`}>
+                      <div className="cv-path-col-header">
+                        <div className="cv-path-icon-title">
+                          <span className="cv-path-status-icon">✨</span>
+                          <div>
+                            <span className="cv-path-kind">COGNIVEIL ADVANTAGE</span>
+                            <h4 className="cv-path-title">{currentMilestone.cogniveilTitle}</h4>
+                          </div>
+                        </div>
+                        <span className={`cv-path-badge ${currentMilestone.cogniveilStatus}`}>
+                          {currentMilestone.cogniveilBadge}
+                        </span>
+                      </div>
+                      <p className="cv-path-narrative">
+                        {currentMilestone.cogniveilDesc}
+                      </p>
+                      <div className="cv-path-footer-lead">
+                        <span className="cv-lead-star">🛡️</span>
+                        <strong>{currentMilestone.leadTimeSaved}</strong>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })()}
+
+              <div className="cv-timeline-footer-meta">
+                <div className="cv-meta-pill">
+                  <span className="cv-meta-label">TELEMETRY DELTA:</span>
+                  <span className="cv-meta-val">{timelineMilestones[activeTimelineMonth].metricDelta}</span>
+                </div>
+                <div className="cv-meta-pill">
+                  <span className="cv-meta-label">CLINICAL STAGE:</span>
+                  <span className="cv-meta-val">{timelineMilestones[activeTimelineMonth].phaseName}</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Card: Brain Health Resilience Builder */}
+            <div id="attribution" className="cv-proactive-card cv-resilience-card">
+              <div className="cv-card-top-bar">
+                <div className="cv-card-badge-group">
+                  <span className="cv-proactive-tag">PREVENTIVE ACTION SIMULATOR</span>
+                  <span className="cv-proactive-pill-protective">🛡️ MODIFIABLE NEURAL RESERVE</span>
+                </div>
+                <span className="cv-live-badge-glow green">
+                  <span className="cv-pulse-pip green" />
+                  <span>Lifestyle Modifiers</span>
+                </span>
+              </div>
+
+              <div className="cv-card-heading-group">
+                <h3 className="cv-card-h3">Brain Health Resilience Builder</h3>
+                <p className="cv-card-p">
+                  Over 40% of cognitive decline is driven by modifiable factors. Toggle evidence-based habits below to simulate their real-time impact on neural resilience.
+                </p>
+              </div>
+
+              {/* Dynamic Resilience Index Meter */}
+              {(() => {
+                const score = calculateResilienceScore();
+                const isHigh = score >= 85;
+                const isModerate = score >= 70 && score < 85;
+                const tierLabel = isHigh ? 'High Neural Defense' : isModerate ? 'Good Neural Reserve' : 'Vulnerable Reserve';
+                const tierClass = isHigh ? 'high' : isModerate ? 'moderate' : 'vulnerable';
+
+                return (
+                  <div className="cv-resilience-meter-box">
+                    <div className="cv-meter-top">
+                      <div>
+                        <span className="cv-meter-kicker">SIMULATED NEURAL RESILIENCE INDEX</span>
+                        <div className="cv-meter-score-row">
+                          <span className="cv-meter-big-score">{score}%</span>
+                          <span className={`cv-meter-status-pill ${tierClass}`}>{tierLabel}</span>
+                        </div>
+                      </div>
+                      <div className="cv-meter-delta-tag">
+                        <span>+{score - 58}% Buffer Gained</span>
+                      </div>
+                    </div>
+
+                    <div className="cv-meter-track">
+                      <div 
+                        className={`cv-meter-fill ${tierClass}`}
+                        style={{ width: `${score}%` }}
+                      >
+                        <div className="cv-meter-sheen" />
+                      </div>
+                    </div>
+
+                    <div className="cv-meter-ticks">
+                      <span>Baseline (58%)</span>
+                      <span>Moderate (70%)</span>
+                      <span>Optimal Target (90%+)</span>
                     </div>
                   </div>
-                  <p className="cv-selected-note">
-                    {shapScenarios[selectedShap].note}
-                  </p>
-                </div>
+                );
+              })()}
+
+              {/* 4 Tactile Lifestyle Habit Toggle Switches */}
+              <div className="cv-habits-list">
+                {habitFactors.map((hb) => {
+                  const isOn = !!activeHabits[hb.id];
+                  return (
+                    <div 
+                      key={hb.id}
+                      onClick={() => toggleHabit(hb.id)}
+                      className={`cv-habit-row ${isOn ? 'active' : ''}`}
+                    >
+                      <div className="cv-habit-left">
+                        <div className="cv-habit-icon-wrap">
+                          <span className="cv-habit-emoji">{hb.icon}</span>
+                        </div>
+                        <div className="cv-habit-details">
+                          <div className="cv-habit-title-row">
+                            <span className="cv-habit-title">{hb.title}</span>
+                            <span className="cv-habit-tag">{hb.tag}</span>
+                          </div>
+                          <p className="cv-habit-mech">{hb.mechanism}</p>
+                        </div>
+                      </div>
+
+                      <div className="cv-habit-right">
+                        <span className={`cv-habit-pts ${isOn ? 'on' : 'off'}`}>
+                          +{hb.points}%
+                        </span>
+                        {/* Apple / iOS-style Toggle Switch */}
+                        <div className={`cv-ios-toggle ${isOn ? 'on' : ''}`}>
+                          <div className="cv-ios-toggle-thumb" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Reassuring Empathetic Takeaway */}
+              <div className="cv-resilience-empower-box">
+                <span className="cv-empower-icon">💡</span>
+                <p className="cv-empower-text">
+                  <strong>Early detection turns uncertainty into agency.</strong> Daily habits compound over time to strengthen synaptic pathways and protect cognitive independence.
+                </p>
               </div>
 
             </div>
