@@ -1,86 +1,104 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { getEvidenceGraph } from '../utils/api';
+
+const defaultNodes = {
+  cognitive: {
+    id: 'E1',
+    title: 'Active Cognitive Battery',
+    modality: 'Psychometrics',
+    score: '73/100',
+    status: 'Declining',
+    delta: '↓ 16.0% Memory Retention',
+    color: '#0F4C4A',
+    summary: '5 micro-tests: Pattern Recall, Word Span, Stroop Inhibition, Flanker Reaction, and Digit Span.'
+  },
+  typing: {
+    id: 'E2',
+    title: 'Digital Keystroke Telemetry',
+    modality: 'Passive Interaction',
+    score: '64/100',
+    status: 'Declining',
+    delta: '↓ 20.6% Typing Cadence',
+    color: '#287C78',
+    summary: 'Continuous background monitoring of inter-key latency variability, typing pauses, and backspaces.'
+  },
+  scrolling: {
+    id: 'E3',
+    title: 'Navigation Exploration',
+    modality: 'Passive Interaction',
+    score: '72/100',
+    status: 'Elevated Hesitation',
+    delta: '↑ 85.7% Pause Hesitation',
+    color: '#53B7C5',
+    summary: 'Scroll velocity trajectory, pauses >2s during page reading, and spatial exploration reversals.'
+  },
+  voice: {
+    id: 'E4',
+    title: 'Acoustic Speech Biomarkers',
+    modality: 'Voice Linguistics',
+    score: '70/100',
+    status: 'Mild Deviation',
+    delta: '↑ 42.0% Pause Rate',
+    color: '#2F7D5B',
+    summary: 'Conversational speech cadence, mean pause duration, lexical richness across 7 vernacular languages.'
+  },
+  longitudinal: {
+    id: 'E5',
+    title: 'Signal Fusion & Longitudinal Trajectory',
+    modality: 'CUSUM / EWMA Filter',
+    score: '71.2 / 100',
+    status: 'Persistent Drift',
+    delta: 'CUSUM: 13.4 (Exceeded)',
+    color: '#D97745',
+    summary: 'Tracks 7–30 day trend stability to rule out single-day transient fatigue and confirm persistent decline.'
+  },
+  tier2: {
+    id: 'E6',
+    title: 'Tier 2 Multivariate ML (CatBoost)',
+    modality: 'Tabular SHAP',
+    score: '74% Risk',
+    status: 'Elevated',
+    delta: 'Top: Sleep (+0.28), Sedentary (+0.19)',
+    color: '#C94C4C',
+    summary: 'Evaluates 24 clinical, lifestyle, and vascular factors with TreeSHAP feature attributions.'
+  },
+  mri: {
+    id: 'E7',
+    title: 'Tier 3 Neuroimaging (ResNet-18)',
+    modality: 'Structural MRI',
+    score: 'CDR 0.5',
+    status: 'Confirmed Staging',
+    delta: 'BPF: 0.78 · VBR: 0.14',
+    color: '#102A43',
+    summary: 'PyTorch ResNet-18 volumetric classification with Grad-CAM medial temporal visual attention overlay.'
+  }
+};
 
 const EvidenceGraphModal = ({ isOpen, onClose, onSelectEvidence }) => {
   const { theme, isDark } = useTheme();
   const [activeNode, setActiveNode] = useState('longitudinal');
+  const [graphData, setGraphData] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      getEvidenceGraph()
+        .then((res) => {
+          if (res?.data?.nodes) {
+            setGraphData(res.data);
+          }
+        })
+        .catch((err) => {
+          console.log('Using local evidence graph defaults:', err.message);
+        });
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const nodes = {
-    cognitive: {
-      id: 'E1',
-      title: 'Active Cognitive Battery',
-      modality: 'Psychometrics',
-      score: '73/100',
-      status: 'Declining',
-      delta: '↓ 16.0% Memory Retention',
-      color: '#0F4C4A',
-      summary: '5 micro-tests: Pattern Recall, Word Span, Stroop Inhibition, Flanker Reaction, and Digit Span.'
-    },
-    typing: {
-      id: 'E2',
-      title: 'Digital Keystroke Telemetry',
-      modality: 'Passive Interaction',
-      score: '64/100',
-      status: 'Declining',
-      delta: '↓ 20.6% Typing Cadence',
-      color: '#287C78',
-      summary: 'Continuous background monitoring of inter-key latency variability, typing pauses, and backspaces.'
-    },
-    scrolling: {
-      id: 'E3',
-      title: 'Navigation Exploration',
-      modality: 'Passive Interaction',
-      score: '72/100',
-      status: 'Elevated Hesitation',
-      delta: '↑ 85.7% Pause Hesitation',
-      color: '#53B7C5',
-      summary: 'Scroll velocity trajectory, pauses >2s during page reading, and spatial exploration reversals.'
-    },
-    voice: {
-      id: 'E4',
-      title: 'Acoustic Speech Biomarkers',
-      modality: 'Voice Linguistics',
-      score: '70/100',
-      status: 'Mild Deviation',
-      delta: '↑ 42.0% Pause Rate',
-      color: '#2F7D5B',
-      summary: 'Conversational speech cadence, mean pause duration, lexical richness across 7 vernacular languages.'
-    },
-    longitudinal: {
-      id: 'E5',
-      title: 'Signal Fusion & Longitudinal Trajectory',
-      modality: 'CUSUM / EWMA Filter',
-      score: '71.2 / 100',
-      status: 'Persistent Drift',
-      delta: 'CUSUM: 13.4 (Exceeded)',
-      color: '#D97745',
-      summary: 'Tracks 7–30 day trend stability to rule out single-day transient fatigue and confirm persistent decline.'
-    },
-    tier2: {
-      id: 'E6',
-      title: 'Tier 2 Multivariate ML (CatBoost)',
-      modality: 'Tabular SHAP',
-      score: '74% Risk',
-      status: 'Elevated',
-      delta: 'Top: Sleep (+0.28), Sedentary (+0.19)',
-      color: '#C94C4C',
-      summary: 'Evaluates 24 clinical, lifestyle, and vascular factors with TreeSHAP feature attributions.'
-    },
-    mri: {
-      id: 'E7',
-      title: 'Tier 3 Neuroimaging (ResNet-18)',
-      modality: 'Structural MRI',
-      score: 'CDR 0.5',
-      status: 'Confirmed Staging',
-      delta: 'BPF: 0.78 · VBR: 0.14',
-      color: '#102A43',
-      summary: 'PyTorch ResNet-18 volumetric classification with Grad-CAM medial temporal visual attention overlay.'
-    }
-  };
-
+  const nodes = graphData?.nodes || defaultNodes;
   const selected = nodes[activeNode] || nodes.longitudinal;
+
 
   return (
     <div style={styles.overlay} onClick={onClose}>

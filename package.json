@@ -5,10 +5,13 @@
   "scripts": {
     "start": "npm --prefix frontend start",
     "dev": "npm --prefix frontend start",
-    "backend": "py -3.13 -m uvicorn main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload",
-    "mcp": "py -3.13 backend/mcp_server.py",
-    "train:speech": "py -3.13 backend/train_speech_model.py --data backend/data/approved_speech_features.csv --model-version 2026.1",
-    "seed": "py -3.13 backend/seed_demo.py",
-    "build": "npm --prefix frontend run build"
-  }
+    "backend": "py -3.12 -m uvicorn main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload",
+    "mcp": "py -3.12 backend/mcp_server.py",
+    "train:speech": "py -3.12 backend/train_speech_model.py --data backend/data/approved_speech_features.csv --model-version 2026.1",
+    "seed": "py -3.12 backend/seed_demo.py",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build"
+  },
+  "workspaces": [
+    "frontend"
+  ]
 }

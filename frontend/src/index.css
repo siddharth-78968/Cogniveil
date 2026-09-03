@@ -135,6 +135,44 @@ h4, h5, h6 {
   border: 1px solid var(--cv-level3-border);
 }
 
+/* High Contrast Mode */
+.high-contrast {
+  --cv-bg-warm: #000000 !important;
+  --cv-surface: #0a0a0a !important;
+  --cv-surface-subtle: #121212 !important;
+  --cv-border: #ffffff !important;
+  --cv-text-main: #ffffff !important;
+  --cv-text-muted: #ffff00 !important;
+  --cv-teal-primary: #00ffff !important;
+  --cv-teal-secondary: #ffff00 !important;
+  --cv-ai-cyan: #00ffff !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast body {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast button,
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea {
+  border: 2px solid #ffffff !important;
+}
+
+/* Reduced Motion Fallbacks */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* Buttons */
 .cv-btn-primary {
   background: var(--cv-btn-primary);

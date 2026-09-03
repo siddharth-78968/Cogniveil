@@ -1,12 +1,18 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import { downloadClinicalReportPDF, downloadPatientReportPDF } from '../utils/api';
 
 const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
   const printRef = useRef();
+  const [downloading, setDownloading] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
 
-  if (!isOpen || !reportData) return null;
+  if (!isOpen) return null;
 
-  const handlePrint = () => {
-    window.print();
+  const data = reportData || {
+    cogni_score: 68.0,
+    risk_level: 'Moderate',
+    is_deviating: true
   };
 
   const patient = patientData || {
@@ -16,11 +22,59 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
     email: 'rajan@demo.com',
   };
 
-  const rj = reportData.report_json;
-  const referral = reportData.referral || {
+  const handleDownloadPDF = async () => {
+    setDownloading(true);
+    setDownloadError(null);
+    setDownloadSuccess(false);
+
+    try {
+      let res;
+      if (patient?.id && typeof patient.id === 'number') {
+        res = await downloadPatientReportPDF(patient.id);
+      } else {
+        const payload = {
+          cogni_score: data?.cogni_score ?? 68.0,
+          risk_level: data?.risk_level ?? 'Moderate',
+          is_deviating: Boolean(data?.is_deviating ?? true),
+          patient_name: patient?.name || 'Rajan Pillai',
+          age: patient?.age || 78,
+          shap_features: data?.shap_features || [],
+          mri_result: data?.mri_result || null
+        };
+        res = await downloadClinicalReportPDF(payload);
+      }
+
+      // Create Blob from binary response and trigger download
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const cleanName = (patient?.name || 'Patient').replace(/\s+/g, '_');
+      link.setAttribute('download', `CogniVeil_Clinical_Referral_Report_${cleanName}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 5000);
+    } catch (err) {
+      console.error('PDF download error:', err);
+      setDownloadError('Failed to generate PDF. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const rj = data.report_json;
+  const referral = data.referral || {
     action: 'Comprehensive Neurological Evaluation & Cognitive Battery',
     recommended_specialist: 'Cognitive Neurologist / Memory Disorders Clinic',
-    urgency: reportData.risk_level === 'High' ? 'High (within 2 weeks)' : 'Routine (within 30 days)',
+    urgency: data.risk_level === 'High' ? 'High (within 2 weeks)' : 'Routine (within 30 days)',
     timeframe: '2-4 weeks',
     rationale: 'Longitudinal multimodal deviation flagged by deterministic screening filters.'
   };
@@ -29,14 +83,15 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
   const overview = rj?.section_01_assessment_overview || {
     session_id: 'S_rajan_pillai_2026',
     assessment_date: new Date().toLocaleDateString('en-US', { dateStyle: 'long' }),
-    cogniscore: reportData.cogni_score ?? 71.0,
-    overall_status: reportData.risk_level === 'High' ? 'Elevated screening concern' : reportData.risk_level === 'Moderate' ? 'Moderate screening deviation' : 'Stable screening pattern',
+    cogniscore: data.cogni_score ?? 71.0,
+    overall_status: data.risk_level === 'High' ? 'Elevated screening concern' : data.risk_level === 'Moderate' ? 'Moderate screening deviation' : 'Stable screening pattern',
     confidence: 0.84,
-    tier_reached: reportData.mri_result ? 'Tier 3 (MRI Neuroimaging)' : 'Tier 2 (Multivariate Clinical ML)'
+    tier_reached: data.mri_result ? 'Tier 3 (MRI Neuroimaging)' : 'Tier 2 (Multivariate Clinical ML)'
   };
 
-  const execSummary = rj?.section_02_executive_summary || reportData.narrative || 
-    `Patient ${patient.name} presented for multimodal cognitive health screening, demonstrating an overall CogniScore of ${overview.cogniscore}/100. Time-series analysis confirms persistent deviation from baseline driven by memory retention shifts, reduced typing cadence, and heightened navigation hesitation. These findings represent probabilistic screening indicators that warrant formal clinical evaluation.`;
+  const execSummary = rj?.section_02_executive_summary || 
+    `Screening identified a persistent decline in memory and processing-speed performance compared with ${patient.name}'s established baseline across multiple sessions. Behavioral telemetry also showed increased hesitation and correction activity. Voice analysis demonstrated increased pausing, while speech coherence remained relatively preserved. The combined findings suggest that formal clinical evaluation may be appropriate.`;
+
 
   const cognitive = rj?.section_03_cognitive_performance || {
     score: 73.0,
@@ -157,15 +212,35 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
               CogniVeil Clinical Decision Support Dossier (MedGemma-4B Synthesis)
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {downloadError && (
+              <span style={{ color: '#FCA5A5', fontSize: '0.78rem', fontWeight: '600' }}>⚠️ {downloadError}</span>
+            )}
+            {downloadSuccess && (
+              <span style={{ color: '#86EFAC', fontSize: '0.78rem', fontWeight: '700' }}>✓ PDF Downloaded!</span>
+            )}
+            <button 
+              onClick={handleDownloadPDF} 
+              disabled={downloading}
+              style={{
+                ...modalStyles.downloadBtn,
+                backgroundColor: downloadSuccess ? '#059669' : '#0F4C4A',
+                opacity: downloading ? 0.7 : 1,
+                cursor: downloading ? 'wait' : 'pointer'
+              }}
+              title="Download official multi-page PDF generated by ReportLab"
+            >
+              {downloading ? '⏳ Generating PDF...' : downloadSuccess ? '✓ PDF Saved' : '⬇️ Download Official PDF'}
+            </button>
             <button onClick={handlePrint} style={modalStyles.printBtn}>
-              🖨️ Save / Print as PDF
+              🖨️ Print / Preview
             </button>
             <button onClick={onClose} style={modalStyles.closeBtn}>
               ✕ Close
             </button>
           </div>
         </div>
+
 
         {/* Printable Hospital Document Paper */}
         <div ref={printRef} className="printable-report-paper" style={modalStyles.paper}>
@@ -544,8 +619,22 @@ const modalStyles = {
     backgroundColor: '#1e293b',
     borderBottom: '1px solid #334155',
   },
+  downloadBtn: {
+    backgroundColor: '#0F4C4A',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '8px 16px',
+    fontWeight: '700',
+    fontSize: '0.85rem',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    transition: 'all 0.2s ease',
+  },
   printBtn: {
-    backgroundColor: '#4338CA',
+    backgroundColor: '#334155',
     color: '#ffffff',
     border: 'none',
     borderRadius: '8px',

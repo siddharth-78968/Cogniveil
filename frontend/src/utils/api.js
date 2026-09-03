@@ -63,5 +63,34 @@ export const getSharingRequests = () => API.get('/sharing/requests');
 export const acceptSharingRequest = (id) => API.post(`/sharing/requests/${id}/accept`);
 export const revokeSharingRequest = (id) => API.delete(`/sharing/requests/${id}`);
 
+// Evidence Graph, Notifications, Search & Appointments APIs
+export const getEvidenceGraph = (patientId) => API.get(`/api/evidence-graph${patientId ? `?patient_id=${patientId}` : ''}`);
+export const getNotifications = () => API.get('/api/notifications');
+export const markNotificationRead = (id) => API.post(`/api/notifications/${id}/read`);
+export const clearNotifications = () => API.post('/api/notifications/clear');
+export const getClinicians = () => API.get('/api/clinicians');
+export const getAppointments = () => API.get('/api/appointments');
+export const getAppointmentById = (id) => API.get(`/api/appointments/${id}`);
+export const createAppointment = (data) => API.post('/api/appointments', data);
+export const updateAppointmentStatus = (id, status) => API.put(`/api/appointments/${id}/status`, { status });
+export const deleteAppointment = (id) => API.delete(`/api/appointments/${id}`);
+export const searchApi = (query) => API.get(`/api/search?q=${encodeURIComponent(query)}`);
+export const demoAuth = (email) => API.post(`/api/auth/demo?email=${encodeURIComponent(email)}`);
+
+// Clinician Patient Inspection APIs
+export const getClinicianPatients = () => API.get('/api/clinician/patients');
+export const getClinicianPatientOverview = (patientId) => API.get(`/api/clinician/patients/${patientId}/overview`);
+export const getClinicianPatientTests = (patientId) => API.get(`/api/clinician/patients/${patientId}/tests`);
+export const getClinicianPatientVoice = (patientId) => API.get(`/api/clinician/patients/${patientId}/voice`);
+export const getClinicianPatientLevel2 = (patientId) => API.get(`/api/clinician/patients/${patientId}/level2`);
+export const getClinicianPatientMRI = (patientId) => API.get(`/api/clinician/patients/${patientId}/mri`);
+
+// Clinical PDF Export APIs (Binary PDF Blobs)
+export const downloadClinicalReportPDF = (data) => API.post('/api/clinical-report/pdf', data, { responseType: 'blob' });
+export const downloadPatientReportPDF = (patientId) => API.get(`/api/clinician/patients/${patientId}/report-pdf`, { responseType: 'blob' });
+
 // Ping backend endpoint
 export const pingBackend = () => API.get('/');
+
+
+

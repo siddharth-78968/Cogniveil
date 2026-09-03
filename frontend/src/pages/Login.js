@@ -39,14 +39,19 @@ const Login = () => {
     }
   };
 
-  const handleDemoLogin = (demoEmail, demoPass = 'demo1234') => {
+  const handleDemoLogin = async (demoEmail, demoPass = 'demo1234') => {
     setEmail(demoEmail);
     setPassword(demoPass);
     setLoading(true);
     setError('');
-    login(demoEmail, demoPass)
-      .then(() => navigate('/dashboard'))
-      .catch((err) => {
+    try {
+      await login(demoEmail, demoPass);
+      navigate('/dashboard');
+    } catch (err) {
+      try {
+        await login(demoEmail, 'password123');
+        navigate('/dashboard');
+      } catch (err2) {
         if (err.code === 'ERR_NETWORK' || !err.response) {
           setError('Cannot connect to backend server. Please ensure the Python backend is running on port 8000.');
         } else if (err.response?.data?.detail) {
@@ -55,9 +60,12 @@ const Login = () => {
         } else {
           setError('Failed to login with demo account. Ensure the backend is running.');
         }
-      })
-      .finally(() => setLoading(false));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const demoAccounts = [
     { label: 'Rajan Pillai (MCI trajectory drift)', email: 'rajan@demo.com', tier: 'High risk (Tier 3)', tierClass: 'level-3' },

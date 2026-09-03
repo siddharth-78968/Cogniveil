@@ -18,6 +18,55 @@ const Level2Assessment = () => {
   const [showBMICalc, setShowBMICalc] = useState(false);
   const [bmiHeight, setBmiHeight] = useState('');
   const [bmiWeight, setBmiWeight] = useState('');
+  const [simulateEditForm, setSimulateEditForm] = useState(false);
+
+  // Clinician Inspection State
+  const [patients, setPatients] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [clinicianLevel2Data, setClinicianLevel2Data] = useState(null);
+  const [loadingClinician, setLoadingClinician] = useState(false);
+
+  const isClinician = user?.is_caregiver === true;
+
+  React.useEffect(() => {
+    if (isClinician) {
+      fetchClinicianLevel2();
+    }
+  }, [isClinician]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+  const fetchClinicianLevel2 = async () => {
+    try {
+      setLoadingClinician(true);
+      const { getClinicianPatients } = await import('../utils/api');
+      const res = await getClinicianPatients();
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setPatients(res.data);
+        const pId = res.data[0].id;
+        setSelectedPatientId(pId);
+        loadPatientLevel2(pId);
+      }
+    } catch (err) {
+      console.log('Error loading clinician patients for level2:', err.message);
+    } finally {
+      setLoadingClinician(false);
+    }
+  };
+
+  const loadPatientLevel2 = async (patientId) => {
+    try {
+      setSelectedPatientId(patientId);
+      setLoadingClinician(true);
+      const { getClinicianPatientLevel2 } = await import('../utils/api');
+      const res = await getClinicianPatientLevel2(patientId);
+      setClinicianLevel2Data(res.data);
+    } catch (err) {
+      console.log('Error loading patient level2:', err.message);
+    } finally {
+      setLoadingClinician(false);
+    }
+  };
+
   const [form, setForm] = useState({
     Country: 'India',
     Age: user?.age || 65,
@@ -125,9 +174,197 @@ const Level2Assessment = () => {
     </div>
   );
 
+  // ── CLINICIAN VIEWPORT: Tier 2 CatBoost & SHAP Review ──────────────────
+  if (isClinician && !simulateEditForm) {
+    const pred = clinicianLevel2Data?.prediction;
+    const patForm = clinicianLevel2Data?.form_data;
+    const probPct = pred ? Math.round(pred.probability * 100) : 74;
+    return (
+      <DoctorLayout activeTitle="Tier 2 Clinical ML">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.25rem' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#0F4C4A' }} />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.08em', color: '#287C78' }}>
+                  CLINICIAN WORKSPACE · MULTIVARIATE CATBOOST ML
+                </span>
+              </div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0 0 0.35rem 0' }}>
+                Patient Multivariate Clinical Risk & TreeSHAP
+              </h1>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                CatBoost ML risk stratification with TreeSHAP explainability across cardiovascular, metabolic, lifestyle, and genetic vectors.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSimulateEditForm(true)}
+              style={{
+                backgroundColor: '#162B3D',
+                color: '#53B7C5',
+                border: '1px solid #53B7C5',
+                borderRadius: '8px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.8rem',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
+              📝 Clinical Intake / Edit Form →
+            </button>
+          </div>
+
+          {/* Patient Selector Strip */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
+              Select Monitored Patient:
+            </span>
+            {patients.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => loadPatientLevel2(p.id)}
+                style={{
+                  border: '1px solid',
+                  borderColor: selectedPatientId === p.id ? '#0F4C4A' : '#e2e8f0',
+                  backgroundColor: selectedPatientId === p.id ? '#E8F5EE' : 'transparent',
+                  color: selectedPatientId === p.id ? '#0F4C4A' : '#1e293b',
+                  borderRadius: '8px',
+                  padding: '0.4rem 0.85rem',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                {p.name} {p.is_deviating ? '⚠️' : '✓'}
+              </button>
+            ))}
+          </div>
+
+          {/* Model Prediction & SHAP Breakdown */}
+          {loadingClinician ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>Calculating TreeSHAP attributions...</div>
+          ) : pred ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1rem' }}>
+                {/* Risk Probability Gauge Card */}
+                <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
+                      CatBoost Multivariate Probability
+                    </span>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '900', color: probPct >= 65 ? '#C94C4C' : probPct >= 40 ? '#D97745' : '#2F7D5B', margin: '4px 0' }}>
+                      {probPct}%
+                    </div>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: probPct >= 65 ? '#C94C4C' : probPct >= 40 ? '#D97745' : '#2F7D5B' }}>
+                      {pred.risk_level} Risk Category
+                    </span>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.76rem', color: '#64748b' }}>
+                    <span>🧬 APOE-ε4: <strong>{patForm?.APOE_e4 || 'Negative'}</strong></span>
+                    <span>🩸 Hypertension: <strong>{patForm?.Hypertension || 'No'}</strong></span>
+                    <span>💤 Sleep Quality: <strong>{patForm?.Sleep_Quality || 'Good'}</strong></span>
+                    <span>🏃 Physical Activity: <strong>{patForm?.Physical_Activity || 'Moderate'}</strong></span>
+                  </div>
+                </div>
+
+                {/* TreeSHAP Feature Importance Waterfall Card */}
+                <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#1e293b' }}>
+                      TreeSHAP Explainable Feature Contributions
+                    </span>
+                    <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#64748b' }}>
+                      Base Model Log-Odds: 0.00
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                    {pred.top_features?.map((f, idx) => {
+                      const isRisk = f.importance > 0;
+                      return (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.82rem' }}>
+                          <span style={{ width: '180px', fontWeight: '700', color: '#1e293b' }}>
+                            {f.feature} <span style={{ color: '#64748b', fontSize: '0.74rem' }}>({String(f.value)})</span>
+                          </span>
+                          <div style={{ flex: 1, height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div
+                              style={{
+                                width: `${Math.min(Math.abs(f.importance) * 120, 100)}%`,
+                                height: '100%',
+                                backgroundColor: isRisk ? '#C94C4C' : '#2F7D5B',
+                                borderRadius: '4px'
+                              }}
+                            />
+                          </div>
+                          <span style={{ width: '110px', textAlign: 'right', fontWeight: '800', color: isRisk ? '#C94C4C' : '#2F7D5B' }}>
+                            {isRisk ? `+${f.importance.toFixed(2)} Risk` : `${f.importance.toFixed(2)} Protective`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modifiable Clinical Target Recommendations */}
+              <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
+                <h4 style={{ margin: '0 0 0.65rem 0', fontSize: '0.92rem', fontWeight: '800', color: '#1e293b' }}>
+                  Targeted Modifiable Lifestyle Recommendations (Lancet Commission 2024 Guidelines)
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                  <div style={{ padding: '0.85rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <strong style={{ fontSize: '0.82rem', color: '#1e293b', display: 'block', marginBottom: '4px' }}>
+                      💤 Sleep Architecture Hygiene
+                    </strong>
+                    <span style={{ fontSize: '0.76rem', color: '#64748b' }}>
+                      Extend restorative slow-wave sleep to 7–8 hrs/night to optimize glymphatic clearance.
+                    </span>
+                  </div>
+
+                  <div style={{ padding: '0.85rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <strong style={{ fontSize: '0.82rem', color: '#1e293b', display: 'block', marginBottom: '4px' }}>
+                      🏃 Aerobic Cardiovascular Cadence
+                    </strong>
+                    <span style={{ fontSize: '0.76rem', color: '#64748b' }}>
+                      Target 150 min/week moderate-intensity brisk walking to promote BDNF neurogenesis.
+                    </span>
+                  </div>
+
+                  <div style={{ padding: '0.85rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <strong style={{ fontSize: '0.82rem', color: '#1e293b', display: 'block', marginBottom: '4px' }}>
+                      🥗 Mediterranean MIND Diet
+                    </strong>
+                    <span style={{ fontSize: '0.76rem', color: '#64748b' }}>
+                      Increase antioxidant polyphenol intake, leafy greens, berries, and omega-3 fatty acids.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>No Tier 2 model prediction found for selected patient.</div>
+          )}
+        </div>
+      </DoctorLayout>
+    );
+  }
+
   return (
     <DoctorLayout activeTitle="Tier 2 Biomarkers">
       <div style={styles.container}>
+        {isClinician && (
+          <div style={{ marginBottom: '0.5rem' }}>
+            <button
+              onClick={() => setSimulateEditForm(false)}
+              style={{ background: 'none', border: 'none', color: '#0F4C4A', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', padding: 0 }}
+            >
+              ← Back to Patient Risk & SHAP Review
+            </button>
+          </div>
+        )}
         <div style={styles.headerRow}>
           <div style={styles.levelBadge}>TIER 2</div>
           <div>

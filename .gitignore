@@ -1,5 +1,7 @@
 .env
 __pycache__/
 *.pyc
+*.pdf
 backend/cogniveil.db
-node_modules/
+backend/cogniveil_backup.db
+node_modules/

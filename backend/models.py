@@ -12,6 +12,7 @@ class User(Base):
     hashed_password = Column(String)
     age = Column(Integer)
     gender = Column(String, default="Not specified")
+    role = Column(String, default="patient")  # "patient" | "clinician"
     is_caregiver = Column(Boolean, default=False)
     consent_granted = Column(Boolean, default=False)
     consent_granted_at = Column(DateTime, nullable=True)
@@ -113,3 +114,33 @@ class ClinicalReport(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="clinical_reports")
+
+class Appointment(Base):
+    __tablename__ = "appointments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False) # patient user account
+    patient_id = Column(Integer, ForeignKey("users.id"), nullable=True) # explicit patient foreign key
+    clinician_id = Column(Integer, ForeignKey("users.id"), nullable=True) # attending clinician foreign key
+    patient_name = Column(String, nullable=False)
+    clinician_name = Column(String, nullable=True) # derived dynamically from authenticated clinician or selected clinician
+    appointment_type = Column(String, default="Neurological Evaluation")  # "Cognitive Battery", "Acoustic Fluency", "Tier 2 Review", "MRI Review", "Neurological Evaluation"
+    scheduled_time = Column(String, nullable=False)  # e.g. "Today - 10:00 AM", "Tomorrow - 2:00 PM", "2026-09-02 14:00"
+    status = Column(String, default="Pending")  # "Pending", "Accepted", "Due", "Finished", "Cancelled", "Rejected"
+    notes = Column(Text, nullable=True)
+    location = Column(String, default="Memory & Cognitive Health Clinic - Suite 402")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    type = Column(String, default="info")  # "alert", "reminder", "success", "info"
+    severity = Column(String, default="normal")  # "critical", "warning", "normal"
+    link = Column(String, nullable=True)  # e.g. "/dashboard", "/tests", "/appointments"
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
