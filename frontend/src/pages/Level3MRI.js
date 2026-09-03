@@ -103,7 +103,7 @@ const Level3MRI = () => {
   };
 
   const getStageColor = (className) => {
-    if (typeof className !== 'string' || !className.trim()) return '#00d4aa';
+    if (!className) return '#00d4aa';
     const c = className.toLowerCase();
     if (c.includes('non') || c.includes('normal')) return '#00d4aa';
     if (c.includes('very mild')) return '#f59e0b';
@@ -114,38 +114,6 @@ const Level3MRI = () => {
   // ── CLINICIAN VIEWPORT: Structural Neuroimaging & Grad-CAM ─────────────
   if (isClinician && !simulateUpload) {
     const mri = clinicianMRIData?.mri_analysis;
-    const predictedClass = typeof mri?.predicted_class === 'string'
-      ? mri.predicted_class
-      : (typeof mri?.cdr_stage === 'string' ? mri.cdr_stage : 'Non-Demented (CDR 0)');
-    const isVeryMild = typeof predictedClass === 'string' && (predictedClass.includes('Very Mild') || predictedClass.includes('0.5'));
-
-    // Sort scans by actual timestamp NEWEST FIRST
-    const rawScans = Array.isArray(mri?.scans_history) ? mri.scans_history : [];
-    const sortedScans = [...rawScans].sort((a, b) => {
-      const timeA = a?.timestamp ? new Date(a.timestamp).getTime() : 0;
-      const timeB = b?.timestamp ? new Date(b.timestamp).getTime() : 0;
-      return timeB - timeA; // Newest first
-    });
-
-    const bpfVal = Number(mri?.volumetric_metrics?.brain_parenchymal_fraction_bpf ?? mri?.volumetric_metrics?.bpf ?? mri?.brain_parenchymal_fraction ?? 0.78);
-    const vbrVal = Number(mri?.volumetric_metrics?.ventricular_brain_ratio_vbr ?? mri?.volumetric_metrics?.vbr ?? mri?.ventricular_brain_ratio ?? 0.14);
-    const hippoOccVal = Number(mri?.volumetric_metrics?.hippocampal_occupancy_ratio ?? 0.72);
-    const leftHippo = mri?.volumetric_metrics?.left_hippocampal_volume_mm3 ?? mri?.hippocampal_volume_mm3?.left ?? 2850;
-    const rightHippo = mri?.volumetric_metrics?.right_hippocampal_volume_mm3 ?? mri?.hippocampal_volume_mm3?.right ?? 3020;
-
-    const targetLayer = typeof mri?.gradcam?.target_layer === 'string' ? mri.gradcam.target_layer : 'ResNet-18 Layer4 Conv';
-    const primaryAttention = typeof mri?.gradcam?.primary_attention_region === 'string'
-      ? mri.gradcam.primary_attention_region
-      : (typeof mri?.gradcam_focus === 'string' ? mri.gradcam_focus : 'Medial Temporal Lobe & Hippocampal Formation');
-    const secondaryAttention = typeof mri?.gradcam?.secondary_attention_region === 'string'
-      ? mri.gradcam.secondary_attention_region
-      : 'Lateral Ventricular Periphery';
-    const clinicalNotes = typeof mri?.clinical_notes === 'string'
-      ? mri.clinical_notes
-      : (typeof mri?.gradcam_focus === 'string'
-          ? `Medial temporal attention: ${mri.gradcam_focus}`
-          : 'Volumetric assessment consistent with current Clinical Dementia Rating.');
-
     return (
       <DoctorLayout activeTitle="Tier 3 MRI Scans">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -220,18 +188,18 @@ const Level3MRI = () => {
                   <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
                     ResNet-18 Volumetric Classification
                   </span>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '900', color: isVeryMild ? '#D97745' : '#2F7D5B', margin: '4px 0' }}>
-                    {predictedClass}
+                  <div style={{ fontSize: '1.5rem', fontWeight: '900', color: mri.predicted_class.includes('Very Mild') ? '#D97745' : '#2F7D5B', margin: '4px 0' }}>
+                    {mri.predicted_class}
                   </div>
                   <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#4338CA' }}>
-                    Clinical Dementia Rating: {mri?.cdr_stage || 'CDR 0'} · Confidence: {Math.round((Number(mri?.confidence) || 0.88) * 100)}%
+                    Clinical Dementia Rating: {mri.cdr_stage} · Confidence: {Math.round(mri.confidence * 100)}%
                   </span>
 
                   <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: '#64748b' }}>
-                    <span>Scan ID: <strong>{mri?.scan_id || 'MRI-2026-0819'}</strong></span>
-                    <span>Acquisition: <strong>{mri?.acquisition_date || '03 Sep 2026'}</strong></span>
-                    <span>Hardware: <strong>{mri?.scanner || 'Siemens Prisma 3.0T'}</strong></span>
-                    <span>Resolution: <strong>{mri?.resolution || '1.0mm isotropic 3D T1-MPRAGE'}</strong></span>
+                    <span>Scan ID: <strong>{mri.scan_id}</strong></span>
+                    <span>Acquisition: <strong>{mri.acquisition_date}</strong></span>
+                    <span>Hardware: <strong>{mri.scanner}</strong></span>
+                    <span>Resolution: <strong>{mri.resolution}</strong></span>
                   </div>
                 </div>
 
@@ -243,32 +211,32 @@ const Level3MRI = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.85rem' }}>
                     <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Brain Parenchymal Fraction (BPF)</span>
-                      <div style={{ fontSize: '1.3rem', fontWeight: '900', color: bpfVal < 0.82 ? '#C94C4C' : '#1e293b' }}>
-                        {bpfVal.toFixed(2)}
+                      <div style={{ fontSize: '1.3rem', fontWeight: '900', color: mri.volumetric_metrics.brain_parenchymal_fraction_bpf < 0.82 ? '#C94C4C' : '#1e293b' }}>
+                        {mri.volumetric_metrics.brain_parenchymal_fraction_bpf}
                       </div>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Normative: {mri?.volumetric_metrics?.bpf_normative_range || '0.82 - 0.88'}</span>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Normative: {mri.volumetric_metrics.bpf_normative_range}</span>
                     </div>
 
                     <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Ventricular Brain Ratio (VBR)</span>
-                      <div style={{ fontSize: '1.3rem', fontWeight: '900', color: vbrVal > 0.10 ? '#C94C4C' : '#1e293b' }}>
-                        {vbrVal.toFixed(2)}
+                      <div style={{ fontSize: '1.3rem', fontWeight: '900', color: mri.volumetric_metrics.ventricular_brain_ratio_vbr > 0.10 ? '#C94C4C' : '#1e293b' }}>
+                        {mri.volumetric_metrics.ventricular_brain_ratio_vbr}
                       </div>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Normative: {mri?.volumetric_metrics?.vbr_normative_range || '< 0.10'}</span>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Normative: {mri.volumetric_metrics.vbr_normative_range}</span>
                     </div>
 
                     <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Hippocampal Occupancy</span>
-                      <div style={{ fontSize: '1.3rem', fontWeight: '900', color: hippoOccVal < 0.70 ? '#D97745' : '#1e293b' }}>
-                        {hippoOccVal.toFixed(2)}
+                      <div style={{ fontSize: '1.3rem', fontWeight: '900', color: mri.volumetric_metrics.hippocampal_occupancy_ratio < 0.70 ? '#D97745' : '#1e293b' }}>
+                        {mri.volumetric_metrics.hippocampal_occupancy_ratio}
                       </div>
                       <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Normative: &gt; 0.80</span>
                     </div>
                   </div>
 
                   <div style={{ marginTop: '0.85rem', display: 'flex', gap: '1.5rem', fontSize: '0.76rem', color: '#64748b' }}>
-                    <span>Left Hippocampus: <strong>{leftHippo} mm³</strong></span>
-                    <span>Right Hippocampus: <strong>{rightHippo} mm³</strong></span>
+                    <span>Left Hippocampus: <strong>{mri.volumetric_metrics.left_hippocampal_volume_mm3} mm³</strong></span>
+                    <span>Right Hippocampus: <strong>{mri.volumetric_metrics.right_hippocampal_volume_mm3} mm³</strong></span>
                   </div>
                 </div>
               </div>
@@ -280,79 +248,21 @@ const Level3MRI = () => {
                     Grad-CAM Medial Temporal Saliency & Radiological Impression
                   </h4>
                   <span style={{ fontSize: '0.72rem', fontWeight: '700', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#E8F5EE', color: '#0F4C4A' }}>
-                    Layer: {targetLayer}
+                    Layer: {mri.gradcam.target_layer}
                   </span>
                 </div>
 
                 <div style={{ padding: '0.85rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '0.85rem' }}>
                   <p style={{ margin: 0, fontSize: '0.84rem', color: '#1e293b', lineHeight: '1.5' }}>
-                    🧠 <strong>Findings:</strong> {clinicalNotes}
+                    🧠 <strong>Findings:</strong> {mri.clinical_notes}
                   </p>
                 </div>
 
                 <div style={{ display: 'flex', gap: '2rem', fontSize: '0.76rem', color: '#64748b' }}>
-                  <span>Primary Attention: <strong>{primaryAttention}</strong></span>
-                  <span>Secondary Attention: <strong>{secondaryAttention}</strong></span>
+                  <span>Primary Attention: <strong>{mri.gradcam.primary_attention_region}</strong></span>
+                  <span>Secondary Attention: <strong>{mri.gradcam.secondary_attention_region}</strong></span>
                 </div>
               </div>
-
-              {/* Longitudinal Scan History Table (Newest First) */}
-              {sortedScans.length > 0 && (
-                <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: '800', color: '#1e293b' }}>
-                      Longitudinal Scan Acquisition History
-                    </h4>
-                    <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700' }}>
-                      Sorted by Timestamp (Newest → Oldest)
-                    </span>
-                  </div>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b', textAlign: 'left' }}>
-                          <th style={{ padding: '0.5rem 0.75rem', fontWeight: '800' }}>Acquisition Date</th>
-                          <th style={{ padding: '0.5rem 0.75rem', fontWeight: '800' }}>Scan ID</th>
-                          <th style={{ padding: '0.5rem 0.75rem', fontWeight: '800' }}>CDR Staging</th>
-                          <th style={{ padding: '0.5rem 0.75rem', fontWeight: '800' }}>Model Confidence</th>
-                          <th style={{ padding: '0.5rem 0.75rem', fontWeight: '800' }}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedScans.map((sc, sIdx) => {
-                          const scClass = sc?.predicted_class || sc?.cdr_stage || 'Non-Demented';
-                          const scVeryMild = typeof scClass === 'string' && (scClass.includes('Very Mild') || scClass.includes('0.5'));
-                          return (
-                            <tr key={sIdx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: sIdx === 0 ? '#f8fafc' : 'transparent' }}>
-                              <td style={{ padding: '0.65rem 0.75rem', fontWeight: sIdx === 0 ? '800' : '600', color: '#1e293b' }}>
-                                {sc?.acquisition_date || 'Unknown'} {sIdx === 0 ? '⭐ (Latest)' : ''}
-                              </td>
-                              <td style={{ padding: '0.65rem 0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
-                                {sc?.scan_id || `MRI-${sIdx + 1}`}
-                              </td>
-                              <td style={{ padding: '0.65rem 0.75rem', fontWeight: '700', color: scVeryMild ? '#D97745' : '#2F7D5B' }}>
-                                {sc?.cdr_stage || scClass}
-                              </td>
-                              <td style={{ padding: '0.65rem 0.75rem', color: '#4338CA', fontWeight: '700' }}>
-                                {Math.round((Number(sc?.confidence) || 0.90) * 100)}%
-                              </td>
-                              <td style={{ padding: '0.65rem 0.75rem' }}>
-                                <span style={{
-                                  padding: '2px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '700',
-                                  backgroundColor: scVeryMild ? 'rgba(217, 119, 69, 0.12)' : 'rgba(47, 125, 91, 0.12)',
-                                  color: scVeryMild ? '#D97745' : '#2F7D5B'
-                                }}>
-                                  Verified Scan
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>No structural MRI records found for selected patient.</div>

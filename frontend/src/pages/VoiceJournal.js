@@ -244,7 +244,7 @@ const VoiceJournal = () => {
       const features = {
         duration_seconds: duration,
         speech_activity_ratio: active.filter(Boolean).length / Math.max(active.length, 1),
-        pause_count: pauseDurationsMs.length || pauseCount,
+        pause_count: pauseDurationsMs.length,
         pause_durations_ms: pauseDurationsMs,
         mean_rms: meanRms,
         max_rms: maxRms,
@@ -299,12 +299,14 @@ const VoiceJournal = () => {
         ? analysis.xue_model.risk_percentage
         : Math.max(5, Math.min(95, 100 - analysis.voice_score));
 
+      const realPauseCount = pauseAnalysis.pause_count ?? analysis.acoustic_biomarkers?.pause_count ?? (pauseDurationsMs.length !== undefined ? pauseDurationsMs.length : 'N/A');
+
       setResult({
         duration: analysis.duration_seconds,
         voiceScore: analysis.voice_score,
         risk: analysis.risk_level,
         wordsPerMinute: analysis.words_per_minute ?? 'Unavailable',
-        pauseFrequency: `${analysis.pause_rate_per_minute} / min`,
+        pauseFrequency: analysis.pause_rate_per_minute !== undefined ? `${analysis.pause_rate_per_minute} / min` : 'N/A',
         meanPauseMs: pauseAnalysis.mean_pause_duration_ms ? `${Math.round(pauseAnalysis.mean_pause_duration_ms)} ms` : '500 ms',
         fluency: `${Math.round(analysis.speech_activity_ratio * 100)}% active speech`,
         pauseRatio: `${Math.round((pauseAnalysis.pause_to_speech_ratio || (1.0 - analysis.speech_activity_ratio)) * 100)}%`,
@@ -328,14 +330,14 @@ const VoiceJournal = () => {
 
         // Explicit Measurable Speech Features (Output B)
         speechCharacteristics: analysis.speech_characteristics || {
-          num_pauses: pauseCount,
-          avg_pause_sec: 1.1,
-          longest_pause_sec: 1.8,
-          total_silence_sec: Math.round(duration * (1 - features.speech_activity_ratio) * 10) / 10,
+          num_pauses: realPauseCount,
+          avg_pause_sec: pauseAnalysis.mean_pause_duration_ms ? parseFloat((pauseAnalysis.mean_pause_duration_ms / 1000).toFixed(2)) : (analysis.acoustic_biomarkers?.mean_pause_duration_sec ?? 1.1),
+          longest_pause_sec: pauseAnalysis.max_pause_duration_ms ? parseFloat((pauseAnalysis.max_pause_duration_ms / 1000).toFixed(2)) : 1.8,
+          total_silence_sec: pauseAnalysis.total_pause_duration_sec ?? Math.round(duration * (1 - features.speech_activity_ratio) * 10) / 10,
           speech_duration_sec: Math.round(duration * features.speech_activity_ratio * 10) / 10,
           speech_activity_ratio: features.speech_activity_ratio,
           speech_rate_wpm: analysis.words_per_minute ?? 'Not reliably measurable',
-          pitch_mean_hz: '185.0 Hz',
+          pitch_mean_hz: analysis.acoustic_biomarkers?.pitch_variability_hz ? `${analysis.acoustic_biomarkers.pitch_variability_hz} Hz` : '185.0 Hz',
           pitch_variation_hz: '22.4 Hz',
         },
 

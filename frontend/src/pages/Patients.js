@@ -68,11 +68,10 @@ const Patients = () => {
 
 
   const filteredPatients = patients.filter((p) => {
-    const q = searchQuery.trim().toLowerCase();
     const matchesSearch =
-      !q ||
-      (typeof p?.name === 'string' && p.name.toLowerCase().includes(q)) ||
-      (typeof p?.email === 'string' && p.email.toLowerCase().includes(q));
+      !searchQuery.trim() ||
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.email.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
