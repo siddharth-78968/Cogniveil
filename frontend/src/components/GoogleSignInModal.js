@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -24,107 +24,128 @@ export const GoogleIcon = ({ size = 20 }) => (
   </svg>
 );
 
-const defaultGoogleProfiles = [
-  {
-    name: 'Dr. Riya Mehta',
-    email: 'riyamehta55@gmail.com',
-    role: 'clinician',
-    badge: 'Clinician Supervisor',
-    badgeColor: '#0ea5e9',
-    avatarColor: '#2563eb',
-    avatarInitials: 'RM'
-  },
-  {
-    name: 'Siddharth',
-    email: 'siddharth@gmail.com',
-    role: 'patient',
-    badge: 'Patient Telemetry',
-    badgeColor: '#10b981',
-    avatarColor: '#059669',
-    avatarInitials: 'S'
-  },
-  {
-    name: 'Rajan Pillai',
-    email: 'rajan.pillai@gmail.com',
-    role: 'patient',
-    badge: 'Patient (Tier 3)',
-    badgeColor: '#8b5cf6',
-    avatarColor: '#7c3aed',
-    avatarInitials: 'RP'
-  }
-];
-
 const GoogleSignInModal = ({ isOpen, onClose, defaultRole = 'patient', onSuccess }) => {
   const { googleLogin } = useAuth();
   const { isDark } = useTheme();
   const navigate = useNavigate();
 
-  const [loadingEmail, setLoadingEmail] = useState('');
+  const [clientId, setClientId] = useState(() => {
+    return process.env.REACT_APP_GOOGLE_CLIENT_ID || localStorage.getItem('COGNIVEIL_GOOGLE_CLIENT_ID') || '';
+  });
+  const [inputClientId, setInputClientId] = useState(clientId);
+  const [selectedRole, setSelectedRole] = useState(defaultRole);
+  const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
   const [error, setError] = useState('');
-  const [showCustomForm, setShowCustomForm] = useState(false);
-  const [customName, setCustomName] = useState('');
-  const [customEmail, setCustomEmail] = useState('');
-  const [customRole, setCustomRole] = useState(defaultRole);
+  const [copiedOrigin, setCopiedOrigin] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => (clientId ? 'oauth' : 'setup'));
 
-  if (!isOpen) return null;
-
-  const handleSelectAccount = async (profile) => {
-    setError('');
-    setLoadingEmail(profile.email);
-    try {
-      await googleLogin({
-        email: profile.email,
-        name: profile.name,
-        role: profile.role
-      });
-      if (onSuccess) {
-        onSuccess(profile);
-      } else {
-        navigate('/dashboard');
-      }
-      onClose();
-    } catch (err) {
-      if (err.response?.data?.detail) {
-        setError(typeof err.response.data.detail === 'string' ? err.response.data.detail : 'Google authentication failed.');
-      } else {
-        setError('Failed to authenticate with Google. Ensure backend is running.');
-      }
-    } finally {
-      setLoadingEmail('');
+  useEffect(() => {
+    if (clientId) {
+      setActiveTab('oauth');
+    } else {
+      setActiveTab('setup');
     }
-  };
+  }, [clientId, isOpen]);
 
-  const handleCustomSubmit = async (e) => {
-    e.preventDefault();
-    if (!customEmail || !customEmail.includes('@')) {
-      setError('Please provide a valid Google / Gmail address.');
+  // Launch the REAL Google Identity Services OAuth 2.0 Popup
+  const launchRealGoogleOAuth = useCallback(async (activeClientId = clientId) => {
+    if (!activeClientId) {
+      setError('Please provide a Google OAuth Client ID to connect with accounts.google.com.');
+      setActiveTab('setup');
       return;
     }
-    const cleanName = customName.trim() || customEmail.split('@')[0].replace('.', ' ');
-    setError('');
-    setLoadingEmail(customEmail);
-    try {
-      await googleLogin({
-        email: customEmail.trim().toLowerCase(),
-        name: cleanName,
-        role: customRole
-      });
-      if (onSuccess) {
-        onSuccess({ email: customEmail, name: cleanName, role: customRole });
-      } else {
-        navigate('/dashboard');
-      }
-      onClose();
-    } catch (err) {
-      if (err.response?.data?.detail) {
-        setError(typeof err.response.data.detail === 'string' ? err.response.data.detail : 'Google sign-in error.');
-      } else {
-        setError('Failed to connect with Google identity service.');
-      }
-    } finally {
-      setLoadingEmail('');
+
+    if (!window.google || !window.google.accounts) {
+      setError('Google Identity Services SDK is still loading. Please check your internet connection and try again.');
+      return;
     }
+
+    setError('');
+    setLoading(true);
+    setStatusMsg('Opening official Google OAuth popup (accounts.google.com)...');
+
+    try {
+      // Use Google Identity Services Token Client for popup OAuth flow
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: activeClientId.trim(),
+        scope: 'openid email profile',
+        prompt: 'select_account',
+        callback: async (tokenResponse) => {
+          if (tokenResponse.error) {
+            setError(`Google OAuth error: ${tokenResponse.error_description || tokenResponse.error}`);
+            setLoading(false);
+            return;
+          }
+
+          setStatusMsg('Verifying Google credentials with CogniVeil clinical server...');
+          try {
+            // Fetch verified user profile directly from Google
+            const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+            });
+            const googleProfile = await userInfoRes.json();
+
+            if (!googleProfile.email) {
+              throw new Error('Could not retrieve verified email from Google.');
+            }
+
+            // Authenticate with CogniVeil backend
+            const res = await googleLogin({
+              email: googleProfile.email,
+              name: googleProfile.name || googleProfile.email.split('@')[0],
+              role: selectedRole,
+              credential: tokenResponse.access_token
+            });
+
+            const userObj = res.data?.user;
+            onClose();
+
+            if (onSuccess) {
+              onSuccess(userObj);
+            } else if (userObj && userObj.consent_granted === false) {
+              // Direct user to Terms of Service & Informed Consent page
+              navigate('/consent');
+            } else {
+              navigate('/dashboard');
+            }
+          } catch (loginErr) {
+            const detail = loginErr.response?.data?.detail;
+            setError(typeof detail === 'string' ? detail : 'Failed to finalize session with CogniVeil.');
+          } finally {
+            setLoading(false);
+            setStatusMsg('');
+          }
+        }
+      });
+
+      tokenClient.requestAccessToken();
+    } catch (err) {
+      setError(`Failed to initialize Google Sign-In: ${err.message}`);
+      setLoading(false);
+    }
+  }, [clientId, selectedRole, googleLogin, navigate, onClose, onSuccess]);
+
+  const handleSaveClientIdAndLaunch = (e) => {
+    e.preventDefault();
+    const cleanId = inputClientId.trim();
+    if (!cleanId || !cleanId.includes('.apps.googleusercontent.com')) {
+      setError('A valid Google Client ID must end with .apps.googleusercontent.com');
+      return;
+    }
+    localStorage.setItem('COGNIVEIL_GOOGLE_CLIENT_ID', cleanId);
+    setClientId(cleanId);
+    setError('');
+    launchRealGoogleOAuth(cleanId);
   };
+
+  const handleCopyOrigin = () => {
+    navigator.clipboard.writeText('http://localhost:3000');
+    setCopiedOrigin(true);
+    setTimeout(() => setCopiedOrigin(false), 2000);
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -133,7 +154,7 @@ const GoogleSignInModal = ({ isOpen, onClose, defaultRole = 'patient', onSuccess
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        backgroundColor: 'rgba(5, 10, 6, 0.72)',
+        backgroundColor: 'rgba(5, 10, 6, 0.76)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
@@ -145,7 +166,7 @@ const GoogleSignInModal = ({ isOpen, onClose, defaultRole = 'patient', onSuccess
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: '460px',
+          maxWidth: '520px',
           backgroundColor: isDark ? '#111712' : '#ffffff',
           color: isDark ? '#f1f5ee' : '#141e13',
           borderRadius: '24px',
@@ -158,23 +179,40 @@ const GoogleSignInModal = ({ isOpen, onClose, defaultRole = 'patient', onSuccess
           fontFamily: "'Mulish', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
         }}
       >
-        {/* Top Google Header Bar */}
+        {/* Top Header */}
         <div style={{
-          padding: '28px 30px 18px 30px',
+          padding: '24px 28px 16px 28px',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          textAlign: 'center',
-          position: 'relative',
+          justifyContent: 'space-between',
           borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0f4ef'}`
         }}>
-          {/* Close button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: isDark ? '#1c251e' : '#f8fbf7',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: `1px solid ${isDark ? '#2d3d2c' : '#e4ece1'}`
+            }}>
+              <GoogleIcon size={22} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800' }}>
+                Real Google Sign-In
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: isDark ? '#98ab94' : '#5a7056' }}>
+                Official Google Identity Services (OAuth 2.0)
+              </p>
+            </div>
+          </div>
+
           <button
             onClick={onClose}
             style={{
-              position: 'absolute',
-              top: '18px',
-              right: '18px',
               background: 'none',
               border: 'none',
               color: isDark ? '#8ca088' : '#70886c',
@@ -182,297 +220,101 @@ const GoogleSignInModal = ({ isOpen, onClose, defaultRole = 'patient', onSuccess
               fontSize: '1.3rem',
               lineHeight: 1,
               padding: '6px 8px',
-              borderRadius: '8px',
-              transition: 'background 0.15s'
+              borderRadius: '8px'
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = isDark ? '#1b241c' : '#f1f5ef'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
             title="Close"
           >
             ✕
           </button>
-
-          <div style={{
-            width: '46px',
-            height: '46px',
-            borderRadius: '50%',
-            backgroundColor: isDark ? '#1c251e' : '#f8fbf7',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: isDark ? '0 2px 10px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.08)',
-            marginBottom: '14px',
-            border: `1px solid ${isDark ? '#2d3d2c' : '#e4ece1'}`
-          }}>
-            <GoogleIcon size={26} />
-          </div>
-
-          <h3 style={{
-            margin: '0 0 6px 0',
-            fontSize: '1.35rem',
-            fontWeight: '800',
-            letterSpacing: '-0.02em',
-            color: isDark ? '#f4f8f1' : '#141e13'
-          }}>
-            Sign in with Google
-          </h3>
-
-          <p style={{
-            margin: 0,
-            fontSize: '0.88rem',
-            color: isDark ? '#98ab94' : '#5a7056',
-            lineHeight: 1.4
-          }}>
-            Choose an account to continue to <strong style={{ color: isDark ? '#7dd3fc' : '#0369a1' }}>CogniVeil Telemetry</strong>
-          </p>
         </div>
 
-        {/* Error Notification */}
-        {error && (
-          <div style={{
-            margin: '14px 24px 0 24px',
-            padding: '10px 14px',
-            borderRadius: '10px',
-            backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
-            border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : '#fecaca'}`,
-            color: isDark ? '#fca5a5' : '#b91c1c',
-            fontSize: '0.84rem',
-            lineHeight: 1.4
-          }}>
-            {error}
-          </div>
-        )}
+        {/* Tab Navigation */}
+        <div style={{
+          display: 'flex',
+          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0f4ef'}`,
+          backgroundColor: isDark ? '#0d130e' : '#f8fbf7'
+        }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('oauth')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'oauth' ? '2.5px solid #10b981' : 'none',
+              color: activeTab === 'oauth' ? (isDark ? '#4ade80' : '#15803d') : (isDark ? '#8ba087' : '#697f66'),
+              fontWeight: '700',
+              fontSize: '0.85rem',
+              cursor: 'pointer'
+            }}
+          >
+            1. Launch Google Login
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('setup')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'setup' ? '2.5px solid #10b981' : 'none',
+              color: activeTab === 'setup' ? (isDark ? '#4ade80' : '#15803d') : (isDark ? '#8ba087' : '#697f66'),
+              fontWeight: '700',
+              fontSize: '0.85rem',
+              cursor: 'pointer'
+            }}
+          >
+            2. Google Cloud Setup Guide (2 min)
+          </button>
+        </div>
 
-        {/* Account Selector List */}
-        <div style={{ padding: '16px 20px', maxHeight: '380px', overflowY: 'auto' }}>
-          {!showCustomForm ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {defaultGoogleProfiles.map((p) => {
-                const isLoading = loadingEmail === p.email;
-                return (
-                  <button
-                    key={p.email}
-                    onClick={() => handleSelectAccount(p)}
-                    disabled={Boolean(loadingEmail)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '14px',
-                      padding: '12px 14px',
-                      borderRadius: '14px',
-                      border: `1px solid ${isDark ? '#222f22' : '#e6ede3'}`,
-                      backgroundColor: isDark ? '#161e17' : '#fbfdfa',
-                      cursor: loadingEmail ? 'wait' : 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                      position: 'relative',
-                      width: '100%'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!loadingEmail) {
-                        e.currentTarget.style.backgroundColor = isDark ? '#1d271e' : '#f0f6ed';
-                        e.currentTarget.style.borderColor = isDark ? '#3d5236' : '#bfd4bc';
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!loadingEmail) {
-                        e.currentTarget.style.backgroundColor = isDark ? '#161e17' : '#fbfdfa';
-                        e.currentTarget.style.borderColor = isDark ? '#222f22' : '#e6ede3';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                      }
-                    }}
-                  >
-                    {/* User Avatar Circle */}
-                    <div style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      backgroundColor: p.avatarColor,
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: '800',
-                      fontSize: '0.92rem',
-                      flexShrink: 0
-                    }}>
-                      {p.avatarInitials}
-                    </div>
-
-                    {/* Account Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontWeight: '700',
-                        fontSize: '0.94rem',
-                        color: isDark ? '#f1f5ee' : '#162315',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}>
-                        <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{p.name}</span>
-                        <span style={{
-                          fontSize: '0.68rem',
-                          padding: '2px 7px',
-                          borderRadius: '6px',
-                          backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                          color: p.badgeColor,
-                          fontWeight: '800',
-                          fontFamily: "'JetBrains Mono', monospace",
-                          letterSpacing: '0.02em',
-                          flexShrink: 0
-                        }}>
-                          {p.badge}
-                        </span>
-                      </div>
-                      <div style={{
-                        fontSize: '0.82rem',
-                        color: isDark ? '#8ba086' : '#627a5d',
-                        textOverflow: 'ellipsis',
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        marginTop: '2px'
-                      }}>
-                        {p.email}
-                      </div>
-                    </div>
-
-                    {/* Loading or Google Logo */}
-                    {isLoading ? (
-                      <div style={{
-                        width: '18px',
-                        height: '18px',
-                        border: '2px solid rgba(16, 185, 129, 0.2)',
-                        borderTopColor: '#10b981',
-                        borderRadius: '50%',
-                        animation: 'spin 0.8s linear infinite',
-                        flexShrink: 0
-                      }} />
-                    ) : (
-                      <GoogleIcon size={18} />
-                    )}
-                  </button>
-                );
-              })}
-
-              {/* Use Another Account Button */}
-              <button
-                type="button"
-                onClick={() => setShowCustomForm(true)}
-                disabled={Boolean(loadingEmail)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  padding: '12px 14px',
-                  borderRadius: '14px',
-                  border: `1px dashed ${isDark ? '#324530' : '#ccd9c8'}`,
-                  backgroundColor: 'transparent',
-                  color: isDark ? '#b2c5ae' : '#455d3e',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.15s ease',
-                  marginTop: '4px',
-                  width: '100%'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDark ? '#161e17' : '#f5f9f3';
-                  e.currentTarget.style.borderColor = isDark ? '#4ade80' : '#2e7d32';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = isDark ? '#324530' : '#ccd9c8';
-                }}
-              >
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  backgroundColor: isDark ? '#1d271e' : '#eef4ec',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.2rem',
-                  color: isDark ? '#98ab94' : '#577052',
-                  flexShrink: 0
-                }}>
-                  +
-                </div>
-                <div>
-                  <div style={{ fontWeight: '700', fontSize: '0.92rem' }}>Use another Google account</div>
-                  <div style={{ fontSize: '0.78rem', color: isDark ? '#7a8e75' : '#738a6e' }}>
-                    Sign in or auto-enroll with any Gmail or Workspace ID
-                  </div>
-                </div>
-              </button>
+        {/* Body Content */}
+        <div style={{ padding: '20px 26px' }}>
+          {error && (
+            <div style={{
+              marginBottom: '14px',
+              padding: '10px 14px',
+              borderRadius: '10px',
+              backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
+              border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : '#fecaca'}`,
+              color: isDark ? '#fca5a5' : '#b91c1c',
+              fontSize: '0.84rem'
+            }}>
+              {error}
             </div>
-          ) : (
-            /* Custom Account Form */
-            <form onSubmit={handleCustomSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.78rem',
-                  fontWeight: '700',
-                  color: isDark ? '#a8bfa4' : '#475d41',
-                  marginBottom: '5px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em'
-                }}>
-                  Full Legal Name
-                </label>
-                <input
-                  type="text"
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="e.g. Siddharth"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    backgroundColor: isDark ? '#182119' : '#f9fbf8',
-                    border: `1px solid ${isDark ? '#2e3f2c' : '#d2dfd0'}`,
-                    color: isDark ? '#f1f5ee' : '#141e13',
-                    fontSize: '0.92rem',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
+          )}
 
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.78rem',
-                  fontWeight: '700',
-                  color: isDark ? '#a8bfa4' : '#475d41',
-                  marginBottom: '5px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em'
-                }}>
-                  Google / Gmail Address *
-                </label>
-                <input
-                  type="email"
-                  value={customEmail}
-                  onChange={(e) => setCustomEmail(e.target.value)}
-                  placeholder="yourname@gmail.com"
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    backgroundColor: isDark ? '#182119' : '#f9fbf8',
-                    border: `1px solid ${isDark ? '#2e3f2c' : '#d2dfd0'}`,
-                    color: isDark ? '#f1f5ee' : '#141e13',
-                    fontSize: '0.92rem',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
+          {statusMsg && (
+            <div style={{
+              marginBottom: '14px',
+              padding: '10px 14px',
+              borderRadius: '10px',
+              backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ecfdf5',
+              border: `1px solid ${isDark ? 'rgba(16, 185, 129, 0.3)' : '#a7f3d0'}`,
+              color: isDark ? '#6ee7b7' : '#047857',
+              fontSize: '0.84rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <div style={{
+                width: '14px',
+                height: '14px',
+                border: '2px solid rgba(16, 185, 129, 0.2)',
+                borderTopColor: '#10b981',
+                borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite'
+              }} />
+              <span>{statusMsg}</span>
+            </div>
+          )}
 
-              <div>
+          {activeTab === 'oauth' ? (
+            <div>
+              {/* Role Selection */}
+              <div style={{ marginBottom: '16px' }}>
                 <label style={{
                   display: 'block',
                   fontSize: '0.78rem',
@@ -482,102 +324,325 @@ const GoogleSignInModal = ({ isOpen, onClose, defaultRole = 'patient', onSuccess
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em'
                 }}>
-                  CogniVeil Role
+                  Select Your Clinical Telemetry Role
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <button
                     type="button"
-                    onClick={() => setCustomRole('patient')}
+                    onClick={() => setSelectedRole('patient')}
                     style={{
-                      padding: '9px 10px',
+                      padding: '10px 12px',
                       borderRadius: '10px',
-                      border: customRole === 'patient'
-                        ? '1.5px solid #10b981'
+                      border: selectedRole === 'patient'
+                        ? '2px solid #10b981'
                         : `1px solid ${isDark ? '#2c3b2a' : '#d5e0d3'}`,
-                      backgroundColor: customRole === 'patient'
+                      backgroundColor: selectedRole === 'patient'
                         ? (isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)')
                         : (isDark ? '#171f18' : '#f9fbf8'),
-                      color: customRole === 'patient' ? '#10b981' : (isDark ? '#b8c9b4' : '#576c52'),
-                      fontSize: '0.82rem',
+                      color: selectedRole === 'patient' ? '#10b981' : (isDark ? '#b8c9b4' : '#576c52'),
+                      fontSize: '0.84rem',
                       fontWeight: '700',
-                      cursor: 'pointer',
-                      textAlign: 'center'
+                      cursor: 'pointer'
                     }}
                   >
-                    👤 Patient (Self)
+                    👤 Patient (Monitoring)
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCustomRole('clinician')}
+                    onClick={() => setSelectedRole('clinician')}
                     style={{
-                      padding: '9px 10px',
+                      padding: '10px 12px',
                       borderRadius: '10px',
-                      border: customRole === 'clinician'
-                        ? '1.5px solid #0ea5e9'
+                      border: selectedRole === 'clinician'
+                        ? '2px solid #0ea5e9'
                         : `1px solid ${isDark ? '#2c3b2a' : '#d5e0d3'}`,
-                      backgroundColor: customRole === 'clinician'
+                      backgroundColor: selectedRole === 'clinician'
                         ? (isDark ? 'rgba(14, 165, 233, 0.15)' : 'rgba(14, 165, 233, 0.1)')
                         : (isDark ? '#171f18' : '#f9fbf8'),
-                      color: customRole === 'clinician' ? '#0ea5e9' : (isDark ? '#b8c9b4' : '#576c52'),
-                      fontSize: '0.82rem',
+                      color: selectedRole === 'clinician' ? '#0ea5e9' : (isDark ? '#b8c9b4' : '#576c52'),
+                      fontSize: '0.84rem',
                       fontWeight: '700',
-                      cursor: 'pointer',
-                      textAlign: 'center'
+                      cursor: 'pointer'
                     }}
                   >
-                    🩺 Clinician / MD
+                    🩺 Clinician / Supervisor
                   </button>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+              {/* Status of Client ID */}
+              <div style={{
+                padding: '12px 14px',
+                borderRadius: '12px',
+                backgroundColor: isDark ? '#161e17' : '#f4f8f2',
+                border: `1px solid ${isDark ? '#283827' : '#e0ebdd'}`,
+                marginBottom: '16px',
+                fontSize: '0.82rem'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: '700', color: isDark ? '#c2d4be' : '#3d5238' }}>
+                    Google OAuth Client ID:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('setup')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#0284C7',
+                      fontSize: '0.76rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    {clientId ? 'Edit Client ID' : 'Add Client ID'}
+                  </button>
+                </div>
+                <div style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: '0.74rem',
+                  color: clientId ? (isDark ? '#6ee7b7' : '#059669') : (isDark ? '#f87171' : '#dc2626'),
+                  wordBreak: 'break-all'
+                }}>
+                  {clientId ? `Active: ${clientId.substring(0, 24)}...apps.googleusercontent.com` : '⚠️ No Client ID configured yet'}
+                </div>
+              </div>
+
+              {/* Main Action: Launch Real Google Popup */}
+              {clientId ? (
                 <button
                   type="button"
-                  onClick={() => setShowCustomForm(false)}
+                  onClick={() => launchRealGoogleOAuth(clientId)}
+                  disabled={loading}
                   style={{
-                    flex: 1,
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    backgroundColor: 'transparent',
-                    border: `1px solid ${isDark ? '#334731' : '#ccd9c9'}`,
-                    color: isDark ? '#b9cab5' : '#4d6547',
-                    fontWeight: '700',
-                    fontSize: '0.86rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  ← Back to List
-                </button>
-                <button
-                  type="submit"
-                  disabled={Boolean(loadingEmail)}
-                  style={{
-                    flex: 2,
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    backgroundColor: isDark ? '#233821' : '#273822',
-                    border: `1px solid ${isDark ? '#3d5939' : '#1e2d1a'}`,
-                    color: '#ffffff',
-                    fontWeight: '700',
-                    fontSize: '0.88rem',
-                    cursor: loadingEmail ? 'wait' : 'pointer',
+                    width: '100%',
+                    padding: '14px 20px',
+                    borderRadius: '12px',
+                    backgroundColor: isDark ? '#ffffff' : '#141e13',
+                    color: isDark ? '#141e13' : '#ffffff',
+                    border: 'none',
+                    fontWeight: '800',
+                    fontSize: '1rem',
+                    cursor: loading ? 'wait' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px'
+                    gap: '12px',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                    transition: 'all 0.15s ease'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
-                  <GoogleIcon size={16} />
-                  <span>{loadingEmail ? 'Connecting...' : 'Sign in with Google'}</span>
+                  <GoogleIcon size={22} />
+                  <span>{loading ? 'Opening accounts.google.com...' : 'Open Official Google Sign-In'}</span>
                 </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('setup')}
+                    style={{
+                      width: '100%',
+                      padding: '14px 20px',
+                      borderRadius: '12px',
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontWeight: '800',
+                      fontSize: '0.94rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px'
+                    }}
+                  >
+                    <span>⚙️ Configure Free Google Client ID (2 min)</span>
+                  </button>
+                  <p style={{
+                    margin: 0,
+                    fontSize: '0.76rem',
+                    textAlign: 'center',
+                    color: isDark ? '#8ba087' : '#697f66',
+                    lineHeight: 1.4
+                  }}>
+                    Real Google Sign-In with accounts.google.com security popups requires a Google OAuth Client ID for localhost:3000.
+                  </p>
+                </div>
+              )}
+
+              {/* What Happens Next Reassurance */}
+              <div style={{
+                marginTop: '18px',
+                padding: '12px',
+                borderRadius: '10px',
+                backgroundColor: isDark ? '#0c120d' : '#f8fbf6',
+                border: `1px solid ${isDark ? '#1f2d1e' : '#e6eee3'}`,
+                fontSize: '0.76rem',
+                color: isDark ? '#98ab94' : '#577052',
+                lineHeight: 1.5
+              }}>
+                <strong>What happens when you click:</strong>
+                <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px' }}>
+                  <li>Official <code>accounts.google.com</code> popup opens in your browser.</li>
+                  <li>You select your real Google account & accept Google's consent screen.</li>
+                  <li>Google sends a security alert email to your Gmail address.</li>
+                  <li>CogniVeil redirects you to the <strong>Terms & Informed Consent Protocol</strong>.</li>
+                </ul>
               </div>
-            </form>
+            </div>
+          ) : (
+            /* Setup Guide Tab */
+            <div>
+              <div style={{
+                fontSize: '0.82rem',
+                color: isDark ? '#cbd8c7' : '#354b32',
+                lineHeight: 1.5,
+                marginBottom: '14px'
+              }}>
+                To allow your local website to open real Google login popups and send Google security emails, create an OAuth 2.0 Web Client in Google Cloud:
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                <div style={{
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  backgroundColor: isDark ? '#171f18' : '#f4f8f2',
+                  border: `1px solid ${isDark ? '#2b3b29' : '#d8e4d5'}`,
+                  fontSize: '0.8rem'
+                }}>
+                  <strong>Step 1:</strong> Open{' '}
+                  <a
+                    href="https://console.cloud.google.com/apis/credentials"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: '#0284C7', fontWeight: '700' }}
+                  >
+                    Google Cloud Console Credentials ↗
+                  </a>
+                  <div style={{ color: isDark ? '#8ba087' : '#697f66', fontSize: '0.74rem', marginTop: '2px' }}>
+                    Create a project named <em>CogniVeil</em> if you don't have one.
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  backgroundColor: isDark ? '#171f18' : '#f4f8f2',
+                  border: `1px solid ${isDark ? '#2b3b29' : '#d8e4d5'}`,
+                  fontSize: '0.8rem'
+                }}>
+                  <strong>Step 2:</strong> Under <strong>OAuth consent screen</strong>, select <strong>External</strong> and enter App Name: <em>CogniVeil</em>.
+                </div>
+
+                <div style={{
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  backgroundColor: isDark ? '#171f18' : '#f4f8f2',
+                  border: `1px solid ${isDark ? '#2b3b29' : '#d8e4d5'}`,
+                  fontSize: '0.8rem'
+                }}>
+                  <strong>Step 3:</strong> Click <strong>+ CREATE CREDENTIALS → OAuth client ID</strong>.
+                  <div style={{ marginTop: '4px' }}>
+                    Type: <strong>Web application</strong>
+                  </div>
+                  <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>Authorized JavaScript origins:</span>
+                    <code style={{
+                      backgroundColor: isDark ? '#222f22' : '#e6ede4',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: '0.76rem'
+                    }}>
+                      http://localhost:3000
+                    </code>
+                    <button
+                      type="button"
+                      onClick={handleCopyOrigin}
+                      style={{
+                        padding: '2px 6px',
+                        fontSize: '0.7rem',
+                        borderRadius: '4px',
+                        border: 'none',
+                        backgroundColor: copiedOrigin ? '#10b981' : '#0284C7',
+                        color: '#fff',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {copiedOrigin ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Paste Form */}
+              <form onSubmit={handleSaveClientIdAndLaunch}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  color: isDark ? '#a8bfa4' : '#475d41',
+                  marginBottom: '5px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em'
+                }}>
+                  Step 4: Paste Your Google Client ID
+                </label>
+                <input
+                  type="text"
+                  value={inputClientId}
+                  onChange={(e) => setInputClientId(e.target.value)}
+                  placeholder="e.g. 1029384756-xxxxxxxx.apps.googleusercontent.com"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    backgroundColor: isDark ? '#182119' : '#f9fbf8',
+                    border: `1px solid ${isDark ? '#2e3f2c' : '#d2dfd0'}`,
+                    color: isDark ? '#f1f5ee' : '#141e13',
+                    fontSize: '0.84rem',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    marginBottom: '12px'
+                  }}
+                />
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="submit"
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      borderRadius: '10px',
+                      backgroundColor: isDark ? '#233821' : '#273822',
+                      border: `1px solid ${isDark ? '#3d5939' : '#1e2d1a'}`,
+                      color: '#ffffff',
+                      fontWeight: '800',
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <GoogleIcon size={16} />
+                    <span>Save & Launch Real Google OAuth</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
         </div>
 
-        {/* Footer Security Notice */}
+        {/* Security / Compliance Notice Footer */}
         <div style={{
-          padding: '14px 24px',
+          padding: '12px 24px',
           backgroundColor: isDark ? '#0b100c' : '#f5f8f3',
           borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#e7efe4'}`,
           fontSize: '0.74rem',

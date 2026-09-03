@@ -242,13 +242,41 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 def google_login(req: schemas.GoogleLoginRequest, db: Session = Depends(get_db)):
     """Single Sign-On endpoint for Google authentication and automatic enrollment."""
     clean_email = req.email.strip().lower() if req.email else ""
+    display_name = req.name.strip() if req.name else ""
+
+    # Real Google Credential Token Verification
+    if req.credential:
+        try:
+            cred = req.credential.strip()
+            if cred.startswith("ya29."):
+                # OAuth2 Access Token
+                userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+                req_google = urllib.request.Request(userinfo_url, headers={"Authorization": f"Bearer {cred}"})
+                with urllib.request.urlopen(req_google, timeout=8) as resp:
+                    google_payload = json.loads(resp.read().decode("utf-8"))
+                clean_email = google_payload.get("email", "").strip().lower()
+                display_name = google_payload.get("name") or display_name
+            else:
+                # OIDC ID Token (JWT)
+                token_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={cred}"
+                req_google = urllib.request.Request(token_url, headers={"User-Agent": "CogniVeil-Auth/1.0"})
+                with urllib.request.urlopen(req_google, timeout=8) as resp:
+                    google_payload = json.loads(resp.read().decode("utf-8"))
+                clean_email = google_payload.get("email", "").strip().lower()
+                display_name = google_payload.get("name") or display_name
+        except Exception as e:
+            logger.error(f"Google token verification failed: {e}")
+            if not clean_email:
+                raise HTTPException(status_code=400, detail=f"Google token verification failed: {str(e)}")
+
     if not clean_email or "@" not in clean_email:
         raise HTTPException(status_code=400, detail="A valid Google email is required.")
 
     db_user = db.query(models.User).filter(models.User.email == clean_email).first()
     if not db_user:
         # Create user automatically with Google identity
-        display_name = req.name.strip() if req.name else clean_email.split("@")[0].replace(".", " ").title()
+        if not display_name:
+            display_name = clean_email.split("@")[0].replace(".", " ").title()
         assigned_role = req.role if req.role in ["clinician", "patient"] else "patient"
         hashed = auth.get_password_hash(f"google_auth_{clean_email}_{datetime.utcnow().timestamp()}")
         
@@ -260,8 +288,7 @@ def google_login(req: schemas.GoogleLoginRequest, db: Session = Depends(get_db))
             gender="Not specified",
             role=assigned_role,
             is_caregiver=(assigned_role == "clinician"),
-            consent_granted=True,
-            consent_granted_at=datetime.utcnow(),
+            consent_granted=False,  # Enforce Terms of Service & Consent on onboarding
             baseline_status="collecting",
             level2_status="not_collected",
             apoe_e4_provenance="self_reported",
@@ -270,7 +297,7 @@ def google_login(req: schemas.GoogleLoginRequest, db: Session = Depends(get_db))
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-        mcp_tools.log_audit(db, db_user.id, "google_register", {"email": clean_email, "role": assigned_role}, {"status": "enrolled_via_google"}, pipeline_state="baseline_period")
+        mcp_tools.log_audit(db, db_user.id, "google_register", {"email": clean_email, "role": assigned_role}, {"status": "enrolled_via_google", "terms_pending": True}, pipeline_state="baseline_period")
     else:
         if not hasattr(db_user, 'role') or not db_user.role:
             db_user.role = "clinician" if db_user.is_caregiver else "patient"

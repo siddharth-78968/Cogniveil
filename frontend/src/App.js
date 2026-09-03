@@ -23,7 +23,11 @@ import { pingBackend } from './utils/api';
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div style={{ color: 'white', padding: '2rem' }}>Loading...</div>;
-  return user ? children : <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
+  if (user.consent_granted === false && window.location.pathname !== '/consent') {
+    return <Navigate to="/consent" replace />;
+  }
+  return children;
 };
 
 const RoleProtectedRoute = ({ children, requiredRole }) => {

@@ -18,7 +18,7 @@ class UserLogin(BaseModel):
     password: str
 
 class GoogleLoginRequest(BaseModel):
-    email: str
+    email: Optional[str] = None
     name: Optional[str] = None
     role: Optional[str] = "patient"
     credential: Optional[str] = None
