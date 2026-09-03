@@ -19,6 +19,7 @@ import EvidenceDrawer from '../components/EvidenceDrawer';
 import EvidenceGraphModal from '../components/EvidenceGraphModal';
 import AgentPipelineModal from '../components/AgentPipelineModal';
 import DoctorLayout from '../components/DoctorLayout';
+import ChatWidget from '../components/ChatWidget';
 import { 
   AreaChart, 
   Area, 
@@ -1304,6 +1305,7 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+      <ChatWidget user={user} />
     </DoctorLayout>
   );
 };

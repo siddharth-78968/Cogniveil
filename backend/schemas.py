@@ -232,3 +232,13 @@ class EvidenceGraphResponse(BaseModel):
     edges: List[Dict[str, Any]]
     dossier: Optional[Dict[str, Any]] = None
 
+class ChatRequest(BaseModel):
+    question: str
+
+class ChatResponse(BaseModel):
+    answer: str
+    guardrail_passed: bool = True
+    sources_used: List[str] = []
+    timestamp: str
+
+

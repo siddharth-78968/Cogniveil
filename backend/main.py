@@ -10,10 +10,13 @@ import io
 import models, schemas, auth
 from database import engine, get_db
 import mcp_tools
+import transcription
 try:
     from services.pdf_report import build_clinical_referral_pdf
 except Exception:
     build_clinical_referral_pdf = None
+from agents.chat import ChatAgent
+
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -704,6 +707,24 @@ def generate_clinical_report_pdf_endpoint(
             "Access-Control-Expose-Headers": "Content-Disposition",
             "Content-Type": "application/pdf"
         }
+    )
+
+# -----------------------------------------------------------------------------
+# Read-Only Grounded Chatbot API Endpoint (Parallel Query Path)
+# -----------------------------------------------------------------------------
+@app.post("/chat", response_model=schemas.ChatResponse)
+@app.post("/api/chat", response_model=schemas.ChatResponse)
+def chat_endpoint(
+    req: schemas.ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Personal read-only assistant for querying individual screening results and progress."""
+    agent = ChatAgent()
+    return agent.answer_query(
+        db=db,
+        user=current_user,
+        question=req.question
     )
 
 @app.get("/api/clinician/patients/{patient_id}/report-pdf")
