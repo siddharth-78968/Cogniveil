@@ -10,8 +10,10 @@ import io
 import models, schemas, auth
 from database import engine, get_db
 import mcp_tools
-import transcription
-from services.pdf_report import build_clinical_referral_pdf
+try:
+    from services.pdf_report import build_clinical_referral_pdf
+except Exception:
+    build_clinical_referral_pdf = None
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -509,9 +511,10 @@ def transcription_status(current_user: models.User = Depends(auth.get_current_us
 @app.post("/predict/level2")
 def level2_predict(data: dict, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     try:
+        session_id = f"S_{current_user.id}_{current_user.email.split('@')[0]}"
         current_user.level2_data = json.dumps(data)
         current_user.level2_status = "completed"
-        res = mcp_tools.predict_risk(data, level2_status="completed")
+        res = mcp_tools.predict_risk(data, level2_status="completed", session_id=session_id, pipeline_state="tier2_ml")
         current_user.combined_risk_score = res.get("combined_risk_score")
         
         # Update latest score record with combined_risk_score and level2_status
@@ -541,9 +544,10 @@ def level2_predict(data: dict, db: Session = Depends(get_db), current_user: mode
 # -----------------------------------------------------------------------------
 @app.post("/api/classify-mri")
 async def classify_mri_endpoint(file: Optional[UploadFile] = File(None), db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    session_id = f"S_{current_user.id}_{current_user.email.split('@')[0]}"
     filename = file.filename if file else "sample_mri_scan.dcm"
     image_bytes = await file.read() if file else None
-    res = mcp_tools.classify_mri(image_bytes=image_bytes, filename=filename)
+    res = mcp_tools.classify_mri(image_bytes=image_bytes, filename=filename, session_id=session_id, pipeline_state="tier3_mri")
     mcp_tools.log_audit(db, current_user.id, "classify_mri", {"filename": filename, "bytes_length": len(image_bytes) if image_bytes else 0}, res)
     return res
 
@@ -552,11 +556,14 @@ async def classify_mri_endpoint(file: Optional[UploadFile] = File(None), db: Ses
 # -----------------------------------------------------------------------------
 @app.post("/api/generate-referral", response_model=schemas.ReferralResponse)
 def generate_referral_endpoint(req: schemas.ReferralRequest, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    session_id = f"S_{current_user.id}_{current_user.email.split('@')[0]}"
     res = mcp_tools.generate_referral(
         risk_level=req.risk_level, 
         is_deviating=req.is_deviating, 
         active_score=req.active_score, 
-        shap_features=req.shap_top_features
+        shap_features=req.shap_top_features,
+        session_id=session_id,
+        pipeline_state="referral_generation"
     )
     mcp_tools.log_audit(db, current_user.id, "generate_referral", req.dict(), res)
     return res
@@ -566,6 +573,7 @@ def generate_referral_endpoint(req: schemas.ReferralRequest, db: Session = Depen
 # -----------------------------------------------------------------------------
 @app.post("/api/clinical-report")
 def generate_clinical_report_endpoint(req: schemas.ClinicalReportRequest, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    session_id = f"S_{current_user.id}_{current_user.email.split('@')[0]}"
     patient_name = req.patient_name or current_user.name
     age = req.age or current_user.age
     
@@ -593,7 +601,9 @@ def generate_clinical_report_endpoint(req: schemas.ClinicalReportRequest, db: Se
         risk_level=req.risk_level,
         is_deviating=req.is_deviating,
         active_score=req.cogni_score,
-        shap_features=req.shap_features
+        shap_features=req.shap_features,
+        session_id=session_id,
+        pipeline_state="clinical_synthesis"
     )
     
     # Save report to longitudinal ClinicalReport table

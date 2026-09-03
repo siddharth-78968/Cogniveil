@@ -124,22 +124,26 @@ TOOLS = [
     },
     {
         "name": "10_predict_risk",
-        "description": "Executes CatBoost Tier 2 ML dementia risk classification with SHAP local explanations.",
+        "description": "Executes CatBoost Tier 2 ML dementia risk classification with SHAP local explanations (requires orchestrator session_id or pipeline_state).",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "patient_data": {"type": "object"}
+                "patient_data": {"type": "object"},
+                "session_id": {"type": "string", "description": "Active orchestrator screening session ID"},
+                "pipeline_state": {"type": "string", "description": "Verified pipeline lifecycle state"}
             },
             "required": ["patient_data"]
         }
     },
     {
         "name": "11_classify_mri",
-        "description": "Evaluates conditional neuroimaging scan (ResNet-18) with Grad-CAM visual heatmaps.",
+        "description": "Evaluates conditional neuroimaging scan (ResNet-18) with Grad-CAM visual heatmaps (requires orchestrator session_id or pipeline_state).",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "filename": {"type": "string", "default": "brain_mri.jpg"}
+                "filename": {"type": "string", "default": "brain_mri.jpg"},
+                "session_id": {"type": "string", "description": "Active orchestrator screening session ID"},
+                "pipeline_state": {"type": "string", "description": "Verified pipeline lifecycle state"}
             }
         }
     },
@@ -181,7 +185,7 @@ TOOLS = [
     },
     {
         "name": "15_draft_report",
-        "description": "Synthesizes MedGemma-4B structured clinical decision support narrative.",
+        "description": "Synthesizes MedGemma-4B structured clinical decision support narrative (requires orchestrator session_id or pipeline_state).",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -191,7 +195,9 @@ TOOLS = [
                 "risk_level": {"type": "string"},
                 "is_deviating": {"type": "boolean"},
                 "shap_features": {"type": "array", "items": {"type": "object"}},
-                "mri_result": {"type": "object"}
+                "mri_result": {"type": "object"},
+                "session_id": {"type": "string", "description": "Active orchestrator screening session ID"},
+                "pipeline_state": {"type": "string", "description": "Verified pipeline lifecycle state"}
             },
             "required": ["patient_name", "cogni_score", "risk_level"]
         }
@@ -209,13 +215,15 @@ TOOLS = [
     },
     {
         "name": "17_generate_referral",
-        "description": "Determines clinical referral action, urgency, and recommended specialist pathway.",
+        "description": "Determines clinical referral action, urgency, and recommended specialist pathway (requires orchestrator session_id or pipeline_state).",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "risk_level": {"type": "string"},
                 "is_deviating": {"type": "boolean", "default": False},
-                "active_score": {"type": "number", "default": 50.0}
+                "active_score": {"type": "number", "default": 50.0},
+                "session_id": {"type": "string", "description": "Active orchestrator screening session ID"},
+                "pipeline_state": {"type": "string", "description": "Verified pipeline lifecycle state"}
             },
             "required": ["risk_level"]
         }
@@ -307,10 +315,18 @@ def call_tool(name: str, args: dict) -> dict:
         )
 
     elif clean_name == "predict_risk":
-        return mcp_tools.predict_risk(data=args.get("patient_data") or args.get("data", {}))
+        return mcp_tools.predict_risk(
+            data=args.get("patient_data") or args.get("data", {}),
+            session_id=args.get("session_id"),
+            pipeline_state=args.get("pipeline_state")
+        )
 
     elif clean_name == "classify_mri":
-        return mcp_tools.classify_mri(filename=args.get("filename", "mri_scan.dcm"))
+        return mcp_tools.classify_mri(
+            filename=args.get("filename", "mri_scan.dcm"),
+            session_id=args.get("session_id"),
+            pipeline_state=args.get("pipeline_state")
+        )
 
     elif clean_name == "calculate_morphometry":
         return mcp_tools.calculate_morphometry(mri_result=args.get("mri_result", {}))
@@ -336,18 +352,19 @@ def call_tool(name: str, args: dict) -> dict:
         )
 
     elif clean_name == "draft_report":
-        return {
-            "report": mcp_tools.draft_report(
-                patient_name=args.get("patient_name", "Patient"),
-                age=args.get("age", 68),
-                cogni_score=args.get("cogni_score", 70.0),
-                risk_level=args.get("risk_level", "Moderate"),
-                is_deviating=args.get("is_deviating", False),
-                shap_features=args.get("shap_features"),
-                mri_result=args.get("mri_result"),
-                guidelines=args.get("guidelines")
-            )
-        }
+        res = mcp_tools.draft_report(
+            patient_name=args.get("patient_name", "Patient"),
+            age=args.get("age", 68),
+            cogni_score=args.get("cogni_score", 70.0),
+            risk_level=args.get("risk_level", "Moderate"),
+            is_deviating=args.get("is_deviating", False),
+            shap_features=args.get("shap_features"),
+            mri_result=args.get("mri_result"),
+            guidelines=args.get("guidelines"),
+            session_id=args.get("session_id"),
+            pipeline_state=args.get("pipeline_state")
+        )
+        return res if isinstance(res, dict) else {"report": res}
 
     elif clean_name == "check_output_safety":
         return mcp_tools.check_output_safety(narrative=args.get("narrative", ""))
@@ -357,7 +374,9 @@ def call_tool(name: str, args: dict) -> dict:
             risk_level=args.get("risk_level", "Moderate"),
             is_deviating=args.get("is_deviating", False),
             active_score=args.get("active_score", 50.0),
-            shap_features=args.get("shap_features")
+            shap_features=args.get("shap_features"),
+            session_id=args.get("session_id"),
+            pipeline_state=args.get("pipeline_state")
         )
 
     elif clean_name == "log_audit":

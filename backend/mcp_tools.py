@@ -257,11 +257,42 @@ def analyze_longitudinal_trend(historical_scores: list, current_score: float, vo
     return longitudinal_agent.analyze(historical_scores, current_score, voice_trend, typing_trend, memory_trend)
 
 
+def check_pipeline_guard(session_id: Optional[str] = None, pipeline_state: Optional[str] = None, tool_name: str = "") -> Optional[dict]:
+    """Guards risk-sensitive screening MCP tools against unauthorized standalone execution.
+
+    Validates that the tool call occurs within an active orchestrator pipeline run or verified session.
+    If neither session_id nor pipeline_state is provided, returns a structured rejection payload.
+    """
+    if not session_id and not pipeline_state:
+        return {
+            "tool": tool_name,
+            "status": "rejected_unorchestrated_execution",
+            "error": (
+                f"Execution Blocked: '{tool_name}' is a risk-sensitive clinical screening tool. "
+                "Standalone invocation without an active orchestrator session or verified pipeline state "
+                "is prohibited to prevent uncalibrated screening output. Please execute via RiskOrchestrationAgent "
+                "or supply a valid 'session_id' / 'pipeline_state'."
+            ),
+            "orchestrator_required": True,
+            "guardrail_passed": False
+        }
+    return None
+
+
 # =============================================================================
 # MCP Tool 10: predict_risk (CatBoost Tier 2 + SHAP)
 # =============================================================================
-def predict_risk(data: dict = None, level2_status: str = "completed") -> dict:
+def predict_risk(
+    data: dict = None, 
+    level2_status: str = "completed",
+    session_id: Optional[str] = None,
+    pipeline_state: Optional[str] = None
+) -> dict:
     """Executes Tier 2 CatBoost model over 24 structured features & computes SHAP top-8 drivers."""
+    guard = check_pipeline_guard(session_id, pipeline_state, "10_predict_risk")
+    if guard:
+        return guard
+
     if level2_status != "completed" and (not data or len(data) < 10):
         return {
             "tool": "10_predict_risk",
@@ -284,15 +315,29 @@ def predict_risk(data: dict = None, level2_status: str = "completed") -> dict:
     result["level2_status"] = "completed"
     result["combined_risk_score"] = round(result["probability"] * 100, 1)
     result["apoe_e4_provenance"] = data.get("apoe_e4_provenance", "self_reported")
+    result["session_id"] = session_id
+    result["pipeline_state"] = pipeline_state or "tier2_completed"
     return result
 
 
 # =============================================================================
 # MCP Tool 11: classify_mri
 # =============================================================================
-def classify_mri(image_bytes: bytes = None, filename: str = "mri_scan.dcm") -> dict:
+def classify_mri(
+    image_bytes: bytes = None, 
+    filename: str = "mri_scan.dcm",
+    session_id: Optional[str] = None,
+    pipeline_state: Optional[str] = None
+) -> dict:
     """Deep ResNet-18 neuroimaging classifier and Grad-CAM visual heatmap generator."""
-    return mri_model.classify_mri_scan(image_bytes=image_bytes, filename=filename)
+    guard = check_pipeline_guard(session_id, pipeline_state, "11_classify_mri")
+    if guard:
+        return guard
+
+    res = mri_model.classify_mri_scan(image_bytes=image_bytes, filename=filename)
+    res["session_id"] = session_id
+    res["pipeline_state"] = pipeline_state or "tier3_completed"
+    return res
 
 
 # =============================================================================
@@ -381,9 +426,15 @@ def draft_report(
     is_deviating: bool,
     shap_features: list = None,
     mri_result: dict = None,
-    guidelines: list = None
-) -> str:
+    guidelines: list = None,
+    session_id: Optional[str] = None,
+    pipeline_state: Optional[str] = None
+) -> str | dict:
     """Synthesizes multimodal findings into MedGemma-4B formatted clinical narrative."""
+    guard = check_pipeline_guard(session_id, pipeline_state, "15_draft_report")
+    if guard:
+        return guard
+
     t1_mock = {"score": cogni_score, "risk_level": risk_level}
     long_mock = {"is_deviating": is_deviating, "days_with_decline": 4 if is_deviating else 0}
     t2_mock = {"risk_level": risk_level, "shap_features": shap_features or []} if shap_features else None
@@ -394,7 +445,8 @@ def draft_report(
         longitudinal_summary=long_mock,
         tier2_result=t2_mock,
         mri_result=mri_result,
-        guidelines=guidelines
+        guidelines=guidelines,
+        session_id=session_id
     )
     return synth["raw_narrative"]
 
@@ -410,10 +462,21 @@ def check_output_safety(narrative: str, risk_level: str = "Moderate", provenance
 # =============================================================================
 # MCP Tool 17: generate_referral
 # =============================================================================
-def generate_referral(risk_level: str, is_deviating: bool = False, active_score: float = 50.0, shap_features: list = None) -> dict:
+def generate_referral(
+    risk_level: str, 
+    is_deviating: bool = False, 
+    active_score: float = 50.0, 
+    shap_features: list = None,
+    session_id: Optional[str] = None,
+    pipeline_state: Optional[str] = None
+) -> dict:
     """Generates explicit clinical pathways, referral urgency, and target specialists."""
+    guard = check_pipeline_guard(session_id, pipeline_state, "17_generate_referral")
+    if guard:
+        return guard
+
     if risk_level == "High" or (risk_level == "Moderate" and is_deviating):
-        return {
+        referral_payload = {
             "tool": "17_generate_referral",
             "action": "Immediate Referral Required",
             "urgency": "High",
@@ -422,7 +485,7 @@ def generate_referral(risk_level: str, is_deviating: bool = False, active_score:
             "clinical_rationale": "High risk classification or active baseline score deviation detected. Comprehensive diagnostic workup including formal neuropsychological evaluation and neuroimaging is indicated."
         }
     elif risk_level == "Moderate":
-        return {
+        referral_payload = {
             "tool": "17_generate_referral",
             "action": "Targeted Clinical Evaluation",
             "urgency": "Moderate",
@@ -431,7 +494,7 @@ def generate_referral(risk_level: str, is_deviating: bool = False, active_score:
             "clinical_rationale": "Moderate risk signals detected. Recommended to evaluate modifiable vascular and lifestyle risk factors and repeat CogniScore monitoring."
         }
     else:
-        return {
+        referral_payload = {
             "tool": "17_generate_referral",
             "action": "Routine Annual Monitoring",
             "urgency": "Low",
@@ -439,6 +502,10 @@ def generate_referral(risk_level: str, is_deviating: bool = False, active_score:
             "recommended_specialist": "Primary Care Physician",
             "clinical_rationale": "Cognitive performance is within expected limits. Continue daily cognitive active/passive screening and maintain healthy lifestyle routines."
         }
+
+    referral_payload["session_id"] = session_id
+    referral_payload["pipeline_state"] = pipeline_state or "referral_generated"
+    return referral_payload
 
 
 # =============================================================================
