@@ -7,10 +7,12 @@ from typing import List, Optional
 import json
 import os
 import io
+import re
 import models, schemas, auth
 from database import engine, get_db
 import mcp_tools
 import transcription
+import dementia_pattern_model
 try:
     from services.pdf_report import build_clinical_referral_pdf
 except Exception:
@@ -1379,31 +1381,66 @@ def delete_appointment(
 # -----------------------------------------------------------------------------
 # Clinician Workspace & Patient Inspection Endpoints
 # -----------------------------------------------------------------------------
+OFFICIAL_DEMO_PATIENT_EMAILS = {"arjun@demo.com", "meena@demo.com", "rajan@demo.com"}
+
+TEST_PATIENT_EMAIL_PATTERNS = [
+    r"@isolation\.test$",
+    r"_\d{8,}@",                 # e.g. patient_1788102754800@...
+    r"_[0-9a-f]{6}@demo\.com$",  # e.g. patient.rajan_b19d94@demo.com
+    r"^dr_smith",
+    r"^alpha_",
+    r"^beta_",
+    r"^patient_[ab]_",
+    r"^patient_\d+@",
+    r"^patient_rajan@demo\.com$"
+]
+
+def is_test_or_isolation_artifact(user: models.User) -> bool:
+    """Returns True if the user record is an ephemeral test runner artifact to exclude from clinician directory."""
+    email = (user.email or "").lower().strip()
+    if email in OFFICIAL_DEMO_PATIENT_EMAILS:
+        return False
+    for pat in TEST_PATIENT_EMAIL_PATTERNS:
+        if re.search(pat, email):
+            return True
+    if user.name in ["Alpha Isolation", "Beta Isolation", "Patient Alpha", "Patient Beta", "Frankie Patient B", "Dr. Smith"]:
+        return True
+    return False
+
 @app.get("/api/clinician/patients")
 def get_clinician_patients_list(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.require_clinician)
 ):
-    """Returns list of monitored patients with risk drift status for the clinician workstation."""
-    patients = db.query(models.User).filter(
+    """Returns clean cohort of genuine registered patients and designated demo patients for the clinician workstation."""
+    all_patient_records = db.query(models.User).filter(
         (models.User.role == "patient") | (models.User.role == None),
         models.User.is_caregiver == False
-    ).all()
-    results = []
-    for p in patients:
+    ).order_by(models.User.id.asc()).all()
+
+    # Filter out test-runner artifacts while preserving official demo and registered patients
+    cohort = [p for p in all_patient_records if not is_test_or_isolation_artifact(p)]
+
+    # Separate demo accounts and registered accounts for clean ordering
+    demo_patients = []
+    registered_patients = []
+
+    for p in cohort:
         latest = db.query(models.CogniScore).filter(
             models.CogniScore.user_id == p.id
         ).order_by(models.CogniScore.created_at.desc()).first()
 
         tests_count = db.query(models.TestResult).filter(models.TestResult.user_id == p.id).count()
         signals_count = db.query(models.PassiveSignal).filter(models.PassiveSignal.user_id == p.id).count()
+        is_demo = (p.email or "").lower().strip() in OFFICIAL_DEMO_PATIENT_EMAILS
 
-        results.append({
+        item = {
             "id": p.id,
             "name": p.name,
             "email": p.email,
             "age": p.age,
             "gender": p.gender,
+            "is_demo": is_demo,
             "baseline_status": p.baseline_status,
             "level2_status": p.level2_status,
             "latest_score": latest.score if latest else None,
@@ -1416,8 +1453,14 @@ def get_clinician_patients_list(
             "total_tests": tests_count,
             "total_signals": signals_count,
             "last_screening": latest.created_at if latest else p.created_at
-        })
-    return results
+        }
+        if is_demo:
+            demo_patients.append(item)
+        else:
+            registered_patients.append(item)
+
+    # Return official demo accounts first, then registered accounts
+    return demo_patients + registered_patients
 
 @app.get("/api/clinician/patients/{patient_id}/overview")
 def get_clinician_patient_overview(
@@ -1772,6 +1815,30 @@ def get_clinician_patient_mri(
         "mri_analysis": mri_analysis,
         "status": "Active surveillance"
     }
+
+@app.get("/api/clinician/patients/{patient_id}/dementia-profile", response_model=schemas.DementiaPatternProfileResponse)
+def get_clinician_patient_dementia_profile(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_clinician)
+):
+    """
+    Clinician-Only Decision Support: Computes cross-cutting Dementia Type Profiling
+    combining Level 1 active/passive/voice signals and Level 2 clinical biomarkers.
+    Architecture Notice:
+      - This is NOT Level 4.
+      - Level 1, Level 2, and Level 3 continue to function independently.
+      - Structural MRI (Level 3) is NOT required.
+    """
+    patient = db.query(models.User).filter(models.User.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    profile = dementia_pattern_model.get_patient_dementia_profile(db, patient_id)
+    if profile.get("status") == "not_found":
+        raise HTTPException(status_code=404, detail=profile.get("message", "Patient not found"))
+
+    return profile
 
 # -----------------------------------------------------------------------------
 # Subgroup Fairness Analysis Endpoint

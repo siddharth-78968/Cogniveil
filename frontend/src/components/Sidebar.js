@@ -31,6 +31,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
       items: [
         { label: 'Tier 2 Clinical ML', path: '/level2', icon: 'stethoscope' },
         { label: 'Tier 3 MRI Scans', path: '/level3', icon: 'mri' },
+        { label: 'Dementia Type Profiling', path: '/dementia-profiling', icon: 'profiling', isAi: true },
       ]
     },
     {
@@ -145,6 +146,14 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"></path>
                   <line x1="3" y1="12" x2="21" y2="12" strokeDasharray="2 2"></line>
+                </svg>
+              );
+            case 'profiling':
+              return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <path d="M12 3v9l6 3"></path>
+                  <circle cx="12" cy="12" r="2" fill="currentColor" fillOpacity="0.3"></circle>
                 </svg>
               );
             case 'graph':
