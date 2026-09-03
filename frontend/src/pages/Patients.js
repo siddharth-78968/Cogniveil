@@ -143,7 +143,7 @@ const Patients = () => {
           <div style={styles.filterTabs}>
             {[
               { key: 'all', label: 'All Patients' },
-              { key: 'deviating', label: '⚠️ Active Drift' },
+              { key: 'deviating', label: 'Active Drift' },
               { key: 'High', label: 'High Risk' },
               { key: 'Moderate', label: 'Moderate' },
               { key: 'Low', label: 'Low Risk' }
@@ -231,7 +231,7 @@ const Patients = () => {
                       <div style={styles.scoreItem}>
                         <span style={{ ...styles.scoreLabel, color: theme.subtext }}>Drift State</span>
                         <span style={{ ...styles.driftFlag, color: p.is_deviating ? '#C94C4C' : '#2F7D5B' }}>
-                          {p.is_deviating ? '⚠️ Deviating' : '✓ Calibrated'}
+                          {p.is_deviating ? 'Deviating' : 'Calibrated'}
                         </span>
                       </div>
                     </div>
@@ -314,7 +314,7 @@ const Patients = () => {
                         EWMA: {patientDetail.latest_score.ewma_score} · CUSUM: {patientDetail.latest_score.cusum_value}
                       </div>
                       <span style={{ fontSize: '0.74rem', color: patientDetail.latest_score.is_deviating ? '#C94C4C' : '#2F7D5B', fontWeight: '700' }}>
-                        {patientDetail.latest_score.is_deviating ? '⚠️ Statistically Significant Change-Point Drift' : '✓ Trajectory within calibrated baseline confidence interval'}
+                        {patientDetail.latest_score.is_deviating ? 'Statistically Significant Change-Point Drift' : 'Trajectory within calibrated baseline confidence interval'}
                       </span>
                     </div>
                   </div>

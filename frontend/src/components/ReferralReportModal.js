@@ -279,7 +279,7 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <h3 style={modalStyles.sectionHeader}>2. EXECUTIVE CLINICAL SUMMARY</h3>
               <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#0F4C4A', backgroundColor: '#E0FCFF', padding: '2px 8px', borderRadius: '4px', border: '1px solid #53B7C5' }}>
-                ✨ MEDGEMMA-4B SYNTHESIS
+                MEDGEMMA-4B SYNTHESIS
               </span>
             </div>
             <div style={{ ...modalStyles.calloutBox, borderLeft: '4px solid #53B7C5', backgroundColor: '#F0F5F4' }}>
@@ -458,12 +458,12 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <h3 style={modalStyles.sectionHeader}>9. MULTIMODAL EVIDENCE INTEGRATION (CONCORDANCE REASONING)</h3>
               <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#0F4C4A', backgroundColor: '#E0FCFF', padding: '2px 8px', borderRadius: '4px', border: '1px solid #53B7C5' }}>
-                ✨ MEDGEMMA-4B SYNTHESIS
+                MEDGEMMA-4B SYNTHESIS
               </span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ ...modalStyles.telemetryBox, borderLeft: '3px solid #dc2626' }}>
-                <h4 style={{ ...modalStyles.subHeader, color: '#dc2626' }}>✓ Concordant Findings (Agreement Across Modalities)</h4>
+                <h4 style={{ ...modalStyles.subHeader, color: '#dc2626' }}>Concordant Findings (Agreement Across Modalities)</h4>
                 <ul style={{ margin: '4px 0 0 16px', padding: 0, fontSize: '0.8rem', lineHeight: '1.4' }}>
                   {integration.concordant_findings.map((cf, i) => (
                     <li key={i}>{cf}</li>
@@ -472,7 +472,7 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
               </div>
 
               <div style={{ ...modalStyles.telemetryBox, borderLeft: '3px solid #16a34a' }}>
-                <h4 style={{ ...modalStyles.subHeader, color: '#16a34a' }}>⚡ Discordant / Preserved Domains</h4>
+                <h4 style={{ ...modalStyles.subHeader, color: '#16a34a' }}>Discordant / Preserved Domains</h4>
                 <ul style={{ margin: '4px 0 0 16px', padding: 0, fontSize: '0.8rem', lineHeight: '1.4' }}>
                   {integration.discordant_findings.map((df, i) => (
                     <li key={i}>{df}</li>
@@ -527,7 +527,7 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <h3 style={modalStyles.sectionHeader}>12. FINAL CLINICAL DECISION-SUPPORT SUMMARY</h3>
               <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#0F4C4A', backgroundColor: '#E0FCFF', padding: '2px 8px', borderRadius: '4px', border: '1px solid #53B7C5' }}>
-                ✨ MEDGEMMA-4B SYNTHESIS
+                MEDGEMMA-4B SYNTHESIS
               </span>
             </div>
             <div style={{ ...modalStyles.calloutBox, backgroundColor: '#F0F5F4', border: '1px solid #DCE6E4', borderLeft: '4px solid #53B7C5' }}>

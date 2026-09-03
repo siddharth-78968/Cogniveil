@@ -43,8 +43,18 @@ const VoiceGuideBar = ({ scriptKey, customText, defaultLang = 'en' }) => {
   return (
     <div style={styles.container}>
       <div style={styles.leftGroup}>
-        <span style={{ ...styles.speakerIcon, animation: playing ? 'pulseSpeaker 1s infinite' : 'none' }}>
-          {playing ? '🔊' : '🔈'}
+        <span style={{ ...styles.speakerIcon, display: 'flex', alignItems: 'center' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            {playing ? (
+              <>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              </>
+            ) : (
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            )}
+          </svg>
         </span>
         <div>
           <span style={styles.title}>Elderly Voice Guidance</span>

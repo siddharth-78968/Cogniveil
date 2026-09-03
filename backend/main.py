@@ -10,6 +10,7 @@ import io
 import models, schemas, auth
 from database import engine, get_db
 import mcp_tools
+import transcription
 try:
     from services.pdf_report import build_clinical_referral_pdf
 except Exception:

@@ -312,7 +312,7 @@ const ReferralReport = () => {
             <div style={styles.section}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                 <h3 style={styles.sectionHeader}>2. EXECUTIVE CLINICAL SUMMARY</h3>
-                <span style={styles.medgemmaBadge}>✨ MEDGEMMA-4B SYNTHESIS</span>
+                <span style={styles.medgemmaBadge}>MEDGEMMA-4B SYNTHESIS</span>
               </div>
               <div style={styles.calloutBox}>
                 <p style={styles.execText}>{execSummary}</p>

@@ -48,20 +48,19 @@ const Consent = () => {
           </p>
         </div>
 
-        {error && <div style={styles.errorBox}>⚠️ {error}</div>}
+        {error && <div style={styles.errorBox}>{error}</div>}
 
         <div style={styles.cardsGrid}>
           {/* Card 1 */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <span style={styles.cardIcon}>👁️</span>
               <h3 style={styles.cardTitle}>1. Passive Digital Biomarkers</h3>
             </div>
             <p style={styles.cardText}>
               When you use CogniVeil, background timing metrics (typing speed intervals, backspace correction rate, and scroll hesitation) are measured to evaluate fine motor stability.
             </p>
             <div style={styles.privacyHighlight}>
-              🔒 <strong>Privacy Guarantee:</strong> We <u>never</u> record typed text or key content. Only millisecond intervals are computed.
+              <strong>Privacy Guarantee:</strong> We <u>never</u> record typed text or key content. Only millisecond intervals are computed.
             </div>
             <label style={styles.checkboxRow}>
               <input
@@ -77,14 +76,13 @@ const Consent = () => {
           {/* Card 2 */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <span style={styles.cardIcon}>🎙️</span>
               <h3 style={styles.cardTitle}>2. Acoustic & Speech Biomarkers</h3>
             </div>
             <p style={styles.cardText}>
               Voice Journal recordings analyze pause duration, speech activity ratio, and rhythm indicators in your vernacular language.
             </p>
             <div style={styles.privacyHighlight}>
-              🔒 <strong>Zero Audio Retention:</strong> Raw voice audio is processed on-device / in-memory and discarded after acoustic biomarker extraction.
+              <strong>Zero Audio Retention:</strong> Raw voice audio is processed on-device / in-memory and discarded after acoustic biomarker extraction.
             </div>
             <label style={styles.checkboxRow}>
               <input
@@ -100,14 +98,13 @@ const Consent = () => {
           {/* Card 3 */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <span style={styles.cardIcon}>📅</span>
               <h3 style={styles.cardTitle}>3. 7-Day Baseline Calibration Week</h3>
             </div>
             <p style={styles.cardText}>
               Cognitive monitoring compares your performance strictly against your <strong>own established baseline</strong>, not an arbitrary population average.
             </p>
             <div style={styles.privacyHighlight}>
-              🛡️ <strong>False-Alarm Shield:</strong> During your first 7 days, drift alerts are muted while your personalized baseline is established.
+              <strong>False-Alarm Shield:</strong> During your first 7 days, drift alerts are muted while your personalized baseline is established.
             </div>
             <label style={styles.checkboxRow}>
               <input
@@ -136,7 +133,7 @@ const Consent = () => {
               cursor: !allChecked || submitting ? 'not-allowed' : 'pointer'
             }}
           >
-            {submitting ? 'Recording Consent...' : '✓ Confirm & Begin Baseline Week →'}
+            {submitting ? 'Recording Consent...' : 'Confirm & Begin Baseline Week →'}
           </button>
         </div>
       </div>

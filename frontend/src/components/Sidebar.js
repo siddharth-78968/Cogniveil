@@ -192,7 +192,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
               return null;
           }
         })()}
-        {/* Subtle AI-provenance dot */}
+        {/* Subtle status indicator dot */}
         {isAi && (
           <span style={{
             position: 'absolute',
@@ -201,8 +201,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
             width: '4px',
             height: '4px',
             borderRadius: '50%',
-            backgroundColor: '#53B7C5',
-            boxShadow: '0 0 4px #53B7C5'
+            backgroundColor: '#53B7C5'
           }} />
         )}
       </div>

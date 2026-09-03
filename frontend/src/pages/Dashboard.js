@@ -424,8 +424,7 @@ const Dashboard = () => {
             {/* Main 2-Column Grid: Modality Contribution Bars & Primary Contributors Box */}
             {!score ? (
               <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '12px', border: `1px dashed ${theme.border}` }}>
-                <span style={{ fontSize: '1.8rem' }}>🧠</span>
-                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '0.95rem', fontWeight: '800' }}>No assessment data yet</h4>
+                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '0.95rem', fontWeight: '700' }}>No assessment data yet</h4>
                 <p style={{ margin: 0, color: theme.subtext, fontSize: '0.82rem' }}>Complete daily cognitive tests, voice recordings, and telemetry to generate your multimodal breakdown.</p>
               </div>
             ) : (
@@ -462,10 +461,10 @@ const Dashboard = () => {
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.45rem' }}>
                       <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(6,182,212,0.15)' : '#ecfeff', color: '#0891b2' }}>
-                        ⌨️ Typing: {score?.typing_score != null ? `${Math.round(score.typing_score)}/100` : 'Active'}
+                        Typing: {score?.typing_score != null ? `${Math.round(score.typing_score)}/100` : 'Active'}
                       </span>
                       <span style={{ fontSize: '0.7rem', fontWeight: '700', padding: '0.15rem 0.5rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(6,182,212,0.15)' : '#ecfeff', color: '#0891b2' }}>
-                        📜 Scrolling: {score?.scrolling_score != null ? `${Math.round(score.scrolling_score)}/100` : 'Active'}
+                        Scrolling: {score?.scrolling_score != null ? `${Math.round(score.scrolling_score)}/100` : 'Active'}
                       </span>
                     </div>
                   </div>
@@ -497,7 +496,6 @@ const Dashboard = () => {
                         title="Click to inspect Evidence E1 (Active Psychometrics)"
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.85rem' }}>🧠</span>
                           <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>1. Memory retention accuracy</span>
                         </div>
                         <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ Deviating · View E1 →</span>
@@ -509,7 +507,6 @@ const Dashboard = () => {
                         title="Click to inspect Evidence E2 (Keystroke Telemetry)"
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.85rem' }}>⌨️</span>
                           <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>2. Typing speed & cadence</span>
                         </div>
                         <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#dc2626' }}>↓ Latency drift · View E2 →</span>
@@ -521,7 +518,6 @@ const Dashboard = () => {
                         title="Click to inspect Evidence E3 (Navigation Telemetry)"
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.85rem' }}>📜</span>
                           <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>3. Navigation pause hesitation</span>
                         </div>
                         <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ Elevated pause · View E3 →</span>
@@ -533,7 +529,6 @@ const Dashboard = () => {
                         title="Click to inspect Evidence E4 (Speech Biomarkers)"
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.85rem' }}>🎙️</span>
                           <span style={{ fontSize: '0.8rem', fontWeight: '700', color: theme.text }}>4. Speech inter-phrase pause rate</span>
                         </div>
                         <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#d97706' }}>↑ Pause duration · View E4 →</span>
@@ -541,7 +536,6 @@ const Dashboard = () => {
                     </div>
                   ) : (
                     <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext }}>
-                      <span style={{ fontSize: '1.5rem', color: '#2F7D5B' }}>✓</span>
                       <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', fontWeight: '700', color: theme.text }}>All indicators within normal baseline limits</p>
                       <span style={{ fontSize: '0.75rem' }}>No statistical change-point drift detected across active or passive telemetry channels.</span>
                     </div>
@@ -1071,7 +1065,7 @@ const Dashboard = () => {
                             <td style={{ ...styles.td, color: theme.tableTd }}>{p.age ? `${p.age} yrs` : 'N/A'}</td>
                             <td style={{ ...styles.td, color: theme.tableTd }}>
                               <span style={{ fontSize: '0.75rem', fontWeight: '700', color: p.level2_status === 'triggered' ? '#D97745' : theme.text }}>
-                                {p.level2_status === 'triggered' ? '⚠️ Tier 2 Triggered' : 'Tier 1 Baseline'}
+                                {p.level2_status === 'triggered' ? 'Tier 2 Triggered' : 'Tier 1 Baseline'}
                               </span>
                             </td>
                             <td style={{ ...styles.td, color: theme.tableTd }}>{p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Active'}</td>

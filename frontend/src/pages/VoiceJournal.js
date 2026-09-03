@@ -291,7 +291,7 @@ const prompts = useMemo(() => [
                   cursor: 'pointer'
                 }}
               >
-                {p.name} {p.is_deviating ? '⚠️' : '✓'}
+                {p.name} {p.is_deviating ? '(Drift)' : '(Calibrated)'}
               </button>
             ))}
           </div>
@@ -462,7 +462,17 @@ const prompts = useMemo(() => [
                     backgroundColor: recording ? '#ef444415' : '#00d4aa15',
                     border: `2px solid ${recording ? '#ef4444' : '#00d4aa'}`,
                   }}>
-                    <span style={styles.micEmoji}>{recording ? '⏺' : '🎤'}</span>
+                    <span style={styles.micEmoji}>
+                      {recording ? (
+                        <div style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: '#ef4444' }} />
+                      ) : (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                          <line x1="12" y1="19" x2="12" y2="22"></line>
+                        </svg>
+                      )}
+                    </span>
                   </div>
                 </div>
 
@@ -500,11 +510,11 @@ const prompts = useMemo(() => [
                   }}
                   onClick={recording ? stopRecording : startRecording}
                 >
-                  {recording ? '⏹ Stop Recording' : '🎤 Start Recording'}
+                  {recording ? 'Stop Recording' : 'Start Recording'}
                 </button>
 
                 {timer > 0 && timer < 10 && !recording && (
-                  <p style={styles.tooShortText}>⚠️ Too short — please speak for at least 10 seconds</p>
+                  <p style={styles.tooShortText}>Duration too short, please speak for at least 10 seconds</p>
                 )}
               </>
             ) : (
@@ -558,7 +568,7 @@ const prompts = useMemo(() => [
                 border: `1px solid ${getRiskColor(result.risk)}44`,
                 color: getRiskColor(result.risk),
               }}>
-                {result.risk === 'Low' ? '✓' : result.risk === 'Moderate' ? '⚡' : '⚠️'} {result.risk} Risk
+                {result.risk} Risk
               </div>
               <p style={styles.durationText}>Duration: {result.duration}s</p>
             </div>
@@ -568,13 +578,12 @@ const prompts = useMemo(() => [
               <p style={styles.cardLabel}>BIOMARKER BREAKDOWN</p>
               <div style={styles.metricsGrid}>
                 {[
-                  { label: 'Words / Minute', value: result.wordsPerMinute, icon: '💬' },
-                  { label: 'Pause Frequency', value: result.pauseFrequency, icon: '⏸' },
-                  { label: 'Speech Fluency', value: result.fluency, icon: '🔊' },
-                  { label: 'Vocabulary', value: result.vocabularyRichness, icon: '📚' },
+                  { label: 'Words / Minute', value: result.wordsPerMinute },
+                  { label: 'Pause Frequency', value: result.pauseFrequency },
+                  { label: 'Speech Fluency', value: result.fluency },
+                  { label: 'Vocabulary', value: result.vocabularyRichness },
                 ].map((m, i) => (
                   <div key={i} style={styles.metricCard}>
-                    <span style={styles.metricIcon}>{m.icon}</span>
                     <div>
                       <p style={styles.metricLabel}>{m.label}</p>
                       <p style={styles.metricValue}>{m.value}</p>

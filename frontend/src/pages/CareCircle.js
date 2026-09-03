@@ -58,7 +58,7 @@ const CareCircle = () => {
                       <div style={styles.score}>
                         {patient.latest_score ?? '—'}
                         <small style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', fontWeight: '600' }}>
-                          {patient.risk_level || 'No session yet'}{patient.is_deviating ? ' · ⚠️ Deviation Flagged' : ''}
+                          {patient.risk_level || 'No session yet'}{patient.is_deviating ? ' · Deviation Flagged' : ''}
                         </small>
                       </div>
                     </article>

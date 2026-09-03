@@ -237,7 +237,7 @@ const Level2Assessment = () => {
                   cursor: 'pointer'
                 }}
               >
-                {p.name} {p.is_deviating ? '⚠️' : '✓'}
+                {p.name} {p.is_deviating ? '(Drift)' : '(Calibrated)'}
               </button>
             ))}
           </div>
@@ -552,7 +552,7 @@ const Level2Assessment = () => {
                   <button style={styles.nextBtn} onClick={() => setStep(step + 1)}>Next →</button>
                 ) : (
                   <button style={styles.submitBtn} onClick={handleSubmit} disabled={loading}>
-                    {loading ? '⏳ Analysing...' : '🔬 Get Risk Prediction'}
+                    {loading ? 'Analysing...' : 'Get Risk Prediction'}
                   </button>
                 )}
               </div>
@@ -596,7 +596,7 @@ const Level2Assessment = () => {
                 border: `1px solid ${getRiskColor(result.risk_level)}44`,
                 color: getRiskColor(result.risk_level),
               }}>
-                {result.risk_level === 'Low' ? '✓' : result.risk_level === 'Moderate' ? '⚡' : '⚠️'} {result.risk_level} Risk
+                {result.risk_level} Risk
               </div>
 
               <div style={styles.modelInfo}>
@@ -619,9 +619,8 @@ const Level2Assessment = () => {
                   boxSizing: 'border-box'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '1rem' }}>🧠</span>
                     <span style={{ color: '#a78bfa', fontSize: '0.85rem', fontWeight: '700' }}>
-                      AI CLINICAL RISK SYNTHESIS
+                      CLINICAL RISK SYNTHESIS
                     </span>
                   </div>
                   <p style={{ color: '#e2e8f0', fontSize: '0.86rem', lineHeight: '1.55', margin: 0 }}>
@@ -644,7 +643,7 @@ const Level2Assessment = () => {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ color: getRiskColor(result.risk_level), fontWeight: '700', fontSize: '0.95rem' }}>
-                      📋 ACTIONABLE CLINICAL REFERRAL RECOMMENDATION
+                      ACTIONABLE CLINICAL REFERRAL RECOMMENDATION
                     </span>
                     <span style={{
                       backgroundColor: getRiskColor(result.risk_level) + '22',
@@ -687,7 +686,7 @@ const Level2Assessment = () => {
                       CONDITIONAL WORKUP ACTIVATED
                     </span>
                     <h4 style={{ color: 'white', margin: '4px 0 4px', fontSize: '1.05rem' }}>
-                      🧠 Structural Neuroimaging (Level 3 MRI) Indicated
+                      Structural Neuroimaging (Level 3 MRI) Indicated
                     </h4>
                     <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0 }}>
                       Based on your Moderate/High Tier 2 risk, run an MRI scan analysis as an independent confirmatory panel.
@@ -695,15 +694,8 @@ const Level2Assessment = () => {
                   </div>
                   <button
                     onClick={() => navigate('/level3')}
+                    className="cv-btn-primary"
                     style={{
-                      background: 'linear-gradient(135deg, #a78bfa 0%, #3b82f6 100%)',
-                      border: 'none',
-                      color: 'white',
-                      fontWeight: '700',
-                      padding: '0.75rem 1.2rem',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      fontSize: '0.88rem',
                       whiteSpace: 'nowrap',
                       marginLeft: '12px'
                     }}

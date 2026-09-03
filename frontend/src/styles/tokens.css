@@ -1,38 +1,39 @@
 :root {
-  /* Default: Dark Cyber-Blueprint Theme */
-  --cv-ink: #0a0f16;
-  --cv-surface: #101824;
-  --cv-surface-card: #121d2b;
-  --cv-surface-elevated: #162436;
+  /* Default: Clean Medical Dark Slate Theme */
+  --cv-ink: #0b111e;
+  --cv-surface: #0f1726;
+  --cv-surface-card: #131d2e;
+  --cv-surface-elevated: #182438;
   --cv-border: rgba(255, 255, 255, 0.08);
   --cv-border-subtle: rgba(255, 255, 255, 0.04);
   
-  --cv-fog: #f1f5f9;
+  --cv-fog: #f8fafc;
   --cv-fog-muted: #94a3b8;
   --cv-fog-subtle: #64748b;
 
-  /* Level Colors - Dark Mode */
+  /* Level Clinical Indicators - Dark Mode */
   --cv-level1-emerald: #10b981;
-  --cv-level1-cyan: #22d3ee;
-  --cv-level1-glow: rgba(16, 185, 129, 0.25);
-  --cv-level1-bg: rgba(16, 185, 129, 0.12);
-  --cv-level1-border: rgba(16, 185, 129, 0.4);
+  --cv-level1-cyan: #0284c7;
+  --cv-level1-glow: rgba(16, 185, 129, 0.15);
+  --cv-level1-bg: rgba(16, 185, 129, 0.1);
+  --cv-level1-border: rgba(16, 185, 129, 0.3);
 
   --cv-level2-amber: #f59e0b;
-  --cv-level2-gold: #fbbf24;
-  --cv-level2-glow: rgba(245, 158, 11, 0.25);
-  --cv-level2-bg: rgba(245, 158, 11, 0.12);
-  --cv-level2-border: rgba(245, 158, 11, 0.4);
+  --cv-level2-gold: #d97706;
+  --cv-level2-glow: rgba(245, 158, 11, 0.15);
+  --cv-level2-bg: rgba(245, 158, 11, 0.1);
+  --cv-level2-border: rgba(245, 158, 11, 0.3);
 
-  --cv-level3-rose: #f43f5e;
-  --cv-level3-coral: #fb7185;
-  --cv-level3-glow: rgba(244, 63, 94, 0.25);
-  --cv-level3-bg: rgba(244, 63, 94, 0.12);
-  --cv-level3-border: rgba(244, 63, 94, 0.4);
+  --cv-level3-rose: #ef4444;
+  --cv-level3-coral: #dc2626;
+  --cv-level3-glow: rgba(239, 68, 68, 0.15);
+  --cv-level3-bg: rgba(239, 68, 68, 0.1);
+  --cv-level3-border: rgba(239, 68, 68, 0.3);
 
-  --cv-accent-purple: #818cf8;
-  --cv-signal-cyan: #22d3ee;
-  --cv-btn-primary: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+  --cv-accent-purple: #6366f1;
+  --cv-signal-cyan: #38bdf8;
+  --cv-btn-primary: #0284c7;
+  --cv-btn-primary-hover: #0369a1;
   --cv-btn-primary-text: #ffffff;
 
   /* Typography Scale */
@@ -40,48 +41,49 @@
   --cv-font-grotesk: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --cv-font-mono: 'JetBrains Mono', 'IBM Plex Mono', Consolas, monospace;
 
-  /* Geometry & Radius */
-  --cv-radius-xs: 6px;
-  --cv-radius-sm: 10px;
-  --cv-radius-md: 16px;
-  --cv-radius-lg: 20px;
+  /* Geometry & Restrained Radius Scale */
+  --cv-radius-xs: 4px;
+  --cv-radius-sm: 6px;
+  --cv-radius-md: 10px;
+  --cv-radius-lg: 12px;
   --cv-radius-full: 9999px;
 }
 
-/* Warm Ivory / Cream / Porcelain Light Theme (Matching Reference Image) */
+/* Neutral Off-White / Light Theme */
 .light-mode {
-  --cv-ink: #FAF7F2;                /* Warm ivory-cream base background */
-  --cv-surface: #FFFFFF;            /* Pure white panel background */
-  --cv-surface-card: #FFFFFF;       /* Crisp porcelain card surface */
-  --cv-surface-elevated: #F4EFEA;   /* Soft warm elevated surface */
-  --cv-border: #EAE2D8;             /* Subtle warm border */
-  --cv-border-subtle: #F2EBE1;      /* Delicate divider */
+  --cv-ink: #f8fafc;                /* Neutral light gray/off-white background */
+  --cv-surface: #ffffff;            /* Pure white panel background */
+  --cv-surface-card: #ffffff;       /* Crisp card surface */
+  --cv-surface-elevated: #f1f5f9;   /* Soft elevated surface */
+  --cv-border: #e2e8f0;             /* Subtle neutral border */
+  --cv-border-subtle: #edf2f7;      /* Delicate divider */
   
-  --cv-fog: #1C1917;                /* Deep warm charcoal/espresso text */
-  --cv-fog-muted: #78716C;          /* Warm slate-taupe secondary text */
-  --cv-fog-subtle: #A8A29E;         /* Subtle timestamp / unit text */
+  --cv-fog: #0f172a;                /* Deep charcoal text */
+  --cv-fog-muted: #475569;          /* Slate secondary text */
+  --cv-fog-subtle: #64748b;         /* Subtle timestamp / unit text */
 
-  /* Level Colors - Warm Light Mode */
-  --cv-level1-emerald: #15803D;
-  --cv-level1-cyan: #0284C7;
-  --cv-level1-glow: rgba(22, 163, 74, 0.15);
-  --cv-level1-bg: #F0FDF4;
-  --cv-level1-border: #BBF7D0;
+  /* Level Clinical Indicators - Light Mode */
+  --cv-level1-emerald: #059669;
+  --cv-level1-cyan: #0284c7;
+  --cv-level1-glow: rgba(5, 150, 105, 0.1);
+  --cv-level1-bg: #f0fdf4;
+  --cv-level1-border: #bbf7d0;
 
-  --cv-level2-amber: #B45309;
-  --cv-level2-gold: #D97706;
-  --cv-level2-glow: rgba(217, 119, 6, 0.15);
-  --cv-level2-bg: #FFFBEB;
-  --cv-level2-border: #FDE68A;
+  --cv-level2-amber: #d97706;
+  --cv-level2-gold: #b45309;
+  --cv-level2-glow: rgba(217, 119, 6, 0.1);
+  --cv-level2-bg: #fffbeb;
+  --cv-level2-border: #fde68a;
 
-  --cv-level3-rose: #BE123C;
-  --cv-level3-coral: #E11D48;
-  --cv-level3-glow: rgba(225, 29, 72, 0.15);
-  --cv-level3-bg: #FFF1F2;
-  --cv-level3-border: #FECDD3;
+  --cv-level3-rose: #dc2626;
+  --cv-level3-coral: #b91c1c;
+  --cv-level3-glow: rgba(220, 38, 38, 0.1);
+  --cv-level3-bg: #fef2f2;
+  --cv-level3-border: #fecaca;
 
-  --cv-accent-purple: #6366F1;
-  --cv-signal-cyan: #0284C7;
-  --cv-btn-primary: #56B4D3;
-  --cv-btn-primary-text: #0F2942;
+  --cv-accent-purple: #4f46e5;
+  --cv-signal-cyan: #0284c7;
+  --cv-btn-primary: #0284c7;
+  --cv-btn-primary-hover: #0369a1;
+  --cv-btn-primary-text: #ffffff;
 }

@@ -5,11 +5,11 @@ import VoiceGuideBar from '../components/VoiceGuideBar';
 import DoctorLayout from '../components/DoctorLayout';
 
 const tests = [
-  { id: 'pattern_recall', name: 'Pattern Recall', icon: '🔲', description: 'Memorise a grid pattern then reproduce it from memory', duration: '~2 min', color: '#00d4aa' },
-  { id: 'digit_span', name: 'Digit Span', icon: '🔢', description: 'Remember and repeat sequences of numbers of increasing length', duration: '~1 min', color: '#a78bfa' },
-  { id: 'word_recall', name: 'Word Recall', icon: '📝', description: 'Memorise a word list, complete a distractor task, then recall', duration: '~2 min', color: '#f59e0b' },
-  { id: 'stroop', name: 'Stroop Test', icon: '🎨', description: 'Name the ink color of a word — not what the word says. Tests cognitive interference resistance.', duration: '~1 min', color: '#ef4444' },
-  { id: 'reaction_time', name: 'Reaction Time', icon: '⚡', description: 'Tap the target as fast as possible when it appears. Measures neural processing speed — a validated dementia biomarker.', duration: '~1 min', color: '#06b6d4' },
+  { id: 'pattern_recall', name: 'Pattern Recall', description: 'Memorise a grid pattern then reproduce it from memory', duration: '~2 min', color: '#00d4aa' },
+  { id: 'digit_span', name: 'Digit Span', description: 'Remember and repeat sequences of numbers of increasing length', duration: '~1 min', color: '#a78bfa' },
+  { id: 'word_recall', name: 'Word Recall', description: 'Memorise a word list, complete a distractor task, then recall', duration: '~2 min', color: '#f59e0b' },
+  { id: 'stroop', name: 'Stroop Test', description: 'Name the ink color of a word, not what the word says. Tests cognitive interference resistance.', duration: '~1 min', color: '#ef4444' },
+  { id: 'reaction_time', name: 'Reaction Time', description: 'Tap the target as fast as possible when it appears. Measures neural processing speed.', duration: '~1 min', color: '#06b6d4' },
 ];
 
 const PatternRecall = ({ onComplete }) => {
@@ -79,7 +79,9 @@ const PatternRecall = ({ onComplete }) => {
       )}
       {result && (
         <div style={ts.resultBox}>
-          <span style={{ fontSize: '3rem' }}>{result.score >= 70 ? '🎉' : result.score >= 40 ? '👍' : '💪'}</span>
+          <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: result.score >= 70 ? '#00d4aa' : result.score >= 40 ? '#f59e0b' : '#ef4444', marginBottom: '8px' }}>
+            {result.score >= 70 ? 'Optimal Memory Recall' : result.score >= 40 ? 'Moderate Memory Recall' : 'Sub-Baseline Recall'}
+          </div>
           <p style={{ ...ts.resultScore, color: result.score >= 70 ? '#00d4aa' : result.score >= 40 ? '#f59e0b' : '#ef4444' }}>
             {result.score}/100
           </p>
@@ -167,7 +169,9 @@ const DigitSpan = ({ onComplete }) => {
       )}
       {done && (
         <div style={ts.resultBox}>
-          <span style={{ fontSize: '3rem' }}>{correct === sequences.length ? '🎉' : correct > 0 ? '👍' : '💪'}</span>
+          <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a78bfa', marginBottom: '8px' }}>
+            {correct === sequences.length ? 'Optimal Working Memory' : 'Evaluation Complete'}
+          </div>
           <p style={{ ...ts.resultScore, color: '#a78bfa' }}>{Math.round((correct / sequences.length) * 100)}/100</p>
           <p style={ts.resultDetail}>Got {correct} of {sequences.length} sequences right</p>
         </div>
@@ -244,7 +248,9 @@ const WordRecall = ({ onComplete }) => {
       )}
       {result && (
         <div style={ts.resultBox}>
-          <span style={{ fontSize: '3rem' }}>{result.score >= 70 ? '🎉' : result.score >= 40 ? '👍' : '💪'}</span>
+          <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f59e0b', marginBottom: '8px' }}>
+            {result.score >= 70 ? 'Optimal Verbal Recall' : 'Evaluation Complete'}
+          </div>
           <p style={{ ...ts.resultScore, color: '#f59e0b' }}>{result.score}/100</p>
           <p style={ts.resultDetail}>Recalled {result.correct} of {result.total} words</p>
         </div>
@@ -345,7 +351,9 @@ const StroopTest = ({ onComplete }) => {
       )}
       {done && (
         <div style={ts.resultBox}>
-          <span style={{ fontSize: '3rem' }}>{correct >= 6 ? '🎉' : correct >= 4 ? '👍' : '💪'}</span>
+          <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#ef4444', marginBottom: '8px' }}>
+            {correct >= 6 ? 'Optimal Inhibition Control' : 'Evaluation Complete'}
+          </div>
           <p style={{ ...ts.resultScore, color: '#ef4444' }}>{Math.round(correct / colorWords.length * 100)}/100</p>
           <p style={ts.resultDetail}>Got {correct} of {colorWords.length} ink colours correct</p>
         </div>
@@ -458,11 +466,11 @@ const ReactionTimeTest = ({ onComplete }) => {
             }}
           >
             <span style={{
-              fontSize: phase === 'ready' ? '3rem' : '1.5rem',
+              fontSize: phase === 'ready' ? '1.5rem' : '1.2rem',
               color: phase === 'ready' ? '#080c14' : '#ffffff15',
-              fontWeight: '900', transition: 'all 0.15s',
+              fontWeight: '800', transition: 'all 0.15s',
             }}>
-              {phase === 'ready' ? '⚡' : '●'}
+              {phase === 'ready' ? 'CLICK' : 'WAIT'}
             </span>
           </div>
 
@@ -485,16 +493,14 @@ const ReactionTimeTest = ({ onComplete }) => {
 
           {tooEarly ? (
             <>
-              <span style={{ fontSize: '2.5rem' }}>⚠️</span>
-              <p style={{ color: '#ef4444', fontSize: '1.1rem', fontWeight: '700' }}>Too Early!</p>
-              <p style={{ color: '#ffffff40', fontSize: '0.85rem' }}>Wait for the circle to light up before tapping.</p>
+              <p style={{ color: '#ef4444', fontSize: '1.1rem', fontWeight: '700' }}>Too Early</p>
+              <p style={{ color: '#ffffff40', fontSize: '0.85rem' }}>Wait for the signal circle to appear before tapping.</p>
             </>
           ) : (
             <>
-              <span style={{ fontSize: '2.5rem' }}>✓</span>
               <p style={{ color: getRTColor(lastRT), fontSize: '2rem', fontWeight: '800' }}>{lastRT} ms</p>
               <p style={{ color: '#ffffff40', fontSize: '0.85rem' }}>
-                {lastRT < 250 ? 'Excellent!' : lastRT < 350 ? 'Great!' : lastRT < 500 ? 'Good' : 'Slow — try to focus'}
+                {lastRT < 250 ? 'Optimal Latency' : lastRT < 350 ? 'Within Baseline' : lastRT < 500 ? 'Standard Latency' : 'Slight Latency Delay'}
               </p>
               {avgRT && <p style={{ color: '#ffffff30', fontSize: '0.78rem' }}>Running avg: {avgRT}ms</p>}
             </>
@@ -524,7 +530,9 @@ const ReactionTimeTest = ({ onComplete }) => {
 
       {phase === 'done' && (
         <div style={ts.resultBox}>
-          <span style={{ fontSize: '3rem' }}>{avgRT < 300 ? '🎉' : avgRT < 500 ? '👍' : '💪'}</span>
+          <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#06b6d4', marginBottom: '8px' }}>
+            {avgRT < 300 ? 'Optimal Latency Agility' : 'Reaction Measurement Recorded'}
+          </div>
           <p style={{ ...ts.resultScore, color: '#06b6d4' }}>
             {Math.max(0, Math.min(100, Math.round(((700 - avgRT) / 450) * 100)))}/100
           </p>
@@ -698,7 +706,7 @@ const Tests = () => {
                   cursor: 'pointer'
                 }}
               >
-                {p.name} {p.is_deviating ? '⚠️' : '✓'}
+                {p.name} {p.is_deviating ? '(Drift)' : '(Calibrated)'}
               </button>
             ))}
           </div>
@@ -744,8 +752,10 @@ const Tests = () => {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
-                          {tests.find(t => t.id === domain.test_type)?.icon || '🧠'}
+                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-2 3.5 4 4 0 0 0 1 2.8 4 4 0 0 0-1 2.7 4 4 0 0 0 4 4h4a4 4 0 0 0 4-4 4 4 0 0 0-1-2.7 4 4 0 0 0 1-2.8 4 4 0 0 0-2-3.5V6a4 4 0 0 0-4-4z" />
+                          </svg>
                         </div>
                         <div>
                           <h4 style={{ margin: '0 0 2px 0', fontSize: '0.95rem', fontWeight: '800', color: '#1e293b' }}>

@@ -1,0 +1,394 @@
+/* IntroSplash.css - Clean Animated Clinical Mechanism (ForgeOps Style) */
+
+.intro-splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: var(--cv-ink, #0a0f16);
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 36px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2.5rem 3.5rem;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.6s;
+  user-select: none;
+  overflow: hidden;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  color: #f1f5f9;
+}
+
+.intro-splash-screen.closing {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Four-Corner Minimalist HUD Elements */
+.intro-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.intro-hud-left-title {
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.intro-hud-right-status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #64748b;
+  transition: color 0.3s ease;
+}
+
+.intro-hud-right-status.ready {
+  color: #10b981;
+}
+
+.intro-status-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #22d3ee;
+  box-shadow: 0 0 8px #22d3ee;
+  animation: introDotPulse 1.2s infinite ease-in-out;
+}
+
+.intro-hud-right-status.ready .intro-status-pulse-dot {
+  background-color: #10b981;
+  box-shadow: 0 0 10px #10b981;
+}
+
+@keyframes introDotPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+
+/* Centerpiece Mechanical Assembly */
+.intro-center-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  position: relative;
+  z-index: 10;
+  text-align: center;
+}
+
+/* Mechanical Linkage & Sensor Apparatus Box */
+.intro-mechanism-box {
+  position: relative;
+  width: min(680px, 94vw);
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.8rem;
+}
+
+.intro-mechanism-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* SVG Transform Box Configurations */
+.mech-arm-left,
+.mech-arm-right,
+.intro-central-reticle {
+  transform-box: view-box;
+}
+
+/* 1. Sliding Extension Arm Animations */
+.mech-arm-left {
+  animation: slideInArmLeft 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mech-arm-right {
+  animation: slideInArmRight 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInArmLeft {
+  0% {
+    transform: translateX(-180px);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInArmRight {
+  0% {
+    transform: translateX(180px);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 2. Docking Energy Shockwave Pulse */
+.docking-shockwave {
+  animation: shockwaveExpand 2.2s infinite ease-out 1.2s;
+  transform-origin: 320px 70px;
+  transform-box: view-box;
+}
+
+@keyframes shockwaveExpand {
+  0% {
+    r: 22;
+    opacity: 0.8;
+    stroke-width: 2.5;
+  }
+  60% {
+    r: 65;
+    opacity: 0;
+    stroke-width: 1;
+  }
+  100% {
+    r: 65;
+    opacity: 0;
+    stroke-width: 0;
+  }
+}
+
+/* 3. Central Focus Reticle [ ] Snapping in */
+.intro-central-reticle {
+  animation: reticlePop 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+  transform-origin: 320px 70px;
+}
+
+@keyframes reticlePop {
+  0% {
+    transform: scale(0.65);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 4. Active Bouncing Audio Frequency Bars */
+.eq-bar {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+
+.eq-bar-1 { animation: eqBounce 1.2s ease-in-out infinite 0.1s alternate; }
+.eq-bar-2 { animation: eqBounce 0.9s ease-in-out infinite 0.25s alternate; }
+.eq-bar-3 { animation: eqBounce 1.4s ease-in-out infinite 0.0s alternate; }
+.eq-bar-4 { animation: eqBounce 1.0s ease-in-out infinite 0.35s alternate; }
+.eq-bar-5 { animation: eqBounce 1.3s ease-in-out infinite 0.15s alternate; }
+
+@keyframes eqBounce {
+  0% {
+    transform: scaleY(0.4);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scaleY(1.2);
+    opacity: 1;
+  }
+}
+
+/* 5. Traveling Energy Impulses along the Rods */
+.pulse-stream-left {
+  stroke-dasharray: 20 80;
+  animation: flowEnergyLeft 2s linear infinite 0.5s;
+}
+
+.pulse-stream-right {
+  stroke-dasharray: 20 80;
+  animation: flowEnergyRight 2s linear infinite 0.5s;
+}
+
+@keyframes flowEnergyLeft {
+  from { stroke-dashoffset: 200; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes flowEnergyRight {
+  from { stroke-dashoffset: -200; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* 6. Staggered Typography Reveal */
+.intro-brand-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.intro-kicker-title {
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 0.65rem;
+  animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+}
+
+.intro-main-brand {
+  font-size: clamp(2.8rem, 5.5vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: #f8fafc;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  animation: zoomFadeIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1.0s both;
+}
+
+.intro-brand-highlight {
+  color: #22d3ee;
+  text-shadow: 0 0 24px rgba(34, 211, 238, 0.4);
+}
+
+.intro-sub-statement {
+  font-size: clamp(0.85rem, 1.6vw, 1.02rem);
+  color: #94a3b8;
+  margin-top: 0.85rem;
+  letter-spacing: 0.03em;
+  font-weight: 400;
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.2s both;
+}
+
+@keyframes fadeInDown {
+  0% { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes zoomFadeIn {
+  0% { opacity: 0; transform: scale(0.92); letter-spacing: 0.16em; }
+  100% { opacity: 1; transform: scale(1); letter-spacing: 0.08em; }
+}
+
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Bottom HUD Footer */
+.intro-hud-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.intro-stepped-milestones {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.milestone-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: color 0.3s ease;
+}
+
+.milestone-bullet {
+  font-size: 0.85rem;
+  color: #334155;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.milestone-item.active {
+  color: #cbd5e1;
+}
+
+.milestone-item.active .milestone-bullet {
+  color: #22d3ee;
+  transform: scale(1.3);
+}
+
+.milestone-item.completed {
+  color: #94a3b8;
+}
+
+.milestone-item.completed .milestone-bullet {
+  color: #10b981;
+}
+
+/* Skip Intro Button */
+.intro-skip-btn {
+  background: transparent;
+  border: none;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.2s ease, transform 0.2s ease;
+  padding: 0.4rem 0.6rem;
+}
+
+.intro-skip-btn:hover {
+  color: #f1f5f9;
+  transform: translateX(2px);
+}
+
+.intro-skip-btn .arrow {
+  transition: transform 0.2s ease;
+}
+
+.intro-skip-btn:hover .arrow {
+  transform: translateX(3px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .intro-splash-screen {
+    padding: 1.5rem 1.2rem;
+  }
+  .intro-stepped-milestones {
+    display: none;
+  }
+  .intro-kicker-title {
+    font-size: 0.62rem;
+  }
+  .intro-sub-statement {
+    font-size: 0.8rem;
+  }
+}

@@ -172,7 +172,7 @@ const Level3MRI = () => {
                   cursor: 'pointer'
                 }}
               >
-                {p.name} {p.is_deviating ? '⚠️' : '✓'}
+                {p.name} {p.is_deviating ? '(Drift)' : '(Calibrated)'}
               </button>
             ))}
           </div>
@@ -254,7 +254,7 @@ const Level3MRI = () => {
 
                 <div style={{ padding: '0.85rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '0.85rem' }}>
                   <p style={{ margin: 0, fontSize: '0.84rem', color: '#1e293b', lineHeight: '1.5' }}>
-                    🧠 <strong>Findings:</strong> {mri.clinical_notes}
+                    <strong>Clinical Findings:</strong> {mri.clinical_notes}
                   </p>
                 </div>
 
@@ -298,7 +298,11 @@ const Level3MRI = () => {
 
         {/* Warning banner */}
         <div style={styles.warningBanner}>
-          <span>⚠️</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
           <span>This confirmatory module is strictly decoupled from Tier 1 digital screening scores. Always consult a neurologist for formal clinical diagnosis.</span>
         </div>
 
@@ -309,7 +313,14 @@ const Level3MRI = () => {
               style={styles.dropZone}
               onClick={() => fileRef.current.click()}
             >
-              <span style={styles.uploadIcon}>🧠</span>
+              <span style={styles.uploadIcon}>
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="3" x2="12" y2="7"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </span>
               <p style={styles.uploadTitle}>Upload MRI Brain Scan</p>
               <p style={styles.uploadSub}>Click to browse or drag and drop</p>
               <p style={styles.uploadHint}>Supports JPG, PNG, WEBP, DICOM — axial or coronal views</p>
@@ -355,7 +366,13 @@ const Level3MRI = () => {
         {/* Analysing step */}
         {step === 'analysing' && (
           <div style={styles.analysingCard}>
-            <div style={styles.analysingBrain}>🧠</div>
+            <div style={styles.analysingBrain}>
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M12 3v18"></path>
+                <path d="M3 12h18"></path>
+              </svg>
+            </div>
             <h2 style={styles.analysingTitle}>Evaluating Neuroimaging Morphometry</h2>
             <div style={styles.analysingSteps}>
               {[
@@ -403,7 +420,7 @@ const Level3MRI = () => {
                   <div style={styles.gradCamHeader}>
                     <div>
                       <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: '800', margin: '0 0 4px 0' }}>
-                        🧠 Grad-CAM Explainable Attention Overlay
+                        Grad-CAM Explainable Attention Overlay
                       </h3>
                       <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>
                         Focal visual explanation of CNN activations identifying hippocampal atrophy and ventricular expansion.

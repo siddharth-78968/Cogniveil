@@ -314,7 +314,7 @@ const Appointments = () => {
                       <div style={{ ...styles.patientAvatar, backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A' }}>
                         {isClinician 
                           ? (appt.patient_name ? appt.patient_name.charAt(0).toUpperCase() : 'P')
-                          : '👨‍⚕️'}
+                          : (appt.clinician_name ? appt.clinician_name.charAt(0).toUpperCase() : 'Dr')}
                       </div>
                       <div>
                         <h3 style={{ ...styles.apptPatientName, color: theme.text }}>
