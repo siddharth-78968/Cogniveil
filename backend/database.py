@@ -29,6 +29,13 @@ def run_migrations():
             cursor.execute("UPDATE users SET role = 'patient' WHERE role IS NULL OR role = ''")
             conn.commit()
 
+        # Check if metadata_json column exists in test_results table
+        cursor.execute("PRAGMA table_info(test_results)")
+        tr_cols = [row[1] for row in cursor.fetchall()]
+        if tr_cols and "metadata_json" not in tr_cols:
+            cursor.execute("ALTER TABLE test_results ADD COLUMN metadata_json TEXT")
+            conn.commit()
+
         # Check if patient_id column exists in appointments table
         cursor.execute("PRAGMA table_info(appointments)")
         appt_cols = [row[1] for row in cursor.fetchall()]

@@ -171,27 +171,250 @@ const Landing = () => {
     }
   };
 
-  // Smooth scroll with visual highlight for the in-browser reaction test
-  const scrollToChallenge = (e) => {
+  // Smooth scroll with visual highlight for any target section
+  const scrollToSection = (e, targetId) => {
     if (e) e.preventDefault();
-    const el = document.getElementById('challenge');
+    const el = document.getElementById(targetId);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      const yOffset = -90; // offset for sticky pill header
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
       el.classList.add('cv-highlight-pulse');
-      setTimeout(() => el.classList.remove('cv-highlight-pulse'), 2500);
+      setTimeout(() => el.classList.remove('cv-highlight-pulse'), 2200);
     }
   };
 
-  // Interactive In-Browser Cognitive Reaction Test
+  // Web Audio Synthesizer for tactile physical micro-feedback (zero external assets)
+  const playTone = (freq = 440, type = 'sine', duration = 0.15) => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    } catch (e) {
+      // Audio context silently ignored if blocked by browser autoplay policy
+    }
+  };
+
+  // Floating Back to Top state
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 420);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ── CARD 1: ACOUSTIC VOICE CADENCE DEMO ──
+  const [isPlayingVoice, setIsPlayingVoice] = useState(false);
+  const [voicePlaybackTick, setVoicePlaybackTick] = useState(0);
+  const voiceTimerRef = useRef(null);
+
+  const triggerVoiceCadenceSample = () => {
+    if (isPlayingVoice) return;
+    setIsPlayingVoice(true);
+    setVoicePlaybackTick(1);
+
+    // Play subtle harmonic melodic chime
+    playTone(523.25, 'sine', 0.2); // C5
+    setTimeout(() => playTone(659.25, 'sine', 0.2), 200); // E5
+    setTimeout(() => playTone(783.99, 'sine', 0.25), 400); // G5
+    setTimeout(() => playTone(1046.50, 'sine', 0.35), 650); // C6
+
+    let tickCount = 0;
+    voiceTimerRef.current = setInterval(() => {
+      tickCount += 1;
+      setVoicePlaybackTick(tickCount);
+      if (tickCount > 18) {
+        clearInterval(voiceTimerRef.current);
+        setIsPlayingVoice(false);
+      }
+    }, 160);
+  };
+
+  // ── CARD 2: INTERACTION KEYSTROKE TELEMETRY LIVE TEST ──
+  const [keystrokeInput, setKeystrokeInput] = useState('');
+  const [keystrokeFlightMs, setKeystrokeFlightMs] = useState(114);
+  const [keystrokeWpm, setKeystrokeWpm] = useState(0);
+  const [keystrokePulse, setKeystrokePulse] = useState(0);
+  const lastKeyTimeRef = useRef(0);
+  const typingStartRef = useRef(0);
+
+  const handleKeystrokeInput = (e) => {
+    const val = e.target.value;
+    const now = Date.now();
+
+    if (!typingStartRef.current) {
+      typingStartRef.current = now;
+    }
+
+    if (lastKeyTimeRef.current > 0) {
+      const delta = now - lastKeyTimeRef.current;
+      if (delta > 30 && delta < 800) {
+        setKeystrokeFlightMs(delta);
+      }
+    }
+    lastKeyTimeRef.current = now;
+    setKeystrokePulse((prev) => (prev + 1) % 4);
+    setKeystrokeInput(val);
+
+    const elapsedMinutes = (now - typingStartRef.current) / 60000;
+    if (elapsedMinutes > 0.02) {
+      const words = val.trim().split(/\s+/).filter(Boolean).length;
+      setKeystrokeWpm(Math.round(words / elapsedMinutes));
+    }
+    playTone(320 + (val.length % 6) * 35, 'triangle', 0.04);
+  };
+
+  const handleResetKeystroke = () => {
+    setKeystrokeInput('');
+    setKeystrokeFlightMs(114);
+    setKeystrokeWpm(0);
+    lastKeyTimeRef.current = 0;
+    typingStartRef.current = 0;
+  };
+
+  // ── CARD 3: ACTIVE PSYCHOMETRICS STROOP TEST ──
+  const stroopQuestions = [
+    { word: 'GREEN', ink: '#3b82f6', colorName: 'Blue', options: ['Blue', 'Green', 'Red'] },
+    { word: 'RED', ink: '#10b981', colorName: 'Green', options: ['Red', 'Green', 'Amber'] },
+    { word: 'YELLOW', ink: '#ef4444', colorName: 'Red', options: ['Yellow', 'Red', 'Blue'] },
+    { word: 'PURPLE', ink: '#eab308', colorName: 'Amber', options: ['Purple', 'Amber', 'Green'] },
+  ];
+  const [stroopIndex, setStroopIndex] = useState(0);
+  const [stroopStartTime, setStroopStartTime] = useState(Date.now());
+  const [stroopFeedback, setStroopFeedback] = useState(null);
+
+  const handleStroopChoice = (chosenColor) => {
+    const currentQ = stroopQuestions[stroopIndex];
+    const latency = Date.now() - stroopStartTime;
+    const isCorrect = chosenColor === currentQ.colorName;
+
+    if (isCorrect) {
+      playTone(580, 'sine', 0.12);
+      setStroopFeedback({
+        correct: true,
+        text: `Inhibition resolved in ${latency}ms! Frontal response conflict inhibited smoothly.`
+      });
+    } else {
+      playTone(220, 'square', 0.15);
+      setStroopFeedback({
+        correct: false,
+        text: `Conflict caught! Stroop interference latency demonstrated. Ink was ${currentQ.colorName}.`
+      });
+    }
+  };
+
+  const nextStroopQuestion = () => {
+    setStroopFeedback(null);
+    setStroopIndex((prev) => (prev + 1) % stroopQuestions.length);
+    setStroopStartTime(Date.now());
+  };
+
+  // ── CARD 4: TIER 3 NEUROIMAGING ATROPHY COMPARISON ──
+  const [mriCohortMode, setMriCohortMode] = useState('healthy'); // 'healthy' | 'atrophy'
+
+  // ── SECTION 2: LONGITUDINAL TRAJECTORY POINT SELECTION ──
+  const [selectedTrajectoryNode, setSelectedTrajectoryNode] = useState('detected');
+  const trajectoryPointsData = {
+    m8: {
+      id: 'm8',
+      month: 'Month -8',
+      label: 'Baseline Calibration',
+      score: '76.4',
+      cusum: '0.3σ',
+      leadTime: '8.2 Mo Window',
+      status: 'Tier 1 Nominal',
+      badgeClass: 'optimal',
+      desc: 'Multimodal personal baseline established across everyday keystrokes and audio journals. Variance within 95% individual confidence interval.'
+    },
+    m6: {
+      id: 'm6',
+      month: 'Month -6',
+      label: 'Homeostasis Maintained',
+      score: '75.8',
+      cusum: '0.8σ',
+      leadTime: '7.8 Mo Window',
+      status: 'Tier 1 Nominal',
+      badgeClass: 'optimal',
+      desc: 'No persistent deviation. Daily keystroke dwell times remain centered at 82ms with zero backspace error bursts.'
+    },
+    m4: {
+      id: 'm4',
+      month: 'Month -4',
+      label: 'Micro-Drift Inception',
+      score: '74.1',
+      cusum: '1.7σ',
+      leadTime: '7.1 Mo Window',
+      status: 'Sub-Clinical Hesitation',
+      badgeClass: 'info',
+      desc: 'Inter-key flight times lengthen subtly (+14ms) during multi-syllable word transitions. MMSE remains 30/30 (undetected in routine screens).'
+    },
+    m2: {
+      id: 'm2',
+      month: 'Month -2',
+      label: 'Drift Coherence',
+      score: '72.9',
+      cusum: '2.4σ',
+      leadTime: '6.9 Mo Window',
+      status: 'Accumulator Accelerating',
+      badgeClass: 'warning',
+      desc: 'Speech pause-to-vocalization ratio rises to 18.4%. CUSUM sequential statistic accelerates towards formal decision boundary.'
+    },
+    detected: {
+      id: 'detected',
+      month: 'Detection Point',
+      label: '🚨 Change-Point Confirmed',
+      score: '71.2',
+      cusum: '3.2σ > 3.0σ (Breached)',
+      leadTime: '6–8 Mo Lead Time Gained',
+      status: 'Tier 2 Escalation Triggered',
+      badgeClass: 'alert',
+      desc: 'Two-sided sequential CUSUM crosses critical margin (h=3.0σ, p<0.001). Care team alerted 6–8 months ahead of standard clinical MMSE/MoCA drops.'
+    },
+    current: {
+      id: 'current',
+      month: 'Current Follow-up',
+      label: 'Longitudinal Stabilization',
+      score: '71.2',
+      cusum: '3.1σ (Halted)',
+      leadTime: 'Lead Time Preserved',
+      status: 'Targeted Care Plan Active',
+      badgeClass: 'success',
+      desc: 'Targeted sleep architecture hygiene and cognitive remediation initiated. Biomarker slope stabilized with zero further decline.'
+    }
+  };
+
+  // ── SECTION 3: TREESHAP THERAPEUTIC SIMULATION ──
+  const [isSimulatingIntervention, setIsSimulatingIntervention] = useState(false);
+
+  // ── IN-BROWSER REACTION AGILITY TEST STATE ──
   const [challengeState, setChallengeState] = useState('idle');
   const [challengeStartTime, setChallengeStartTime] = useState(0);
   const [reactionTime, setReactionTime] = useState(null);
+  const [challengeWarning, setChallengeWarning] = useState(null);
   const [stimulusWord, setStimulusWord] = useState({ text: 'EMERALD', color: '#3d5236' });
   const timerRef = useRef(null);
 
   const startChallenge = () => {
     setChallengeState('waiting');
     setReactionTime(null);
+    setChallengeWarning(null);
+    playTone(440, 'sine', 0.1);
     const words = [
       { text: 'SAGE', color: '#4a6b43' },
       { text: 'OLIVE', color: '#3d5236' },
@@ -205,6 +428,7 @@ const Landing = () => {
     timerRef.current = setTimeout(() => {
       setChallengeState('ready');
       setChallengeStartTime(Date.now());
+      playTone(880, 'sine', 0.12); // High cue tone
     }, delay);
   };
 
@@ -212,49 +436,16 @@ const Landing = () => {
     if (challengeState === 'waiting') {
       clearTimeout(timerRef.current);
       setChallengeState('idle');
-      alert('Too early! Wait for the stimulus box to turn green.');
+      playTone(220, 'square', 0.2);
+      setChallengeWarning('⚠️ Too early! Wait for the stimulus pad to flash green.');
+      setTimeout(() => setChallengeWarning(null), 3000);
     } else if (challengeState === 'ready') {
       const elapsed = Date.now() - challengeStartTime;
       setReactionTime(elapsed);
       setChallengeState('result');
+      playTone(660, 'sine', 0.2);
     }
   };
-
-  // 4 Multimodal Telemetry Channels
-  const signalSources = [
-    {
-      id: 'speech',
-      title: 'Acoustic Speech Biomarkers',
-      tag: 'ACOUSTIC DOMAIN',
-      metrics: 'WPM Cadence · Pause Rate · Lexical Richness',
-      desc: 'Whisper neural acoustic feature extraction across 7 vernacular languages. Analyzes pause-to-speech ratios and articulation latency with zero raw audio storage.',
-      specs: ['7 vernacular dialects', 'Sub-second pause tracking', 'Zero raw audio retention']
-    },
-    {
-      id: 'telemetry',
-      title: 'Interaction Keystroke Telemetry',
-      tag: 'MOTOR BEHAVIOR',
-      metrics: 'Inter-Key Latency · Backspace Rate · Scroll Hesitation',
-      desc: 'Sub-millisecond passive timing measurement during natural daily typing. Evaluates neuromuscular hesitation and burst patterns with complete privacy preservation.',
-      specs: ['Sub-ms precision', 'Zero-keylog privacy', 'EWMA smoothed baseline']
-    },
-    {
-      id: 'psychometrics',
-      title: 'Active Psychometrics Micro-Tasks',
-      tag: 'COGNITIVE DOMAIN',
-      metrics: 'Delayed Recall · Stroop Inhibition · Reaction Speed',
-      desc: '3-minute daily micro-battery decomposing episodic retrieval, visual-spatial attention, and working memory into isolated validated subdomains.',
-      specs: ['Standardized digit span', 'Color Stroop inhibition', 'Reaction decay curve']
-    },
-    {
-      id: 'neuroimaging',
-      title: 'Structural Neuroimaging (Tier 3)',
-      tag: 'VOLUMETRIC MORPHOMETRY',
-      metrics: 'ResNet-18 CDR Staging · Morphometry (BPF/VBR) · Grad-CAM',
-      desc: 'Gated conditional evaluation triggered strictly when Tier 2 risk is elevated. Identifies hippocampal volume loss and ventricular enlargement with explainable heatmaps.',
-      specs: ['ResNet-18 architecture', 'BPF/VBR volumetrics', 'Grad-CAM attention maps']
-    }
-  ];
 
   // 10-Agent Pipeline Steps
   const pipelineSteps = [
@@ -270,9 +461,18 @@ const Landing = () => {
     { num: '10', name: 'MedGemma + Safety', model: 'Deterministic guardrails', desc: 'Synthesizes grounded 12-section evidence dossier with deterministic guardrails.', output: '{\n  "dossier_sections": 12,\n  "guardrails_passed": true,\n  "non_diagnostic_certified": true\n}' },
   ];
 
-  // TreeSHAP Scenarios
+  // TreeSHAP Scenarios (dynamically altered by isSimulatingIntervention)
   const shapScenarios = {
-    sleep: {
+    sleep: isSimulatingIntervention ? {
+      id: 'sleep',
+      label: 'Sleep architecture restored (>7.5 hrs/night)',
+      shap: '+0.04',
+      rawVal: 0.04,
+      type: 'INTERVENTION BENEFIT',
+      color: '#34d399',
+      impact: 'Stabilizes glymphatic clearance and resolves daytime cognitive fatigue',
+      note: 'Restorative slow-wave sleep restores hippocampal memory consolidation and eliminates neuromuscular morning hesitation.'
+    } : {
       id: 'sleep',
       label: 'Poor sleep architecture (<5 hrs/night)',
       shap: '+0.28',
@@ -295,14 +495,23 @@ const Landing = () => {
     vascular: {
       id: 'vascular',
       label: 'Stage 1 hypertension (systolic >135 mmHg)',
-      shap: '+0.16',
-      rawVal: 0.16,
+      shap: isSimulatingIntervention ? '+0.08' : '+0.16',
+      rawVal: isSimulatingIntervention ? 0.08 : 0.16,
       type: 'MODIFIABLE VASCULAR',
       color: '#e09f3e',
       impact: 'Increases microvascular cerebral resistance',
       note: 'Elevated systolic pressure correlates with sub-second executive hesitation and neuromotor slowing.'
     },
-    exercise: {
+    exercise: isSimulatingIntervention ? {
+      id: 'exercise',
+      label: 'Aerobic conditioning + resistance (180 min/wk)',
+      shap: '-0.33',
+      rawVal: -0.33,
+      type: 'HIGH PROTECTIVE BUFFER',
+      color: '#34d399',
+      impact: 'Maximizes hippocampal BDNF neurotrophic release',
+      note: 'Cardiovascular fitness directly enhances microvascular brain perfusion and anchors longitudinal neuromotor speed.'
+    } : {
       id: 'exercise',
       label: 'Regular aerobic conditioning (150 min/wk)',
       shap: '-0.19',
@@ -314,29 +523,44 @@ const Landing = () => {
     }
   };
 
-  // FAQ Items
+  // ── CATEGORIZED FAQ ITEMS ──
+  const [faqCategory, setFaqCategory] = useState('all');
   const faqItems = [
     {
+      category: 'science',
+      categoryLabel: 'Clinical Science',
       q: 'How does CogniVeil detect cognitive drift before symptoms trigger a clinical visit?',
       a: 'CogniVeil measures sub-clinical deviations in neuromuscular keystroke speed, inter-key latency, pause-to-speech ratios, and active memory micro-tasks. By applying exponentially weighted moving averages (EWMA) and CUSUM change-point algorithms against a patient’s personal baseline, it flags statistically meaningful drift 6–8 months before traditional clinical observation.'
     },
     {
+      category: 'privacy',
+      categoryLabel: 'Privacy Enclave',
       q: 'What patient data is captured and how is privacy preserved?',
       a: 'CogniVeil is designed with zero-compromise differential privacy. It never logs keystroke characters or records raw speech audio. Only derived numerical timing features (e.g. dwell time, cadence, pitch jitter) are processed locally, ensuring full HIPAA and ISO/DIS 13485 compliance.'
     },
     {
+      category: 'clinical',
+      categoryLabel: 'Diagnostic Cascade',
       q: 'When does the diagnostic cascade escalate to Tier 2 or Tier 3?',
       a: 'Escalation is strictly evidence-governed. Tier 1 continuous passive monitoring runs continuously. If a patient’s personal baseline exhibits persistent negative statistical drift for over 14 days, Tier 2 targeted multidimensional assessments are triggered. Only when Tier 2 multimodal risk remains elevated is a Tier 3 structural neuroimaging review recommended.'
     },
     {
+      category: 'governance',
+      categoryLabel: 'Regulatory & AI',
       q: 'How are the 10 AI agents verified to prevent hallucinations?',
       a: 'CogniVeil employs a deterministic 10-agent pipeline where each agent executes a discrete, audit-logged clinical function with strict JSON output schemas. The final MedGemma synthesis agent is constrained by deterministic safety regex filters and calibrated against OASIS and ADNI clinical benchmarks.'
     },
     {
+      category: 'clinical',
+      categoryLabel: 'Clinical Scope',
       q: 'Does CogniVeil provide a definitive medical diagnosis?',
       a: 'No. CogniVeil is an authorized clinical decision-support and surveillance tool. It is engineered to buy care teams critical lead time, generate quantitative evidence dossiers, and support qualified neurologists in early intervention.'
     }
   ];
+
+  const filteredFaqItems = faqCategory === 'all' 
+    ? faqItems 
+    : faqItems.filter(item => item.category === faqCategory);
 
   return (
     <div className={`cv-landing ${isDark ? 'cv-theme-dark' : 'cv-theme-light'}`}>
@@ -358,11 +582,11 @@ const Landing = () => {
           </div>
 
           <div className="cv-pill-links">
-            <a href="#topology">Architecture</a>
-            <a href="#vectors">Biomarkers</a>
-            <a href="#pipeline">Multi-Agent</a>
-            <a href="#attribution">TreeSHAP</a>
-            <a href="#faq">Governance</a>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'topology')}>Architecture</button>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'vectors')}>Biomarkers</button>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'pipeline')}>Multi-Agent</button>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'attribution')}>TreeSHAP</button>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'faq')}>Governance</button>
           </div>
 
           <div className="cv-pill-actions">
@@ -401,7 +625,7 @@ const Landing = () => {
             <button className="cv-hero-primary-btn" onClick={() => navigate('/login')}>
               Launch clinical workstation
             </button>
-            <button className="cv-hero-secondary-btn" onClick={scrollToChallenge}>
+            <button className="cv-hero-secondary-btn" onClick={(e) => scrollToSection(e, 'challenge')}>
               Run reaction agility test
             </button>
           </div>
@@ -1088,21 +1312,286 @@ const Landing = () => {
           </div>
 
           <div className="cv-grid-4">
-            {signalSources.map((s) => (
-              <div key={s.id} className="cv-card-4">
-                <div className="cv-card-top">
-                  <span className="cv-card-tag">{s.tag}</span>
-                  <span className="cv-card-metric">{s.metrics}</span>
+            
+            {/* ── CARD 1: ACOUSTIC SPEECH BIOMARKERS ── */}
+            <div className="cv-card-4">
+              <div className="cv-card-top">
+                <span className="cv-card-tag">ACOUSTIC DOMAIN</span>
+                <span className="cv-card-metric">WPM Cadence · Pause Rate · Lexical Richness</span>
+              </div>
+              <h3 className="cv-card-title">Acoustic Speech Biomarkers</h3>
+              <p className="cv-card-desc">
+                Whisper neural acoustic feature extraction across 7 vernacular languages. Analyzes pause-to-speech ratios and articulation latency with zero raw audio storage.
+              </p>
+
+              {/* Interactive Voice Cadence Visualizer & Sample Player */}
+              <div className="cv-card-interactive-box voice-box">
+                <div className="cv-interactive-top">
+                  <span className="cv-int-label">ACOUSTIC CADENCE SIMULATOR</span>
+                  <span className="cv-int-pill">{isPlayingVoice ? '16 kHz STREAMING' : 'AUDIO BUFFER READY'}</span>
                 </div>
-                <h3 className="cv-card-title">{s.title}</h3>
-                <p className="cv-card-desc">{s.desc}</p>
-                <div className="cv-card-specs">
-                  {s.specs.map((sp, idx) => (
-                    <span key={idx} className="cv-spec-pill">{sp}</span>
+
+                <div className="cv-voice-waveform-strip">
+                  {[28, 55, 42, 75, 60, 92, 68, 48, 80, 65, 38, 58].map((h, i) => (
+                    <div 
+                      key={i} 
+                      className={`cv-voice-bar ${isPlayingVoice ? 'animating' : ''}`}
+                      style={{ 
+                        height: isPlayingVoice 
+                          ? `${Math.min(100, Math.max(20, h + ((voicePlaybackTick * 7 + i * 9) % 50)))}%` 
+                          : `${h}%`,
+                        animationDelay: `${i * 0.06}s`
+                      }} 
+                    />
                   ))}
                 </div>
+
+                <div className="cv-voice-actions-row">
+                  <button 
+                    className={`cv-voice-play-btn ${isPlayingVoice ? 'playing' : ''}`}
+                    onClick={triggerVoiceCadenceSample}
+                    disabled={isPlayingVoice}
+                  >
+                    {isPlayingVoice ? '▶ Analyzing Cadence...' : '▶ Listen to 3s Cadence Sample'}
+                  </button>
+
+                  <div className="cv-voice-metrics-mini">
+                    <span><strong>124</strong> WPM</span>
+                    <span>·</span>
+                    <span><strong>18.2%</strong> Pause</span>
+                    <span>·</span>
+                    <span><strong>0.81ms</strong> Jitter</span>
+                  </div>
+                </div>
+
+                <div className="cv-voice-crypto-notice">
+                  <span>🔒 Privacy Enclave: Zero raw audio persisted · Mathematical acoustic vectors only</span>
+                </div>
               </div>
-            ))}
+
+              <div className="cv-card-specs">
+                <span className="cv-spec-pill">7 vernacular dialects</span>
+                <span className="cv-spec-pill">Sub-second pause tracking</span>
+                <span className="cv-spec-pill">Zero raw audio retention</span>
+              </div>
+            </div>
+
+            {/* ── CARD 2: INTERACTION KEYSTROKE TELEMETRY ── */}
+            <div className="cv-card-4">
+              <div className="cv-card-top">
+                <span className="cv-card-tag">MOTOR BEHAVIOR</span>
+                <span className="cv-card-metric">Inter-Key Latency · Backspace Rate · Scroll Hesitation</span>
+              </div>
+              <h3 className="cv-card-title">Interaction Keystroke Telemetry</h3>
+              <p className="cv-card-desc">
+                Sub-millisecond passive timing measurement during natural daily typing. Evaluates neuromuscular hesitation and burst patterns with complete privacy preservation.
+              </p>
+
+              {/* Interactive Neuromotor Typing Cadence Sandbox */}
+              <div className="cv-card-interactive-box typing-box">
+                <div className="cv-interactive-top">
+                  <span className="cv-int-label">LIVE KEYSTROKE CADENCE TEST</span>
+                  <div className="cv-keystroke-pulse-dots">
+                    {[0, 1, 2, 3].map((dot) => (
+                      <span 
+                        key={dot} 
+                        className={`cv-k-dot ${keystrokePulse === dot ? 'active' : ''}`} 
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="cv-typing-input-wrap">
+                  <input
+                    type="text"
+                    className="cv-typing-input"
+                    value={keystrokeInput}
+                    onChange={handleKeystrokeInput}
+                    placeholder="Type here to test your neuromuscular flight speed live..."
+                    aria-label="Interactive keystroke latency input"
+                  />
+                  {keystrokeInput && (
+                    <button 
+                      className="cv-typing-clear-btn" 
+                      onClick={handleResetKeystroke}
+                      title="Clear test"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <div className="cv-typing-telemetry-row">
+                  <div className="cv-tt-item">
+                    <span className="cv-tt-label">INTER-KEY FLIGHT</span>
+                    <span className="cv-tt-val">{keystrokeFlightMs} <small>ms</small></span>
+                  </div>
+                  <div className="cv-tt-item">
+                    <span className="cv-tt-label">SPEED</span>
+                    <span className="cv-tt-val">{keystrokeWpm || 64} <small>WPM</small></span>
+                  </div>
+                  <div className="cv-tt-item">
+                    <span className="cv-tt-label">RHYTHM STABILITY</span>
+                    <span className="cv-tt-val">99.4%</span>
+                  </div>
+                </div>
+
+                <div className="cv-typing-status-pill">
+                  {keystrokeFlightMs <= 145 ? (
+                    <span className="optimal">✨ Optimal neuromuscular initiation (&lt;145ms) · Uniform typing cadence</span>
+                  ) : (
+                    <span className="drift">⚠️ Micro-hesitation latency detected ({keystrokeFlightMs}ms) · EWMA smoothing active</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="cv-card-specs">
+                <span className="cv-spec-pill">Sub-ms precision</span>
+                <span className="cv-spec-pill">Zero-keylog privacy</span>
+                <span className="cv-spec-pill">EWMA smoothed baseline</span>
+              </div>
+            </div>
+
+            {/* ── CARD 3: ACTIVE PSYCHOMETRICS MICRO-TASKS ── */}
+            <div className="cv-card-4">
+              <div className="cv-card-top">
+                <span className="cv-card-tag">COGNITIVE DOMAIN</span>
+                <span className="cv-card-metric">Delayed Recall · Stroop Inhibition · Reaction Speed</span>
+              </div>
+              <h3 className="cv-card-title">Active Psychometrics Micro-Tasks</h3>
+              <p className="cv-card-desc">
+                3-minute daily micro-battery decomposing episodic retrieval, visual-spatial attention, and working memory into isolated validated subdomains.
+              </p>
+
+              {/* Interactive Mini Stroop Color-Word Conflict Chip */}
+              <div className="cv-card-interactive-box stroop-box">
+                <div className="cv-interactive-top">
+                  <span className="cv-int-label">MINI STROOP CONFLICT RESOLUTION</span>
+                  <span className="cv-int-pill">FRONTAL INHIBITION</span>
+                </div>
+
+                <div className="cv-stroop-stage">
+                  <div className="cv-stroop-prompt-line">
+                    Select the <strong>INK COLOR</strong> (ignore the written word):
+                  </div>
+
+                  <div 
+                    className="cv-stroop-word-display"
+                    style={{ color: stroopQuestions[stroopIndex].ink }}
+                  >
+                    {stroopQuestions[stroopIndex].word}
+                  </div>
+
+                  <div className="cv-stroop-btn-grid">
+                    {stroopQuestions[stroopIndex].options.map((opt) => (
+                      <button
+                        key={opt}
+                        className="cv-stroop-choice-btn"
+                        onClick={() => handleStroopChoice(opt)}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+
+                  {stroopFeedback && (
+                    <div className={`cv-stroop-feedback-badge ${stroopFeedback.correct ? 'pass' : 'fail'}`}>
+                      <span>{stroopFeedback.text}</span>
+                      <button className="cv-stroop-next-btn" onClick={nextStroopQuestion}>
+                        Next Word →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="cv-card-specs">
+                <span className="cv-spec-pill">Standardized digit span</span>
+                <span className="cv-spec-pill">Color Stroop inhibition</span>
+                <span className="cv-spec-pill">Reaction decay curve</span>
+              </div>
+            </div>
+
+            {/* ── CARD 4: STRUCTURAL NEUROIMAGING (TIER 3) ── */}
+            <div className="cv-card-4">
+              <div className="cv-card-top">
+                <span className="cv-card-tag">VOLUMETRIC MORPHOMETRY</span>
+                <span className="cv-card-metric">ResNet-18 CDR Staging · Morphometry (BPF/VBR) · Grad-CAM</span>
+              </div>
+              <h3 className="cv-card-title">Structural Neuroimaging (Tier 3)</h3>
+              <p className="cv-card-desc">
+                Gated conditional evaluation triggered strictly when Tier 2 risk is elevated. Identifies hippocampal volume loss and ventricular enlargement with explainable heatmaps.
+              </p>
+
+              {/* Interactive Structural Morphometry Comparison Box */}
+              <div className="cv-card-interactive-box mri-box">
+                <div className="cv-interactive-top">
+                  <span className="cv-int-label">OASIS-3 VOLUMETRIC COMPARISON</span>
+                  <div className="cv-mri-toggle-group">
+                    <button
+                      className={`cv-mri-mode-btn ${mriCohortMode === 'healthy' ? 'active' : ''}`}
+                      onClick={() => setMriCohortMode('healthy')}
+                    >
+                      ADNI Control
+                    </button>
+                    <button
+                      className={`cv-mri-mode-btn ${mriCohortMode === 'atrophy' ? 'active' : ''}`}
+                      onClick={() => setMriCohortMode('atrophy')}
+                    >
+                      Temporal Atrophy (-4.1%)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="cv-mri-metrics-display">
+                  <div className="cv-mri-stat-card">
+                    <span className="cv-mri-stat-label">HIPPOCAMPAL VOLUME</span>
+                    <span className={`cv-mri-stat-val ${mriCohortMode === 'atrophy' ? 'alert' : ''}`}>
+                      {mriCohortMode === 'healthy' ? '3.58 cm³' : '3.42 cm³'}
+                    </span>
+                    <span className="cv-mri-stat-sub">
+                      {mriCohortMode === 'healthy' ? 'Normative 50th percentile' : '-4.1% bilateral volume drop'}
+                    </span>
+                  </div>
+
+                  <div className="cv-mri-stat-card">
+                    <span className="cv-mri-stat-label">VENTRICLE-BRAIN RATIO</span>
+                    <span className={`cv-mri-stat-val ${mriCohortMode === 'atrophy' ? 'warning' : ''}`}>
+                      {mriCohortMode === 'healthy' ? '0.14' : '0.18'}
+                    </span>
+                    <span className="cv-mri-stat-sub">
+                      {mriCohortMode === 'healthy' ? 'Normal ventricular size' : 'Mild ventricular expansion'}
+                    </span>
+                  </div>
+
+                  <div className="cv-mri-stat-card">
+                    <span className="cv-mri-stat-label">RESNET-18 STAGING</span>
+                    <span className="cv-mri-stat-val">
+                      {mriCohortMode === 'healthy' ? 'CDR 0.0' : 'CDR 0.5'}
+                    </span>
+                    <span className="cv-mri-stat-sub">
+                      {mriCohortMode === 'healthy' ? 'Healthy Cognition' : 'Very Mild Cognitive Impairment'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="cv-mri-gradcam-status">
+                  <span className="cv-gradcam-dot" />
+                  <span>
+                    {mriCohortMode === 'healthy' 
+                      ? 'Grad-CAM Attention: Uniform diffuse parenchymal focus' 
+                      : 'Grad-CAM Attention: Focused medial temporal hippocampal atrophy'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="cv-card-specs">
+                <span className="cv-spec-pill">ResNet-18 architecture</span>
+                <span className="cv-spec-pill">BPF/VBR volumetrics</span>
+                <span className="cv-spec-pill">Grad-CAM attention maps</span>
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -1208,30 +1697,140 @@ const Landing = () => {
                         strokeWidth="3"
                       />
 
-                      {/* Graph Nodes along Trajectory */}
-                      <circle cx="60" cy="45" r="4.5" fill="#f1f5ee" stroke="#3d5236" strokeWidth="2" />
-                      <circle cx="140" cy="50" r="4.5" fill="#f1f5ee" stroke="#3d5236" strokeWidth="2" />
-                      <circle cx="220" cy="62" r="4.5" fill="#f1f5ee" stroke="#3d5236" strokeWidth="2" />
-                      <circle cx="340" cy="105" r="4.5" fill="#f1f5ee" stroke="#3d5236" strokeWidth="2" />
-                      
-                      {/* Critical Deviation Change-Point Node */}
-                      <circle cx="440" cy="152" r="7" fill="#f87171" stroke="#ffffff" strokeWidth="2" />
-                      <circle cx="500" cy="168" r="5" fill="#f87171" />
+                      {/* Interactive Graph Nodes along Trajectory */}
+                      <g className="cv-svg-interactive-nodes">
+                        {/* Node M-8 */}
+                        {selectedTrajectoryNode === 'm8' && (
+                          <circle cx="60" cy="45" r="9" fill="none" stroke="#34d399" strokeWidth="1.5" className="cv-pulse-halo" />
+                        )}
+                        <circle 
+                          cx="60" cy="45" r={selectedTrajectoryNode === 'm8' ? 6 : 4.5} 
+                          fill={selectedTrajectoryNode === 'm8' ? '#34d399' : '#f1f5ee'} 
+                          stroke="#3d5236" strokeWidth="2" 
+                          className="cv-chart-node-clickable"
+                          onClick={() => { setSelectedTrajectoryNode('m8'); playTone(400, 'sine', 0.08); }}
+                        >
+                          <title>Month -8: Baseline Calibration</title>
+                        </circle>
+
+                        {/* Node M-6 */}
+                        {selectedTrajectoryNode === 'm6' && (
+                          <circle cx="140" cy="50" r="9" fill="none" stroke="#34d399" strokeWidth="1.5" className="cv-pulse-halo" />
+                        )}
+                        <circle 
+                          cx="140" cy="50" r={selectedTrajectoryNode === 'm6' ? 6 : 4.5} 
+                          fill={selectedTrajectoryNode === 'm6' ? '#34d399' : '#f1f5ee'} 
+                          stroke="#3d5236" strokeWidth="2" 
+                          className="cv-chart-node-clickable"
+                          onClick={() => { setSelectedTrajectoryNode('m6'); playTone(460, 'sine', 0.08); }}
+                        >
+                          <title>Month -6: Homeostasis Maintained</title>
+                        </circle>
+
+                        {/* Node M-4 */}
+                        {selectedTrajectoryNode === 'm4' && (
+                          <circle cx="220" cy="62" r="9" fill="none" stroke="#eab308" strokeWidth="1.5" className="cv-pulse-halo" />
+                        )}
+                        <circle 
+                          cx="220" cy="62" r={selectedTrajectoryNode === 'm4' ? 6 : 4.5} 
+                          fill={selectedTrajectoryNode === 'm4' ? '#eab308' : '#f1f5ee'} 
+                          stroke="#3d5236" strokeWidth="2" 
+                          className="cv-chart-node-clickable"
+                          onClick={() => { setSelectedTrajectoryNode('m4'); playTone(520, 'sine', 0.08); }}
+                        >
+                          <title>Month -4: Micro-Drift Inception</title>
+                        </circle>
+
+                        {/* Node M-2 */}
+                        {selectedTrajectoryNode === 'm2' && (
+                          <circle cx="340" cy="105" r="9" fill="none" stroke="#f59e0b" strokeWidth="1.5" className="cv-pulse-halo" />
+                        )}
+                        <circle 
+                          cx="340" cy="105" r={selectedTrajectoryNode === 'm2' ? 6 : 4.5} 
+                          fill={selectedTrajectoryNode === 'm2' ? '#f59e0b' : '#f1f5ee'} 
+                          stroke="#3d5236" strokeWidth="2" 
+                          className="cv-chart-node-clickable"
+                          onClick={() => { setSelectedTrajectoryNode('m2'); playTone(580, 'sine', 0.08); }}
+                        >
+                          <title>Month -2: Drift Coherence</title>
+                        </circle>
+                        
+                        {/* Critical Deviation Change-Point Node (Detected) */}
+                        {selectedTrajectoryNode === 'detected' && (
+                          <circle cx="440" cy="152" r="12" fill="none" stroke="#f87171" strokeWidth="1.8" className="cv-pulse-halo" />
+                        )}
+                        <circle 
+                          cx="440" cy="152" r={selectedTrajectoryNode === 'detected' ? 8.5 : 7} 
+                          fill="#f87171" stroke="#ffffff" strokeWidth="2" 
+                          className="cv-chart-node-clickable"
+                          onClick={() => { setSelectedTrajectoryNode('detected'); playTone(660, 'sine', 0.08); }}
+                        >
+                          <title>Detected: Change-Point Confirmed (h=3.2σ)</title>
+                        </circle>
+
+                        {/* Node Current */}
+                        {selectedTrajectoryNode === 'current' && (
+                          <circle cx="500" cy="168" r="9" fill="none" stroke="#34d399" strokeWidth="1.5" className="cv-pulse-halo" />
+                        )}
+                        <circle 
+                          cx="500" cy="168" r={selectedTrajectoryNode === 'current' ? 6.5 : 5} 
+                          fill={selectedTrajectoryNode === 'current' ? '#34d399' : '#f87171'} 
+                          stroke="#ffffff" strokeWidth="1.5"
+                          className="cv-chart-node-clickable"
+                          onClick={() => { setSelectedTrajectoryNode('current'); playTone(740, 'sine', 0.08); }}
+                        >
+                          <title>Current: Longitudinal Stabilization</title>
+                        </circle>
+                      </g>
 
                       {/* Change Point Callout */}
                       <rect x="330" y="165" width="180" height="34" rx="6" fill="#1b261a" stroke="#f87171" strokeWidth="1.2" />
                       <text x="340" y="180" fill="#f1f5ee" fontSize="10" fontWeight="bold" fontFamily="'Mulish', sans-serif">DRIFT FLAGGED</text>
                       <text x="340" y="193" fill="#cbd5e1" fontSize="9" fontFamily="'JetBrains Mono', monospace">6–8 Mo Lead Time Window</text>
 
-                      {/* X-Axis Labels */}
-                      <text x="60" y="200" fill="currentColor" fillOpacity="0.6" fontSize="10" textAnchor="middle" fontFamily="'JetBrains Mono', monospace">M-8</text>
-                      <text x="140" y="200" fill="currentColor" fillOpacity="0.6" fontSize="10" textAnchor="middle" fontFamily="'JetBrains Mono', monospace">M-6</text>
-                      <text x="220" y="200" fill="currentColor" fillOpacity="0.6" fontSize="10" textAnchor="middle" fontFamily="'JetBrains Mono', monospace">M-4</text>
-                      <text x="340" y="200" fill="currentColor" fillOpacity="0.6" fontSize="10" textAnchor="middle" fontFamily="'JetBrains Mono', monospace">M-2</text>
-                      <text x="440" y="200" fill="#f87171" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="'JetBrains Mono', monospace">Detected</text>
-                      <text x="500" y="200" fill="currentColor" fillOpacity="0.6" fontSize="10" textAnchor="middle" fontFamily="'JetBrains Mono', monospace">Current</text>
+                      {/* X-Axis Clickable Labels */}
+                      <text x="60" y="200" fill={selectedTrajectoryNode === 'm8' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm8' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'm8' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m8')}>M-8</text>
+                      <text x="140" y="200" fill={selectedTrajectoryNode === 'm6' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm6' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'm6' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m6')}>M-6</text>
+                      <text x="220" y="200" fill={selectedTrajectoryNode === 'm4' ? '#eab308' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm4' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'm4' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m4')}>M-4</text>
+                      <text x="340" y="200" fill={selectedTrajectoryNode === 'm2' ? '#f59e0b' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm2' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'm2' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m2')}>M-2</text>
+                      <text x="440" y="200" fill="#f87171" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('detected')}>Detected</text>
+                      <text x="500" y="200" fill={selectedTrajectoryNode === 'current' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'current' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'current' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('current')}>Current</text>
                     </svg>
                   </div>
+
+                  {/* Interactive Trajectory Point Telemetry Pill */}
+                  <div className="cv-trajectory-inspector">
+                    <div className="cv-ti-top">
+                      <div className="cv-ti-title-wrap">
+                        <span className="cv-ti-month">{trajectoryPointsData[selectedTrajectoryNode]?.month}:</span>
+                        <strong className="cv-ti-label">{trajectoryPointsData[selectedTrajectoryNode]?.label}</strong>
+                      </div>
+                      <div className="cv-ti-badges">
+                        <span className="cv-ti-badge score">CogniScore: <strong>{trajectoryPointsData[selectedTrajectoryNode]?.score}</strong></span>
+                        <span className="cv-ti-badge cusum">CUSUM: <strong>{trajectoryPointsData[selectedTrajectoryNode]?.cusum}</strong></span>
+                        <span className="cv-ti-badge lead">{trajectoryPointsData[selectedTrajectoryNode]?.leadTime}</span>
+                      </div>
+                    </div>
+                    <p className="cv-ti-desc">{trajectoryPointsData[selectedTrajectoryNode]?.desc}</p>
+                    <div className="cv-ti-timeline-bar">
+                      <span className="cv-ti-timeline-hint">Click any milestone along the 8-month curve:</span>
+                      <div className="cv-ti-pills">
+                        {['m8', 'm6', 'm4', 'm2', 'detected', 'current'].map((k) => (
+                          <button
+                            key={k}
+                            className={`cv-ti-pill ${selectedTrajectoryNode === k ? 'active' : ''}`}
+                            onClick={() => {
+                              setSelectedTrajectoryNode(k);
+                              playTone(420 + (['m8', 'm6', 'm4', 'm2', 'detected', 'current'].indexOf(k)) * 60, 'sine', 0.08);
+                            }}
+                          >
+                            {k === 'detected' ? '🚨 Detected' : k.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="cv-drift-footer">
                     <span>CUSUM C+ Accumulator: <strong>14.8 &gt; 12.0</strong></span>
                     <span>Persistent negative trajectory confirmed</span>
@@ -1258,11 +1857,30 @@ const Landing = () => {
             <div id="attribution" className="cv-wide-card">
               <div className="cv-wide-card-header">
                 <span className="cv-wide-tag">TREESHAP RISK ATTRIBUTION NODES</span>
-                <span className="cv-wide-status">24-FEATURE CASCADE</span>
+                <div className="cv-shap-header-actions">
+                  <button
+                    className={`cv-shap-simulate-btn ${isSimulatingIntervention ? 'active' : ''}`}
+                    onClick={() => {
+                      setIsSimulatingIntervention(!isSimulatingIntervention);
+                      playTone(isSimulatingIntervention ? 440 : 660, 'sine', 0.12);
+                    }}
+                  >
+                    <span className="cv-sim-icon">⚡</span>
+                    <span>{isSimulatingIntervention ? 'Simulating Lifestyle Intervention' : 'Simulate Lifestyle Intervention'}</span>
+                  </button>
+                  <span className="cv-wide-status">24-FEATURE CASCADE</span>
+                </div>
               </div>
 
               {/* Interactive SHAP Factor Nodes Graph */}
               <div className="cv-shap-network-box">
+                {isSimulatingIntervention && (
+                  <div className="cv-shap-simulation-banner">
+                    <span>Active Simulation: Targeted Sleep Hygiene (+2.5h) & Aerobic Conditioning</span>
+                    <strong>-0.47 Net Risk Shift</strong>
+                  </div>
+                )}
+
                 <div className="cv-shap-waterfall-header">
                   <span>CLINICAL BIOMARKER FACTOR</span>
                   <span>SHAP IMPACT DELTA</span>
@@ -1273,11 +1891,14 @@ const Landing = () => {
                     const sc = shapScenarios[key];
                     const isSelected = selectedShap === key;
                     const isPositive = sc.rawVal > 0;
-                    const barWidth = Math.abs(sc.rawVal) * 280;
+                    const barWidth = Math.min(100, Math.abs(sc.rawVal) * 280);
                     return (
                       <div
                         key={key}
-                        onClick={() => setSelectedShap(key)}
+                        onClick={() => {
+                          setSelectedShap(key);
+                          playTone(500 + Object.keys(shapScenarios).indexOf(key) * 50, 'sine', 0.06);
+                        }}
                         className={`cv-shap-factor-row ${isSelected ? 'selected' : ''}`}
                       >
                         <div className="cv-factor-label-col">
@@ -1364,6 +1985,13 @@ const Landing = () => {
                   </div>
                   <div className="cv-idle-title">Ready to Measure Reaction Cadence?</div>
                   <p className="cv-idle-sub">Calibrated to 1,000 Hz browser frame timing</p>
+                  
+                  {challengeWarning && (
+                    <div className="cv-challenge-inline-warning">
+                      {challengeWarning}
+                    </div>
+                  )}
+
                   <button className="cv-challenge-action-btn" onClick={startChallenge}>
                     Start Reaction Agility Test →
                   </button>
@@ -1433,7 +2061,6 @@ const Landing = () => {
         </div>
       </section>
 
-
       {/* ── SECTION 4: FREQUENTLY ASKED QUESTIONS (ACCORDION) ── */}
       <section id="faq" className="cv-section">
         <div className="cv-container">
@@ -1445,18 +2072,58 @@ const Landing = () => {
             <p className="cv-section-sub">
               Clinical governance, data architecture, and privacy specifications.
             </p>
+
+            {/* Category Filter Pills */}
+            <div className="cv-faq-category-pills">
+              <button
+                className={`cv-faq-cat-btn ${faqCategory === 'all' ? 'active' : ''}`}
+                onClick={() => setFaqCategory('all')}
+              >
+                All Questions (5)
+              </button>
+              <button
+                className={`cv-faq-cat-btn ${faqCategory === 'science' ? 'active' : ''}`}
+                onClick={() => setFaqCategory('science')}
+              >
+                Clinical Science
+              </button>
+              <button
+                className={`cv-faq-cat-btn ${faqCategory === 'privacy' ? 'active' : ''}`}
+                onClick={() => setFaqCategory('privacy')}
+              >
+                Privacy Enclave
+              </button>
+              <button
+                className={`cv-faq-cat-btn ${faqCategory === 'clinical' ? 'active' : ''}`}
+                onClick={() => setFaqCategory('clinical')}
+              >
+                Diagnostic Cascade
+              </button>
+              <button
+                className={`cv-faq-cat-btn ${faqCategory === 'governance' ? 'active' : ''}`}
+                onClick={() => setFaqCategory('governance')}
+              >
+                Regulatory & AI
+              </button>
+            </div>
           </div>
 
           <div className="cv-faq-list">
-            {faqItems.map((item, idx) => {
+            {filteredFaqItems.map((item, idx) => {
               const isOpen = activeFaq === idx;
               return (
-                <div key={idx} className="cv-faq-item">
+                <div key={idx} className={`cv-faq-item ${isOpen ? 'open' : ''}`}>
                   <button 
                     className="cv-faq-question-btn"
-                    onClick={() => setActiveFaq(isOpen ? null : idx)}
+                    onClick={() => {
+                      setActiveFaq(isOpen ? null : idx);
+                      playTone(isOpen ? 360 : 480, 'sine', 0.08);
+                    }}
                   >
-                    <span>{item.q}</span>
+                    <div className="cv-faq-q-left">
+                      <span className="cv-faq-cat-tag">{item.categoryLabel}</span>
+                      <span className="cv-faq-q-text">{item.q}</span>
+                    </div>
                     <span className="cv-faq-icon">{isOpen ? '−' : '+'}</span>
                   </button>
                   {isOpen && (
@@ -1471,6 +2138,21 @@ const Landing = () => {
 
         </div>
       </section>
+
+      {/* ── FLOATING BACK TO TOP BUTTON ── */}
+      {showBackToTop && (
+        <button 
+          className="cv-floating-back-top"
+          onClick={scrollToTop}
+          title="Glide back to top"
+          aria-label="Back to top"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 15l-6-6-6 6"/>
+          </svg>
+          <span>Top</span>
+        </button>
+      )}
 
       {/* ── BOTTOM WARM CONTRAST BANNER (HIGH CONTRAST) ── */}
       <section className="cv-contrast-band">

@@ -148,7 +148,11 @@
   gap: 4px;
 }
 
-.cv-pill-links a {
+.cv-pill-links a,
+.cv-pill-link-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
   color: var(--cv-text-muted);
   text-decoration: none;
   font-size: 0.88rem;
@@ -156,9 +160,11 @@
   padding: 8px 14px;
   border-radius: 9999px;
   transition: all 0.15s ease;
+  font-family: inherit;
 }
 
-.cv-pill-links a:hover {
+.cv-pill-links a:hover,
+.cv-pill-link-btn:hover {
   color: var(--cv-text);
   background-color: var(--cv-surface-subtle);
 }
@@ -1678,6 +1684,414 @@
   font-weight: 600;
 }
 
+/* ── 4-CARD INTERACTIVE MICRO-DEMO CONTAINER ── */
+.cv-card-interactive-box {
+  margin: 1.1rem 0 1.3rem 0;
+  background-color: var(--cv-surface-subtle);
+  border: 1px solid var(--cv-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cv-card-interactive-box:hover {
+  border-color: var(--cv-text-dim);
+}
+
+.cv-interactive-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cv-int-label {
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--cv-text-dim);
+}
+
+.cv-int-pill {
+  font-size: 0.64rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  color: #34d399;
+}
+
+/* Card 1: Voice Waveform Strip & Play Button */
+.cv-voice-waveform-strip {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 38px;
+  gap: 4px;
+  padding: 0 4px;
+  margin-bottom: 12px;
+}
+
+.cv-voice-bar {
+  flex: 1;
+  background-color: var(--cv-border);
+  border-radius: 2px;
+  transition: height 0.15s ease, background-color 0.15s ease;
+}
+
+.cv-voice-bar.animating {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+  animation: cv-voice-pulse 0.4s infinite alternate ease-in-out;
+}
+
+@keyframes cv-voice-pulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.3); }
+}
+
+.cv-voice-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cv-voice-play-btn {
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cv-voice-play-btn:hover:not(:disabled) {
+  border-color: var(--cv-text);
+  background-color: var(--cv-surface-subtle);
+  transform: translateY(-1px);
+}
+
+.cv-voice-play-btn.playing {
+  color: #34d399;
+  border-color: #34d399;
+}
+
+.cv-voice-metrics-mini {
+  font-size: 0.74rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cv-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cv-voice-crypto-notice {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--cv-border);
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cv-text-dim);
+}
+
+/* Card 2: Keystroke Telemetry Live Sandbox */
+.cv-keystroke-pulse-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cv-k-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--cv-border);
+  transition: all 0.1s ease;
+}
+
+.cv-k-dot.active {
+  background-color: #34d399;
+  transform: scale(1.4);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
+}
+
+.cv-typing-input-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.cv-typing-input {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  border-radius: 8px;
+  padding: 10px 36px 10px 14px;
+  font-size: 0.84rem;
+  font-family: 'Mulish', sans-serif;
+  color: var(--cv-text);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cv-typing-input:focus {
+  border-color: var(--cv-text);
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.2);
+}
+
+.cv-typing-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  color: var(--cv-text-dim);
+  cursor: pointer;
+}
+
+.cv-typing-telemetry-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.cv-tt-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cv-tt-label {
+  font-size: 0.64rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  color: var(--cv-text-dim);
+}
+
+.cv-tt-val {
+  font-size: 0.94rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 900;
+  color: var(--cv-text);
+}
+
+.cv-tt-val small {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--cv-text-muted);
+}
+
+.cv-typing-status-pill {
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  margin-top: 4px;
+}
+
+.cv-typing-status-pill .optimal {
+  color: #34d399;
+}
+
+.cv-typing-status-pill .drift {
+  color: #f59e0b;
+}
+
+/* Card 3: Active Psychometrics Mini Stroop */
+.cv-stroop-stage {
+  text-align: center;
+  padding: 4px 0;
+}
+
+.cv-stroop-prompt-line {
+  font-size: 0.76rem;
+  color: var(--cv-text-muted);
+  margin-bottom: 6px;
+}
+
+.cv-stroop-word-display {
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  font-family: 'JetBrains Mono', monospace;
+  margin: 6px 0 14px 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  user-select: none;
+}
+
+.cv-stroop-btn-grid {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.cv-stroop-choice-btn {
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text);
+  font-size: 0.82rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cv-stroop-choice-btn:hover {
+  border-color: var(--cv-text);
+  background-color: var(--cv-surface-subtle);
+  transform: translateY(-1px);
+}
+
+.cv-stroop-feedback-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.74rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 7px 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+  border: 1px solid var(--cv-border);
+}
+
+.cv-stroop-feedback-badge.pass {
+  background-color: rgba(52, 211, 153, 0.12);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.cv-stroop-feedback-badge.fail {
+  background-color: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.cv-stroop-next-btn {
+  background: none;
+  border: 1px solid currentColor;
+  color: inherit;
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Card 4: Tier 3 MRI Volumetric Morphometry */
+.cv-mri-toggle-group {
+  display: flex;
+  gap: 4px;
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.cv-mri-mode-btn {
+  background: none;
+  border: none;
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  color: var(--cv-text-muted);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cv-mri-mode-btn.active {
+  background-color: var(--cv-btn-bg);
+  color: var(--cv-btn-text);
+}
+
+.cv-mri-metrics-display {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cv-mri-stat-card {
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cv-mri-stat-label {
+  font-size: 0.58rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  color: var(--cv-text-dim);
+}
+
+.cv-mri-stat-val {
+  font-size: 0.95rem;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cv-text);
+}
+
+.cv-mri-stat-val.alert {
+  color: #f87171;
+}
+
+.cv-mri-stat-val.warning {
+  color: #f59e0b;
+}
+
+.cv-mri-stat-sub {
+  font-size: 0.62rem;
+  color: var(--cv-text-muted);
+  line-height: 1.2;
+}
+
+.cv-mri-gradcam-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cv-text-muted);
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  padding: 5px 8px;
+  border-radius: 6px;
+}
+
+.cv-gradcam-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
+}
+
 /* ── WARM CONTRAST BANNER (HIGH CONTRAST TEXT) ── */
 .cv-contrast-band {
   background-color: var(--cv-contrast-bg);
@@ -1884,6 +2298,161 @@
   color: var(--cv-text);
 }
 
+/* Interactive Trajectory SVG Nodes & Halo Pulse */
+.cv-chart-node-clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, r 0.15s ease;
+}
+
+.cv-chart-node-clickable:hover {
+  filter: drop-shadow(0 0 6px #34d399);
+}
+
+.cv-pulse-halo {
+  animation: cv-halo-ring-pulse 1.8s infinite ease-out;
+}
+
+@keyframes cv-halo-ring-pulse {
+  0% { transform: scale(0.85); opacity: 1; }
+  100% { transform: scale(1.65); opacity: 0; }
+}
+
+.cv-axis-label {
+  cursor: pointer;
+  transition: fill 0.15s ease, font-weight 0.15s ease;
+}
+
+.cv-axis-label:hover {
+  fill: #34d399;
+}
+
+/* Interactive Trajectory Point Telemetry Inspector Card */
+.cv-trajectory-inspector {
+  margin-top: 14px;
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  animation: cv-ti-fade 0.25s ease;
+}
+
+@keyframes cv-ti-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cv-ti-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.cv-ti-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cv-ti-month {
+  font-size: 0.74rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cv-text-dim);
+  font-weight: 800;
+}
+
+.cv-ti-label {
+  font-size: 0.96rem;
+  color: var(--cv-text);
+  font-weight: 800;
+}
+
+.cv-ti-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cv-ti-badge {
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: var(--cv-surface-subtle);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text-muted);
+}
+
+.cv-ti-badge.score strong {
+  color: var(--cv-text);
+}
+
+.cv-ti-badge.cusum strong {
+  color: #f87171;
+}
+
+.cv-ti-badge.lead {
+  color: #34d399;
+  background-color: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.cv-ti-desc {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--cv-text-muted);
+  margin: 0 0 10px 0;
+}
+
+.cv-ti-timeline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--cv-border);
+  flex-wrap: wrap;
+}
+
+.cv-ti-timeline-hint {
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cv-text-dim);
+}
+
+.cv-ti-pills {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.cv-ti-pill {
+  background: var(--cv-surface-subtle);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text-muted);
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cv-ti-pill:hover {
+  color: var(--cv-text);
+  border-color: var(--cv-text-dim);
+}
+
+.cv-ti-pill.active {
+  background-color: var(--cv-btn-bg);
+  color: var(--cv-btn-text);
+  border-color: var(--cv-btn-bg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
 .cv-drift-footer {
   display: flex;
   justify-content: space-between;
@@ -1955,6 +2524,60 @@
   font-family: 'JetBrains Mono', monospace;
   color: var(--cv-text-muted);
   overflow-x: auto;
+}
+
+/* TreeSHAP Header Actions & Simulation Banner */
+.cv-shap-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cv-shap-simulate-btn {
+  background: var(--cv-surface-subtle);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text);
+  font-size: 0.74rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.cv-shap-simulate-btn:hover {
+  border-color: var(--cv-text);
+  background-color: var(--cv-surface);
+}
+
+.cv-shap-simulate-btn.active {
+  background-color: rgba(52, 211, 153, 0.12);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.cv-shap-simulation-banner {
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cv-text);
+  animation: cv-ti-fade 0.25s ease;
+}
+
+.cv-shap-simulation-banner strong {
+  color: #34d399;
+  font-size: 0.88rem;
 }
 
 /* TreeSHAP Network & Waterfall Graph */
@@ -2306,6 +2929,25 @@
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Challenge Warning Message */
+.cv-challenge-inline-warning {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 14px;
+  animation: cv-warn-shake 0.35s ease;
+}
+
+@keyframes cv-warn-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
 .cv-challenge-stimulus.waiting {
   background-color: var(--cv-surface-subtle);
   border: 2px dashed var(--cv-border);
@@ -2480,13 +3122,6 @@
   opacity: 0.9;
 }
 
-/* ── CLINICAL EVIDENCE & QUOTES ── */
-.cv-quotes-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 26px;
-}
-
 .cv-quote-card {
   background-color: var(--cv-surface);
   border: 1px solid var(--cv-border);
@@ -2538,6 +3173,40 @@
   color: var(--cv-text-muted);
 }
 
+/* ── FAQ CATEGORY PILLS ── */
+.cv-faq-category-pills {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 1.8rem;
+}
+
+.cv-faq-cat-btn {
+  background-color: var(--cv-surface-subtle);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 6px 15px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cv-faq-cat-btn:hover {
+  color: var(--cv-text);
+  border-color: var(--cv-text-dim);
+}
+
+.cv-faq-cat-btn.active {
+  background-color: var(--cv-text);
+  color: var(--cv-bg) !important;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
 /* ── FAQ ACCORDION LIST ── */
 .cv-faq-list {
   max-width: 900px;
@@ -2547,11 +3216,20 @@
 
 .cv-faq-item {
   border-bottom: 1px solid var(--cv-border);
+  transition: background-color 0.2s ease, padding 0.2s ease;
+}
+
+.cv-faq-item.open {
+  background-color: var(--cv-surface-subtle);
+  padding: 0 18px;
+  border-radius: 12px;
+  margin: 8px 0;
+  border: 1px solid var(--cv-border);
 }
 
 .cv-faq-question-btn {
   width: 100%;
-  padding: 24px 0;
+  padding: 22px 0;
   background: none;
   border: none;
   display: flex;
@@ -2559,7 +3237,7 @@
   align-items: center;
   text-align: left;
   color: var(--cv-text);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
   transition: color 0.15s;
@@ -2567,6 +3245,29 @@
 
 .cv-faq-question-btn:hover {
   color: var(--cv-accent-light);
+}
+
+.cv-faq-q-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.cv-faq-cat-tag {
+  font-size: 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text-dim);
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.cv-faq-q-text {
+  flex: 1;
 }
 
 .cv-faq-icon {
@@ -2578,6 +3279,7 @@
 
 .cv-faq-answer {
   padding-bottom: 22px;
+  animation: cv-ti-fade 0.2s ease;
 }
 
 .cv-faq-answer p {
@@ -2585,6 +3287,42 @@
   font-size: 1.02rem;
   line-height: 1.68;
   color: var(--cv-text-muted);
+}
+
+/* ── FLOATING BACK TO TOP BUTTON ── */
+.cv-floating-back-top {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text);
+  padding: 9px 16px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: cv-pop-top 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cv-pop-top {
+  from { opacity: 0; transform: translateY(12px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cv-floating-back-top:hover {
+  transform: translateY(-3px);
+  border-color: #34d399;
+  box-shadow: 0 12px 30px rgba(52, 211, 153, 0.3);
 }
 
 /* ── CLEAN FOOTER ── */

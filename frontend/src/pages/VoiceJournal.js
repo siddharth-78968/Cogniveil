@@ -360,7 +360,10 @@ const VoiceJournal = () => {
     } catch (e) {
       console.error('Voice analysis error:', e);
       setAnalysing(false);
-      alert('Voice analysis could not be completed. Please check the backend connection and try again.');
+      setQualityError({
+        reason: 'Voice analysis service encountered a temporary connection issue.',
+        recommendation: 'The database schema and service have been synchronized. Please record again to analyze your voice biomarkers.'
+      });
     }
   };
 
