@@ -19,6 +19,7 @@ import EvidenceDrawer from '../components/EvidenceDrawer';
 import EvidenceGraphModal from '../components/EvidenceGraphModal';
 import AgentPipelineModal from '../components/AgentPipelineModal';
 import DoctorLayout from '../components/DoctorLayout';
+import ChatWidget from '../components/ChatWidget';
 import { 
   AreaChart, 
   Area, 
@@ -299,6 +300,47 @@ const Dashboard = () => {
               <div style={styles.progressBarTrack}>
                 <div style={{ ...styles.progressBarFill, width: `${Math.min((history.length / 7) * 100, 100)}%` }} />
               </div>
+            </div>
+
+            {/* DementAI "Buy Patients Time" Lead Time Benefit Callout */}
+            <div style={{
+              marginTop: '0.85rem',
+              padding: '0.65rem 1rem',
+              borderRadius: '10px',
+              backgroundColor: score?.is_deviating ? (isDark ? 'rgba(217, 119, 6, 0.15)' : '#fef3c7') : (isDark ? 'rgba(67, 56, 202, 0.12)' : '#eef2ff'),
+              border: `1px solid ${score?.is_deviating ? (isDark ? '#d97706' : '#fde68a') : (isDark ? '#4338ca' : '#c7d2fe')}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.75rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>⏱️</span>
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: '800', color: score?.is_deviating ? (isDark ? '#fbbf24' : '#92400e') : (isDark ? '#a5b4fc' : '#3730a3') }}>
+                    CLINICAL LEAD TIME WINDOW: {score?.is_deviating ? '6–8 MONTHS EARLY DRIFT DETECTED' : 'ACTIVE BASELINE SURVEILLANCE'}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: theme.subtext, marginTop: '2px' }}>
+                    CogniVeil does not diagnose — it buys care teams and families precious time by detecting subtle drift months before symptoms prompt a clinic visit.
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleOpenReferral}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '0.74rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  backgroundColor: score?.is_deviating ? '#d97706' : '#4338ca',
+                  color: '#ffffff'
+                }}
+              >
+                View Decision Support Dossier
+              </button>
             </div>
           </div>
 
@@ -610,6 +652,9 @@ const Dashboard = () => {
             )}
           </div>
 
+          {/* Ask Assistant — Inline Read-Only Q&A Results Widget */}
+          <ChatWidget user={user} />
+
           {/* 5 Primary Modules Grid */}
           <div style={{ marginTop: '1.5rem' }}>
             <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: theme.text, marginBottom: '1rem' }}>Screening & Diagnostic Modules</h3>
@@ -783,84 +828,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* 2. Activity Dual Spline Wave Chart */}
-            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <div style={styles.cardHeader}>
-                <div>
-                  <h3 style={{ ...styles.cardTitle, color: theme.text }}>Activity</h3>
-                </div>
-                <div 
-                  style={{ 
-                    ...styles.dropdownSelector, 
-                    backgroundColor: theme.statBoxBg, 
-                    borderColor: theme.border,
-                    color: theme.text,
-                    cursor: 'pointer' 
-                  }}
-                  onClick={() => setChartTimeframe(prev => prev === 'This Year' ? 'Past 7 Days' : 'This Year')}
-                  title="Click to toggle timeframe"
-                >
-                  <span>{chartTimeframe}</span>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </div>
-              </div>
-
-              {/* Spline Chart */}
-              <div style={{ width: '100%', height: 230, marginTop: '0.5rem' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={activityData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="consultGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#4338CA" stopOpacity={0.25}/>
-                        <stop offset="95%" stopColor="#4338CA" stopOpacity={0.0}/>
-                      </linearGradient>
-                      <linearGradient id="patientGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} vertical={false} />
-                    <XAxis dataKey="month" stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                      type="natural" 
-                      dataKey="score" 
-                      stroke="#4338CA" 
-                      strokeWidth={3} 
-                      fillOpacity={1} 
-                      fill="url(#consultGrad)" 
-                      name="Consultations" 
-                    />
-                    <Area 
-                      type="natural" 
-                      dataKey="baseline" 
-                      stroke="#06b6d4" 
-                      strokeWidth={3} 
-                      fillOpacity={1} 
-                      fill="url(#patientGrad)" 
-                      name="Patients" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Chart Legend */}
-              <div style={{ ...styles.chartLegend, borderTop: `1px solid ${theme.borderSubtle}` }}>
-                <div style={styles.legendItem}>
-                  <span style={{ width: '10px', height: '10px', backgroundColor: '#4338CA', borderRadius: '3px' }} />
-                  <span style={{ color: theme.subtext }}>Consultations</span>
-                </div>
-                <div style={styles.legendItem}>
-                  <span style={{ width: '10px', height: '10px', backgroundColor: '#06b6d4', borderRadius: '3px' }} />
-                  <span style={{ color: theme.subtext }}>Patients</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Middle 2-Column Row: Appointment Request & Appointment */}
+            {/* 2. Middle 2-Column Row: Appointment Request & Appointment */}
             {apptToast && (
               <div style={{
                 padding: '0.6rem 1rem',

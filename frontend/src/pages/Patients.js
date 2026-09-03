@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import DoctorLayout from '../components/DoctorLayout';
-import { getClinicianPatients, getClinicianPatientOverview } from '../utils/api';
+import { getClinicianPatients, getClinicianPatientOverview, getClinicianPatientDementiaProfile } from '../utils/api';
 
 
 const Patients = () => {
@@ -16,6 +16,8 @@ const Patients = () => {
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [patientDetail, setPatientDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [dementiaProfile, setDementiaProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   useEffect(() => {
     fetchPatientsList();
@@ -41,16 +43,29 @@ const Patients = () => {
 
   const handleSelectPatient = async (patientId) => {
     setSelectedPatientId(patientId);
+    setLoadingDetail(true);
+    setLoadingProfile(true);
     try {
-      setLoadingDetail(true);
-      const res = await getClinicianPatientOverview(patientId);
-      setPatientDetail(res.data);
+      const [overviewRes, profileRes] = await Promise.allSettled([
+        getClinicianPatientOverview(patientId),
+        getClinicianPatientDementiaProfile(patientId)
+      ]);
+      if (overviewRes.status === 'fulfilled') {
+        setPatientDetail(overviewRes.value.data);
+      }
+      if (profileRes.status === 'fulfilled') {
+        setDementiaProfile(profileRes.value.data);
+      } else {
+        setDementiaProfile(null);
+      }
     } catch (err) {
       console.log('Error loading patient detail:', err.message);
     } finally {
       setLoadingDetail(false);
+      setLoadingProfile(false);
     }
   };
+
 
   const filteredPatients = patients.filter((p) => {
     const matchesSearch =
@@ -65,6 +80,8 @@ const Patients = () => {
     return p.risk_level?.toLowerCase() === riskFilter.toLowerCase();
   });
 
+  const registeredCount = patients.filter((p) => !p.is_demo).length;
+  const demoCount = patients.filter((p) => p.is_demo).length;
   const highRiskCount = patients.filter((p) => p.risk_level === 'High' || p.is_deviating).length;
   const modRiskCount = patients.filter((p) => p.risk_level === 'Moderate').length;
   const avgScore = patients.length > 0
@@ -100,27 +117,27 @@ const Patients = () => {
         {/* 4 Summary Stats */}
         <div style={styles.statsGrid}>
           <div style={{ ...styles.statCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-            <span style={{ ...styles.statLabel, color: theme.subtext }}>ACTIVE MONITORED PATIENTS</span>
+            <span style={{ ...styles.statLabel, color: theme.subtext }}>TOTAL MONITORED</span>
             <div style={{ ...styles.statValue, color: theme.text }}>{patients.length}</div>
-            <span style={{ ...styles.statSub, color: theme.subtext }}>Enrolled in daily surveillance</span>
+            <span style={{ ...styles.statSub, color: theme.subtext }}>Active enrolled surveillance</span>
           </div>
 
           <div style={{ ...styles.statCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-            <span style={{ ...styles.statLabel, color: theme.subtext }}>ELEVATED RISK / DRIFT ALERTS</span>
+            <span style={{ ...styles.statLabel, color: theme.subtext }}>REGISTERED PATIENTS</span>
+            <div style={{ ...styles.statValue, color: '#10B981' }}>{registeredCount}</div>
+            <span style={{ ...styles.statSub, color: theme.subtext }}>Authentic enrolled accounts</span>
+          </div>
+
+          <div style={{ ...styles.statCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+            <span style={{ ...styles.statLabel, color: theme.subtext }}>DEMO PATIENTS</span>
+            <div style={{ ...styles.statValue, color: '#8B5CF6' }}>{demoCount}</div>
+            <span style={{ ...styles.statSub, color: theme.subtext }}>Designated demo cohort</span>
+          </div>
+
+          <div style={{ ...styles.statCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+            <span style={{ ...styles.statLabel, color: theme.subtext }}>ELEVATED RISK / DRIFT</span>
             <div style={{ ...styles.statValue, color: '#C94C4C' }}>{highRiskCount}</div>
-            <span style={{ ...styles.statSub, color: theme.subtext }}>CUSUM change-point flag triggered</span>
-          </div>
-
-          <div style={{ ...styles.statCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-            <span style={{ ...styles.statLabel, color: theme.subtext }}>PRODROMAL / MODERATE</span>
-            <div style={{ ...styles.statValue, color: '#D97745' }}>{modRiskCount}</div>
-            <span style={{ ...styles.statSub, color: theme.subtext }}>Under watchful surveillance</span>
-          </div>
-
-          <div style={{ ...styles.statCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-            <span style={{ ...styles.statLabel, color: theme.subtext }}>COHORT COGNISCORE MEAN</span>
-            <div style={{ ...styles.statValue, color: '#53B7C5' }}>{avgScore} <span style={{ fontSize: '1rem' }}>/ 100</span></div>
-            <span style={{ ...styles.statSub, color: theme.subtext }}>Tri-modal baseline average</span>
+            <span style={{ ...styles.statSub, color: theme.subtext }}>CUSUM drift / alert triggered</span>
           </div>
         </div>
 
@@ -194,7 +211,23 @@ const Patients = () => {
                           {p.name ? p.name.charAt(0).toUpperCase() : 'P'}
                         </div>
                         <div>
-                          <h3 style={{ ...styles.patientName, color: theme.text }}>{p.name}</h3>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <h3 style={{ ...styles.patientName, color: theme.text, margin: 0 }}>{p.name}</h3>
+                            {p.is_demo ? (
+                              <span style={{
+                                fontSize: '0.62rem',
+                                fontWeight: '800',
+                                letterSpacing: '0.04em',
+                                color: isDark ? '#A78BFA' : '#6D28D9',
+                                backgroundColor: isDark ? '#2E106540' : '#EDE9FE',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                border: `1px solid ${isDark ? '#A78BFA40' : '#C4B5FD'}`
+                              }}>
+                                DEMO
+                              </span>
+                            ) : null}
+                          </div>
                           <span style={{ ...styles.patientMeta, color: theme.subtext }}>
                             {p.gender} · {p.age} yrs · {p.email}
                           </span>
@@ -386,6 +419,122 @@ const Patients = () => {
                     </div>
                   </div>
                 )}
+
+                {/* DEMENTIA TYPE PROFILING (Summary Widget & Shortcut to Dedicated Workspace) */}
+                <div style={{ marginTop: '1.5rem', borderTop: `1px solid ${theme.borderSubtle}`, paddingTop: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#53B7C5' }} />
+                        <h4 style={{ ...styles.sectionHeading, color: theme.text, margin: 0, fontSize: '0.96rem' }}>
+                          Dementia Type Profiling (Decision Support)
+                        </h4>
+                      </div>
+                      <span style={{ fontSize: '0.74rem', color: theme.subtext }}>
+                        Cross-cutting pattern estimator combining Level 1 psychometrics/telemetry & Level 2 clinical biomarkers
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => navigate(`/dementia-profiling?patientId=${patientDetail.patient.id}`)}
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: '800',
+                        color: isDark ? '#53B7C5' : '#0F4C4A',
+                        backgroundColor: isDark ? '#0A222B' : '#E0FCFF',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: `1px solid ${isDark ? '#53B7C540' : '#0F4C4A30'}`,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      Open Full Profiling Workspace →
+                    </button>
+                  </div>
+
+                  {loadingProfile ? (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext, fontSize: '0.82rem' }}>
+                      Evaluating cross-cutting multimodal pattern profile...
+                    </div>
+                  ) : dementiaProfile?.status === 'insufficient_data' ? (
+                    <div style={{
+                      padding: '1rem 1.25rem',
+                      backgroundColor: isDark ? '#141E28' : '#F9FAFB',
+                      border: `1px dashed ${theme.borderSubtle}`,
+                      borderRadius: '10px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <strong style={{ fontSize: '0.82rem', color: theme.text }}>Insufficient Screening Data</strong>
+                        <p style={{ fontSize: '0.76rem', color: theme.subtext, margin: '2px 0 0 0' }}>
+                          {dementiaProfile.message}
+                        </p>
+                      </div>
+                      <span style={{ fontSize: '0.72rem', color: isDark ? '#53B7C5' : '#0F4C4A', fontWeight: '700' }}>
+                        {dementiaProfile.recommended_action}
+                      </span>
+                    </div>
+                  ) : dementiaProfile?.status === 'completed' ? (
+                    <div style={{
+                      backgroundColor: isDark ? '#081119' : '#FFFFFF',
+                      border: `1px solid ${theme.borderSubtle}`,
+                      borderRadius: '10px',
+                      padding: '1rem 1.15rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', fontWeight: '800', color: theme.subtext, textTransform: 'uppercase' }}>
+                          Most Consistent Pattern
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                          <span style={{ fontSize: '1.15rem', fontWeight: '900', color: theme.text }}>
+                            {dementiaProfile.most_consistent_pattern}
+                          </span>
+                          <span style={{
+                            fontSize: '0.7rem',
+                            fontWeight: '800',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: '#53B7C520',
+                            color: isDark ? '#53B7C5' : '#0F4C4A',
+                            border: '1px solid #53B7C540'
+                          }}>
+                            {Math.round((dementiaProfile.confidence_score || 0) * 100)}% Consistency
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.72rem', color: theme.subtext, display: 'block' }}>
+                          Top Signal: <strong>{dementiaProfile.key_contributing_signals?.[0]?.signal_name || 'Psychometrics'}</strong>
+                        </span>
+                        <button
+                          onClick={() => navigate(`/dementia-profiling?patientId=${patientDetail.patient.id}`)}
+                          style={{
+                            marginTop: '4px',
+                            fontSize: '0.74rem',
+                            fontWeight: '700',
+                            color: isDark ? '#53B7C5' : '#0F4C4A',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            textDecoration: 'underline',
+                            padding: 0
+                          }}
+                        >
+                          View Full Distribution & SHAP →
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             ) : (
               <div style={{ padding: '3rem', textAlign: 'center', color: theme.subtext }}>Select a patient on the left to view clinical dossier.</div>

@@ -68,7 +68,7 @@ class SafetyAgent:
             apoe_prov = provenance_meta.get("apoe_e4_provenance", "self_reported")
             mri_prov = provenance_meta.get("mri_provenance", "self_reported")
             if apoe_prov == "self_reported":
-                provenance_notes.append("• Genetic APOE-ε4 status is self-reported and requires laboratory confirmation.")
+                provenance_notes.append("• Genetic APOE-e4 status is self-reported and requires laboratory confirmation.")
             if mri_prov == "self_reported":
                 provenance_notes.append("• Neuroimaging history is patient-reported.")
 

@@ -84,13 +84,18 @@ export const getClinicianPatientTests = (patientId) => API.get(`/api/clinician/p
 export const getClinicianPatientVoice = (patientId) => API.get(`/api/clinician/patients/${patientId}/voice`);
 export const getClinicianPatientLevel2 = (patientId) => API.get(`/api/clinician/patients/${patientId}/level2`);
 export const getClinicianPatientMRI = (patientId) => API.get(`/api/clinician/patients/${patientId}/mri`);
+export const getClinicianPatientDementiaProfile = (patientId) => API.get(`/api/clinician/patients/${patientId}/dementia-profile`);
 
 // Clinical PDF Export APIs (Binary PDF Blobs)
 export const downloadClinicalReportPDF = (data) => API.post('/api/clinical-report/pdf', data, { responseType: 'blob' });
 export const downloadPatientReportPDF = (patientId) => API.get(`/api/clinician/patients/${patientId}/report-pdf`, { responseType: 'blob' });
 
+// Chatbot Assistant API
+export const sendChatMessage = (question) => API.post('/chat', { question });
+
 // Ping backend endpoint
 export const pingBackend = () => API.get('/');
+
 
 
 

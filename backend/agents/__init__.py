@@ -23,6 +23,7 @@ from .orchestrator import RiskOrchestrationAgent
 from .clinical import ClinicalSynthesisAgent
 from .safety import SafetyAgent
 from .audit import AuditAgent
+from .chat import ChatAgent
 
 __all__ = [
     "BehaviorAnalysisAgent",
@@ -34,5 +35,6 @@ __all__ = [
     "RiskOrchestrationAgent",
     "ClinicalSynthesisAgent",
     "SafetyAgent",
-    "AuditAgent"
+    "AuditAgent",
+    "ChatAgent"
 ]

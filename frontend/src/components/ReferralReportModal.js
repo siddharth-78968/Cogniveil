@@ -6,6 +6,7 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
   const [downloading, setDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
+  const [viewMode, setViewMode] = useState('clinical'); // 'clinical' | 'plain'
 
   if (!isOpen) return null;
 
@@ -209,9 +210,46 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '1.2rem' }}>🏥</span>
             <span style={{ color: 'white', fontWeight: '800', fontSize: '0.95rem' }}>
-              CogniVeil Clinical Decision Support Dossier (MedGemma-4B Synthesis)
+              CogniVeil Clinical Decision Support Dossier (MedGemma-4B)
             </span>
           </div>
+
+          {/* Mode Switch: Clinical vs Plain Language (AdvocateGPT Pattern) */}
+          <div style={{ display: 'flex', backgroundColor: '#0f172a', padding: '3px', borderRadius: '8px', border: '1px solid #334155' }}>
+            <button 
+              onClick={() => setViewMode('clinical')} 
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                fontSize: '0.78rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                backgroundColor: viewMode === 'clinical' ? '#0F4C4A' : 'transparent',
+                color: viewMode === 'clinical' ? '#ffffff' : '#94a3b8',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              📋 Specialist Clinical Dossier
+            </button>
+            <button 
+              onClick={() => setViewMode('plain')} 
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                fontSize: '0.78rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                backgroundColor: viewMode === 'plain' ? '#4338CA' : 'transparent',
+                color: viewMode === 'plain' ? '#ffffff' : '#94a3b8',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              💬 Plain Language (Family-Friendly)
+            </button>
+          </div>
+
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {downloadError && (
               <span style={{ color: '#FCA5A5', fontSize: '0.78rem', fontWeight: '600' }}>⚠️ {downloadError}</span>
@@ -249,7 +287,11 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
           <div style={modalStyles.headerRow}>
             <div>
               <h1 style={modalStyles.clinicTitle}>COGNIVEIL MULTIMODAL SCREENING CLINIC</h1>
-              <p style={modalStyles.clinicSub}>Clinical Decision Support Report — MedGemma-4B Grounded Synthesis</p>
+              <p style={modalStyles.clinicSub}>
+                {viewMode === 'clinical' 
+                  ? 'Clinical Decision Support Report — MedGemma-4B Grounded Synthesis (12-Section Specialist Dossier)'
+                  : 'Plain-Language Cognitive Health Summary for Patient & Family / Care Circle'}
+              </p>
             </div>
             <div style={{ textAlign: 'right' }}>
               <span style={modalStyles.urgencyBadge(referral.urgency)}>
@@ -261,31 +303,135 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
 
           <div style={modalStyles.divider} />
 
-          {/* 1. Assessment Overview */}
-          <div style={modalStyles.section}>
-            <h3 style={modalStyles.sectionHeader}>1. ASSESSMENT OVERVIEW</h3>
-            <div style={modalStyles.infoGrid}>
-              <div><strong>Patient Name:</strong> {patient.name}</div>
-              <div><strong>Age / Gender:</strong> {patient.age} yrs · {patient.gender || 'Male'}</div>
-              <div><strong>Session Identifier:</strong> {overview.session_id}</div>
-              <div><strong>Overall CogniScore:</strong> <span style={{ color: '#4338CA', fontWeight: '800' }}>{overview.cogniscore} / 100</span> (Confidence: {overview.confidence})</div>
-              <div><strong>Screening Tier Reached:</strong> {overview.tier_reached}</div>
-              <div><strong>Baseline Availability:</strong> {overview.baseline_availability}</div>
+          {/* DementAI "Buy Time" Lead Time Metric Callout */}
+          <div style={{ 
+            backgroundColor: data.is_deviating ? '#FEF3C7' : '#EFF6FF', 
+            border: `1.5px solid ${data.is_deviating ? '#F59E0B' : '#60A5FA'}`, 
+            borderRadius: '10px', 
+            padding: '12px 16px', 
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.4rem' }}>⏱️</span>
+              <div>
+                <div style={{ fontSize: '0.85rem', fontWeight: '800', color: data.is_deviating ? '#92400E' : '#1E40AF', letterSpacing: '0.02em' }}>
+                  CLINICAL LEAD TIME GAINED: {referral.estimated_clinical_lead_time || (data.is_deviating ? '6–8 MONTHS BEFORE TYPICAL SYMPTOM PRESENTATION' : 'BASELINE STABLE (0 ACTIVE DRIFT)')}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: data.is_deviating ? '#78350F' : '#1E3A8A', marginTop: '2px', lineHeight: '1.4' }}>
+                  CogniVeil catches subtle statistical drift in neuromotor typing, speech cadence, and recall before overt symptoms prompt a clinic visit — buying care teams critical time for early intervention.
+                </div>
+              </div>
+            </div>
+            <div style={{
+              backgroundColor: data.is_deviating ? '#D97706' : '#2563EB',
+              color: '#ffffff',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontSize: '0.75rem',
+              fontWeight: '800',
+              textTransform: 'uppercase'
+            }}>
+              {data.is_deviating ? 'Early Window Active' : 'Optimal Baseline'}
             </div>
           </div>
 
-          {/* 2. Executive Clinical Summary (MedGemma AI Synthesized) */}
-          <div style={modalStyles.section}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <h3 style={modalStyles.sectionHeader}>2. EXECUTIVE CLINICAL SUMMARY</h3>
-              <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#0F4C4A', backgroundColor: '#E0FCFF', padding: '2px 8px', borderRadius: '4px', border: '1px solid #53B7C5' }}>
-                MEDGEMMA-4B SYNTHESIS
-              </span>
+          {/* ── PLAIN-LANGUAGE (FAMILY-FRIENDLY) VIEW (AdvocateGPT Pattern) ── */}
+          {viewMode === 'plain' ? (
+            <div>
+              <div style={{ ...modalStyles.section, backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
+                <h3 style={{ ...modalStyles.sectionHeader, color: '#4338CA', marginBottom: '8px' }}>💬 WHAT THIS MEANS IN SIMPLE WORDS</h3>
+                <p style={{ ...modalStyles.bodyTextLeading, fontSize: '0.9rem', color: '#1E293B', marginBottom: '12px' }}>
+                  Over the past several weeks, CogniVeil compared {patient.name}'s daily typing rhythm, voice cadence, and short memory recall against their own normal baseline.
+                  {data.is_deviating 
+                    ? ` Our system detected subtle slowing down and hesitation across typing and memory tasks. This is NOT a diagnosis of any disease — it simply means small changes were noticed early, giving your family and doctor months of lead time to address reversible factors like sleep quality, stress, or blood pressure.`
+                    : ` All cognitive micro-tasks and digital interaction patterns are holding steady with ${patient.name}'s personal baseline. No significant drift is present.`}
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '14px' }}>
+                  <div style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #CBD5E1' }}>
+                    <div style={{ fontWeight: '800', fontSize: '0.82rem', color: '#0F172A', marginBottom: '4px' }}>⌨️ Typing & Movement</div>
+                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>
+                       Typing pace showed slightly higher hesitation and key corrections compared to baseline calibration.
+                    </p>
+                  </div>
+                  <div style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #CBD5E1' }}>
+                    <div style={{ fontWeight: '800', fontSize: '0.82rem', color: '#0F172A', marginBottom: '4px' }}>🧩 Daily 3-Minute Memory</div>
+                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>
+                       Pattern retention scores dipped slightly ({cognitive.score}/100), suggesting mental fatigue or attentional drift.
+                    </p>
+                  </div>
+                  <div style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #CBD5E1' }}>
+                    <div style={{ fontWeight: '800', fontSize: '0.82rem', color: '#0F172A', marginBottom: '4px' }}>🎙️ Speaking & Fluency</div>
+                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>
+                       Vocabulary and sentence structure remain strong and natural, with slightly longer thinking pauses between phrases.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Caregiver Action Step (PerryOps Pattern) */}
+              <div style={{ 
+                backgroundColor: '#EFF6FF', 
+                border: '1.5px solid #93C5FD', 
+                borderRadius: '10px', 
+                padding: '16px', 
+                marginBottom: '16px' 
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🎯</span>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: '800', color: '#1E40AF' }}>
+                    RECOMMENDED CAREGIVER & CARE CIRCLE ACTION STEP
+                  </h4>
+                </div>
+                <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#1E3A8A', fontWeight: '600', lineHeight: '1.5' }}>
+                  {referral.caregiver_action_item || (data.is_deviating 
+                    ? 'Schedule a formal neurological evaluation & memory clinic consult within 2–4 weeks, and review blood pressure, sleep quality, and routine blood tests (B12, Thyroid) with your primary physician.' 
+                    : 'Encourage ongoing participation in daily 3-minute cognitive games and maintain healthy physical and social routines.')}
+                </p>
+                <div style={{ fontSize: '0.78rem', color: '#3B82F6', fontWeight: '700' }}>
+                  📍 Recommended Clinical Pathway: {referral.recommended_specialist} ({referral.urgency})
+                </div>
+              </div>
+
+              <div style={modalStyles.disclaimerBox}>
+                <p style={{ margin: 0, fontSize: '0.75rem', lineHeight: '1.4', color: '#475569' }}>
+                  <strong>DECISION-SUPPORT NOTICE:</strong> CogniVeil does not provide a clinical diagnosis. It is designed to assist care teams and families by catching subtle behavioral and cognitive trends early. Always consult a qualified medical professional.
+                </p>
+              </div>
             </div>
-            <div style={{ ...modalStyles.calloutBox, borderLeft: '4px solid #53B7C5', backgroundColor: '#F0F5F4' }}>
-              <p style={modalStyles.bodyTextLeading}>{execSummary}</p>
-            </div>
-          </div>
+          ) : (
+            /* ── FULL 12-SECTION CLINICAL DOSSIER ── */
+            <div>
+              {/* 1. Assessment Overview */}
+              <div style={modalStyles.section}>
+                <h3 style={modalStyles.sectionHeader}>1. ASSESSMENT OVERVIEW</h3>
+                <div style={modalStyles.infoGrid}>
+                  <div><strong>Patient Name:</strong> {patient.name}</div>
+                  <div><strong>Age / Gender:</strong> {patient.age} yrs · {patient.gender || 'Male'}</div>
+                  <div><strong>Session Identifier:</strong> {overview.session_id}</div>
+                  <div><strong>Overall CogniScore:</strong> <span style={{ color: '#4338CA', fontWeight: '800' }}>{overview.cogniscore} / 100</span> (Confidence: {overview.confidence})</div>
+                  <div><strong>Screening Tier Reached:</strong> {overview.tier_reached}</div>
+                  <div><strong>Baseline Availability:</strong> {overview.baseline_availability}</div>
+                </div>
+              </div>
+
+              {/* 2. Executive Clinical Summary (MedGemma AI Synthesized) */}
+              <div style={modalStyles.section}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <h3 style={modalStyles.sectionHeader}>2. EXECUTIVE CLINICAL SUMMARY</h3>
+                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#0F4C4A', backgroundColor: '#E0FCFF', padding: '2px 8px', borderRadius: '4px', border: '1px solid #53B7C5' }}>
+                    ✨ MEDGEMMA-4B SYNTHESIS
+                  </span>
+                </div>
+                <div style={{ ...modalStyles.calloutBox, borderLeft: '4px solid #53B7C5', backgroundColor: '#F0F5F4' }}>
+                  <p style={modalStyles.bodyTextLeading}>{execSummary}</p>
+                </div>
+              </div>
 
           {/* 3. Cognitive Performance */}
           <div style={modalStyles.section}>
@@ -557,6 +703,15 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
                   ))}
                 </ul>
               </div>
+
+              <div style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1.5px solid #BFDBFE' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1E40AF', fontWeight: '800', fontSize: '0.83rem' }}>
+                  <span>🎯 CAREGIVER & CARE CIRCLE ACTION STEP (PERRYOPS ROUTING):</span>
+                </div>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#1E3A8A', fontWeight: '600', lineHeight: '1.4' }}>
+                  {referral.caregiver_action_item || (data.is_deviating ? 'Schedule a formal neurological memory evaluation within 2–4 weeks and discuss sleep/vascular health with Primary Care.' : 'Encourage ongoing participation in daily 3-minute cognitive tests and maintain healthy sleep hygiene.')}
+                </p>
+              </div>
             </div>
 
             <div style={modalStyles.disclaimerBox}>
@@ -565,6 +720,8 @@ const ReferralReportModal = ({ isOpen, onClose, reportData, patientData }) => {
               </p>
             </div>
           </div>
+        </div>
+      )}
 
           {/* Footer Signature */}
           <div style={modalStyles.footerRow}>

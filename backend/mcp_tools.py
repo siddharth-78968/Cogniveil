@@ -240,11 +240,26 @@ def detect_language(text: str = None, sample_id: str = None) -> dict:
 # =============================================================================
 # MCP Tool 08: analyze_voice
 # =============================================================================
-def analyze_voice(features: dict, transcript: str = "", language_hint: str = "en") -> dict:
+def analyze_voice(
+    features: dict,
+    transcript: str = "",
+    language_hint: str = "en",
+    baseline: Optional[dict] = None,
+    historical_records: Optional[list] = None,
+) -> dict:
     """Interprets derived speech acoustic biomarkers and lexical features."""
     lang_info = detect_language(transcript) if transcript.strip() else {"detected_language": "English", "language_code": language_hint}
-    features_with_lang = {**features, "detected_language": lang_info["detected_language"]}
-    return voice_agent.analyze(features_with_lang, transcript=transcript)
+    features_with_lang = {
+        **features,
+        "detected_language": lang_info["detected_language"],
+        "language_code": lang_info.get("language_code", language_hint),
+    }
+    return voice_agent.analyze(
+        features_with_lang,
+        transcript=transcript,
+        baseline=baseline,
+        historical_records=historical_records,
+    )
 
 analyse_voice = analyze_voice
 
@@ -482,7 +497,9 @@ def generate_referral(
             "urgency": "High",
             "timeframe": "Within 2 weeks",
             "recommended_specialist": "Neurologist / Memory Disorders Clinic",
-            "clinical_rationale": "High risk classification or active baseline score deviation detected. Comprehensive diagnostic workup including formal neuropsychological evaluation and neuroimaging is indicated."
+            "clinical_rationale": "High risk classification or active baseline score deviation detected. Comprehensive diagnostic workup including formal neuropsychological evaluation and neuroimaging is indicated.",
+            "estimated_clinical_lead_time": "6–8 months prior to overt clinical symptom presentation",
+            "caregiver_action_item": "Schedule a formal neurological evaluation & memory clinic consult within 2–4 weeks."
         }
     elif risk_level == "Moderate":
         referral_payload = {
@@ -491,7 +508,9 @@ def generate_referral(
             "urgency": "Moderate",
             "timeframe": "Within 30 days",
             "recommended_specialist": "Primary Care Physician / Geriatric Specialist",
-            "clinical_rationale": "Moderate risk signals detected. Recommended to evaluate modifiable vascular and lifestyle risk factors and repeat CogniScore monitoring."
+            "clinical_rationale": "Moderate risk signals detected. Recommended to evaluate modifiable vascular and lifestyle risk factors and repeat CogniScore monitoring.",
+            "estimated_clinical_lead_time": "6–12 months prior to overt clinical symptom presentation",
+            "caregiver_action_item": "Discuss sleep hygiene, cardiovascular metrics, and aerobic activity with Primary Care."
         }
     else:
         referral_payload = {
@@ -500,7 +519,9 @@ def generate_referral(
             "urgency": "Low",
             "timeframe": "Annual Checkup",
             "recommended_specialist": "Primary Care Physician",
-            "clinical_rationale": "Cognitive performance is within expected limits. Continue daily cognitive active/passive screening and maintain healthy lifestyle routines."
+            "clinical_rationale": "Cognitive performance is within expected limits. Continue daily cognitive active/passive screening and maintain healthy lifestyle routines.",
+            "estimated_clinical_lead_time": "Baseline intact (no active drift)",
+            "caregiver_action_item": "Encourage ongoing participation in daily cognitive micro-tasks and healthy lifestyle habits."
         }
 
     referral_payload["session_id"] = session_id

@@ -16,7 +16,7 @@ const DoctorLayout = ({
   onOpenEvidenceGraph,
   onOpenAgentPipeline
 }) => {
-  const { isDark, theme } = useTheme();
+  const { isDark, toggleTheme, theme } = useTheme();
   const navigate = useNavigate();
 
   // Search State
@@ -440,6 +440,21 @@ const DoctorLayout = ({
                 </div>
               )}
             </div>
+
+            {/* Light / Dark Mode Toggle Button */}
+            <button 
+              className="theme-toggle-switch" 
+              onClick={toggleTheme}
+              style={{
+                backgroundColor: theme.cardBg,
+                borderColor: theme.border,
+                color: theme.text,
+              }}
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label="Toggle Theme"
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
 
             {actionButton ? actionButton : null}
           </div>

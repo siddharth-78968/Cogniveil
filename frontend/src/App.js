@@ -16,6 +16,7 @@ import CareCircle from './pages/CareCircle';
 import Appointments from './pages/Appointments';
 import Patients from './pages/Patients';
 import ReferralReport from './pages/ReferralReport';
+import DementiaProfiling from './pages/DementiaProfiling';
 import { pingBackend } from './utils/api';
 
 
@@ -80,6 +81,9 @@ const AppContent = () => {
         } />
         <Route path="/referral" element={
           <RoleProtectedRoute requiredRole="clinician"><ReferralReport /></RoleProtectedRoute>
+        } />
+        <Route path="/dementia-profiling" element={
+          <RoleProtectedRoute requiredRole="clinician"><DementiaProfiling /></RoleProtectedRoute>
         } />
         <Route path="*" element={<Navigate to="/" />} />
 
