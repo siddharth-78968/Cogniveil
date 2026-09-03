@@ -10,7 +10,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [activeDemo, setActiveDemo] = useState(null);
+  const [activeDemo, setActiveDemo] = useState('riya');
   const { login } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -68,47 +68,34 @@ const Login = () => {
     }
   };
 
-  // Cohesive clinical olive/slate hierarchy (no red, yellow, or bright green)
   const demoAccounts = [
     { 
       id: 'riya',
       name: 'Dr. Riya Mehta', 
-      role: 'Clinical Supervisor & Caregiver Lead', 
+      role: 'Clinical Supervisor', 
       email: 'riyamehta55@gmail.com', 
-      code: 'CLINICAL SUPERVISOR',
-      badgeBorder: isDark ? '#475d41' : '#b8ccb5',
-      badgeColor: isDark ? '#dbe5d8' : '#273822',
-      badgeBg: isDark ? 'rgba(71, 93, 65, 0.25)' : '#e2ede0'
+      code: 'SUPERVISOR'
     },
     { 
       id: 'rajan',
       name: 'Rajan Pillai', 
-      role: 'Tier 3 MCI · Statistical Drift Trajectory', 
+      role: 'Tier 3 Volumetric', 
       email: 'rajan@demo.com', 
-      code: 'TIER 3 · VOLUMETRIC',
-      badgeBorder: isDark ? '#31412e' : '#c5d7c2',
-      badgeColor: isDark ? '#b8c7b4' : '#3f533a',
-      badgeBg: isDark ? 'rgba(49, 65, 46, 0.2)' : '#e8f2e6'
+      code: 'TIER 3'
     },
     { 
       id: 'meena',
       name: 'Meena Krishnan', 
-      role: 'Tier 2 · Prodromal Fluency Drift', 
+      role: 'Tier 2 Biomarker', 
       email: 'meena@demo.com', 
-      code: 'TIER 2 · BIOMARKER',
-      badgeBorder: isDark ? '#31412e' : '#c5d7c2',
-      badgeColor: isDark ? '#b8c7b4' : '#3f533a',
-      badgeBg: isDark ? 'rgba(49, 65, 46, 0.2)' : '#e8f2e6'
+      code: 'TIER 2'
     },
     { 
       id: 'arjun',
       name: 'Arjun Sharma', 
-      role: 'Tier 1 Baseline · Intact Stability', 
+      role: 'Tier 1 Baseline', 
       email: 'arjun@demo.com', 
-      code: 'TIER 1 · TELEMETRY',
-      badgeBorder: isDark ? '#31412e' : '#c5d7c2',
-      badgeColor: isDark ? '#b8c7b4' : '#3f533a',
-      badgeBg: isDark ? 'rgba(49, 65, 46, 0.2)' : '#e8f2e6'
+      code: 'TIER 1'
     },
   ];
 
@@ -253,7 +240,7 @@ const Login = () => {
                   fontSize: '1.85rem',
                   fontWeight: '900',
                   letterSpacing: '-0.03em',
-                  color: isDark ? '#f1f5ee' : '#141e13',
+                  color: isDark ? '#f1f5ee' : '#141d13',
                   fontFamily: "'Mulish', sans-serif"
                 }}>
                   6–8 Mos
@@ -271,7 +258,7 @@ const Login = () => {
                   fontSize: '1.85rem',
                   fontWeight: '900',
                   letterSpacing: '-0.03em',
-                  color: isDark ? '#f1f5ee' : '#141e13',
+                  color: isDark ? '#f1f5ee' : '#141d13',
                   fontFamily: "'Mulish', sans-serif"
                 }}>
                   10 Agents
@@ -289,7 +276,7 @@ const Login = () => {
                   fontSize: '1.85rem',
                   fontWeight: '900',
                   letterSpacing: '-0.03em',
-                  color: isDark ? '#f1f5ee' : '#141e13',
+                  color: isDark ? '#f1f5ee' : '#141d13',
                   fontFamily: "'Mulish', sans-serif"
                 }}>
                   Tri-Tier
@@ -324,7 +311,7 @@ const Login = () => {
 
       </div>
 
-      {/* ── RIGHT AUTHENTICATION STATION (48% WIDTH) ── */}
+      {/* ── RIGHT AUTHENTICATION STATION (48% WIDTH) — CLAUDE.AI STYLE ── */}
       <div style={{
         flex: '0.95',
         minHeight: '100vh',
@@ -332,32 +319,23 @@ const Login = () => {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
+        alignItems: 'center',
         boxSizing: 'border-box',
         backgroundColor: isDark ? '#080d09' : '#f5f8f3'
       }}>
         
-        <div style={{ maxWidth: '440px', width: '100%', margin: '0 auto' }}>
+        <div style={{ maxWidth: '400px', width: '100%' }}>
           
-          {/* Top Bar with Clean Text Links */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-            <span style={{
-              fontSize: '0.7rem',
-              fontWeight: '800',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              fontFamily: "'JetBrains Mono', monospace",
-              color: isDark ? '#98ab92' : '#394e33'
-            }}>
-              [ AUTHORIZED WORKSTATION ]
-            </span>
+          {/* Top Bar with Theme Toggle */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
             <button
               onClick={toggleTheme}
               style={{
                 background: 'none',
                 border: `1px solid ${isDark ? '#233222' : '#d2ded0'}`,
                 padding: '5px 12px',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
+                borderRadius: '6px',
+                fontSize: '0.74rem',
                 fontFamily: "'JetBrains Mono', monospace",
                 fontWeight: '700',
                 cursor: 'pointer',
@@ -368,54 +346,131 @@ const Login = () => {
             </button>
           </div>
 
-          {/* Form Header */}
-          <div style={{ marginBottom: '1.75rem' }}>
+          {/* Claude-Style Editorial Title & Subtitle */}
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '2rem',
-              fontWeight: '900',
-              letterSpacing: '-0.03em',
-              margin: '0 0 0.4rem 0',
+              fontFamily: "'Newsreader', 'Georgia', serif",
+              fontSize: '2.5rem',
+              fontWeight: '400',
+              letterSpacing: '-0.025em',
+              margin: '0 0 0.5rem 0',
               color: isDark ? '#f1f5ee' : '#141e13'
             }}>
               Sign in to workstation
             </h2>
             <p style={{
-              fontSize: '0.88rem',
-              color: isDark ? '#94a78f' : '#4e6648',
+              fontSize: '0.95rem',
+              color: isDark ? '#98ab92' : '#576c52',
               margin: 0,
-              lineHeight: '1.5'
+              fontWeight: '400'
             }}>
-              Select an authorized clinical evaluation role or enter credentials.
+              Your clinical intelligence partner for early detection
             </p>
           </div>
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '0.76rem',
-                fontWeight: '800',
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
+          {/* Claude-Style Rounded Auth Container */}
+          <div style={{
+            borderRadius: '24px',
+            backgroundColor: isDark ? '#121813' : '#ffffff',
+            border: `1px solid ${isDark ? '#222f22' : '#d8e4d6'}`,
+            padding: '24px',
+            boxShadow: isDark ? '0 12px 36px rgba(0,0,0,0.35)' : '0 8px 30px rgba(0,0,0,0.04)'
+          }}>
+
+            {/* Claude-Style Fast 1-Click Action Button */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('riyamehta55@gmail.com', 'demo1234', 'riya')}
+                style={{
+                  width: '100%',
+                  padding: '0.78rem 1rem',
+                  borderRadius: '10px',
+                  backgroundColor: isDark ? '#1a231b' : '#f0f5ee',
+                  border: `1px solid ${isDark ? '#2e402c' : '#cdd8cb'}`,
+                  color: isDark ? '#f1f5ee' : '#141e13',
+                  fontSize: '0.85rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span>Continue as Dr. Riya Mehta</span>
+                <span style={{
+                  fontSize: '0.66rem',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+                  color: isDark ? '#cdd8c5' : '#475a42',
+                  fontFamily: "'JetBrains Mono', monospace"
+                }}>
+                  SUPERVISOR
+                </span>
+              </button>
+
+              {/* 3 Quick Patient Evaluation Role Pills */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                {demoAccounts.filter(d => d.id !== 'riya').map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => handleDemoLogin(d.email, 'demo1234', d.id)}
+                    style={{
+                      padding: '6px 4px',
+                      borderRadius: '8px',
+                      backgroundColor: isDark ? '#161e17' : '#f7faf5',
+                      border: `1px solid ${isDark ? '#263525' : '#dbe5d8'}`,
+                      color: isDark ? '#b8c7b4' : '#455641',
+                      fontSize: '0.72rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    {d.name.split(' ')[0]} ({d.code})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Claude-Style OR Divider */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              margin: '1.25rem 0',
+              gap: '12px'
+            }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: isDark ? '#233022' : '#dce5da' }} />
+              <span style={{
+                fontSize: '0.7rem',
                 fontFamily: "'JetBrains Mono', monospace",
-                marginBottom: '6px',
-                color: isDark ? '#cdd8c5' : '#394e33'
+                fontWeight: '700',
+                color: isDark ? '#6f8269' : '#889e83'
               }}>
-                Email address
-              </label>
+                OR
+              </span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: isDark ? '#233022' : '#dce5da' }} />
+            </div>
+
+            {/* Email & Password Input Fields */}
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="clinician@hospital.org"
+                placeholder="Enter your email"
                 required
                 style={{
                   width: '100%',
                   padding: '0.8rem 1rem',
-                  borderRadius: '6px',
-                  backgroundColor: isDark ? '#111812' : '#ffffff',
-                  border: `1px solid ${isDark ? '#243324' : '#c8d6c5'}`,
+                  borderRadius: '10px',
+                  backgroundColor: isDark ? '#182119' : '#f8faf6',
+                  border: `1px solid ${isDark ? '#293928' : '#ccd9ca'}`,
                   color: isDark ? '#f1f5ee' : '#141e13',
                   fontSize: '0.9rem',
                   fontFamily: "'Mulish', sans-serif",
@@ -424,193 +479,112 @@ const Login = () => {
                   transition: 'border-color 0.15s'
                 }}
               />
-            </div>
 
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{
-                  fontSize: '0.76rem',
-                  fontWeight: '800',
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  color: isDark ? '#cdd8c5' : '#394e33'
-                }}>
-                  Password
-                </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem 1rem',
+                    paddingRight: '3.5rem',
+                    borderRadius: '10px',
+                    backgroundColor: isDark ? '#182119' : '#f8faf6',
+                    border: `1px solid ${isDark ? '#293928' : '#ccd9ca'}`,
+                    color: isDark ? '#f1f5ee' : '#141e13',
+                    fontSize: '0.9rem',
+                    fontFamily: "'Mulish', sans-serif",
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.15s'
+                  }}
+                />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
                   style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
                     background: 'none',
                     border: 'none',
-                    color: isDark ? '#98ab92' : '#394e33',
-                    fontSize: '0.72rem',
+                    color: isDark ? '#98ab92' : '#4e6648',
+                    fontSize: '0.7rem',
                     fontWeight: '700',
                     fontFamily: "'JetBrains Mono', monospace",
                     cursor: 'pointer',
-                    padding: 0
+                    padding: '4px'
                   }}
                 >
-                  {showPass ? '[HIDE]' : '[SHOW]'}
+                  {showPass ? 'HIDE' : 'SHOW'}
                 </button>
               </div>
-              <input
-                type={showPass ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                required
+
+              {error && (
+                <div style={{
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '8px',
+                  backgroundColor: isDark ? 'rgba(140, 50, 40, 0.2)' : '#FDF2F0',
+                  border: '1px solid #A84236',
+                  color: isDark ? '#fca5a5' : '#A84236',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  fontFamily: "'Mulish', sans-serif"
+                }}>
+                  {error}
+                </div>
+              )}
+
+              {/* Claude-Style Solid Button */}
+              <button
+                type="submit"
+                disabled={loading}
                 style={{
                   width: '100%',
-                  padding: '0.8rem 1rem',
-                  borderRadius: '6px',
-                  backgroundColor: isDark ? '#111812' : '#ffffff',
-                  border: `1px solid ${isDark ? '#243324' : '#c8d6c5'}`,
-                  color: isDark ? '#f1f5ee' : '#141e13',
-                  fontSize: '0.9rem',
+                  padding: '0.85rem',
+                  borderRadius: '10px',
+                  backgroundColor: isDark ? '#ffffff' : '#223320',
+                  color: isDark ? '#121813' : '#ffffff',
+                  border: 'none',
+                  fontSize: '0.88rem',
+                  fontWeight: '800',
                   fontFamily: "'Mulish', sans-serif",
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.15s'
+                  cursor: 'pointer',
+                  transition: 'opacity 0.15s',
+                  marginTop: '4px'
                 }}
-              />
-            </div>
+              >
+                {loading ? 'Signing in...' : 'Continue with email'}
+              </button>
+            </form>
 
-            {error && (
-              <div style={{
-                padding: '0.75rem 1rem',
-                borderRadius: '6px',
-                backgroundColor: isDark ? 'rgba(120, 50, 40, 0.2)' : '#FDF2F0',
-                border: '1px solid #A84236',
-                color: isDark ? '#fca5a5' : '#A84236',
-                fontSize: '0.8rem',
-                fontWeight: '700',
-                fontFamily: "'Mulish', sans-serif"
-              }}>
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.9rem',
-                borderRadius: '6px',
-                backgroundColor: isDark ? '#e3ece0' : '#273822',
-                color: isDark ? '#0b100c' : '#ffffff',
-                border: 'none',
-                fontSize: '0.82rem',
-                fontWeight: '900',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                fontFamily: "'Mulish', sans-serif",
-                cursor: 'pointer',
-                transition: 'opacity 0.15s',
-                marginTop: '0.4rem'
-              }}
-            >
-              {loading ? 'AUTHENTICATING...' : 'SIGN IN TO WORKSTATION'}
-            </button>
-          </form>
-
-          {/* 1-Click Demo Evaluation Roles — Understated Olive/Slate (No Red/Yellow/Green) */}
-          <div style={{ marginTop: '2.5rem', borderTop: `1px solid ${isDark ? '#1e291f' : '#dce6d8'}`, paddingTop: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-              <span style={{
-                fontSize: '0.72rem',
-                fontWeight: '800',
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                fontFamily: "'JetBrains Mono', monospace",
-                color: isDark ? '#98ab92' : '#4e6648'
-              }}>
-                1-CLICK EVALUATION ROLES
-              </span>
-              <span style={{
-                fontSize: '0.7rem',
-                fontFamily: "'JetBrains Mono', monospace",
-                color: isDark ? '#6f8269' : '#738a6d'
-              }}>
-                pass: demo1234
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {demoAccounts.map((d) => {
-                const isSelected = activeDemo === d.id || email === d.email;
-                return (
-                  <div
-                    key={d.id}
-                    onClick={() => handleDemoLogin(d.email, 'demo1234', d.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '6px',
-                      backgroundColor: isSelected 
-                        ? (isDark ? 'rgba(71, 93, 65, 0.3)' : '#e2ede0') 
-                        : (isDark ? '#111812' : '#ffffff'),
-                      border: `1px solid ${isSelected ? (isDark ? '#536d4b' : '#394e33') : (isDark ? '#1f2c20' : '#dce6d8')}`,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    <div>
-                      <div style={{
-                        fontSize: '0.88rem',
-                        fontWeight: '800',
-                        color: isDark ? '#f1f5ee' : '#141e13'
-                      }}>
-                        {d.name}
-                      </div>
-                      <div style={{
-                        fontSize: '0.74rem',
-                        color: isDark ? '#94a78f' : '#4e6648',
-                        marginTop: '1px'
-                      }}>
-                        {d.role}
-                      </div>
-                    </div>
-                    <span style={{
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      fontSize: '0.66rem',
-                      fontWeight: '800',
-                      letterSpacing: '0.06em',
-                      fontFamily: "'JetBrains Mono', monospace",
-                      backgroundColor: d.badgeBg,
-                      border: `1px solid ${d.badgeBorder}`,
-                      color: d.badgeColor
-                    }}>
-                      {d.code}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
           </div>
 
-          {/* Underlined Register Link Matching Editorial Style */}
-          <div style={{
-            textAlign: 'center',
-            marginTop: '2rem',
-            fontSize: '0.78rem',
-            fontFamily: "'JetBrains Mono', monospace",
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: isDark ? '#94a78f' : '#4e6648'
-          }}>
-            <span>ENROLL NEW PATIENT RECORD? </span>
-            <Link to="/register" style={{
-              color: isDark ? '#f1f5ee' : '#141e13',
-              fontWeight: '800',
-              textDecoration: 'underline'
-            }}>
-              REGISTER PATIENT
+          {/* Claude-Style Floating Bottom Pill Button */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.75rem' }}>
+            <Link
+              to="/register"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '10px',
+                backgroundColor: isDark ? '#141c14' : '#eaf2e8',
+                border: `1px solid ${isDark ? '#263725' : '#d1dfcf'}`,
+                color: isDark ? '#dbe5d8' : '#273822',
+                fontSize: '0.8rem',
+                fontWeight: '700',
+                textDecoration: 'none',
+                transition: 'all 0.15s'
+              }}
+            >
+              <span style={{ fontSize: '1rem', lineHeight: '1' }}>+</span>
+              <span>Enroll new patient record</span>
             </Link>
           </div>
 
