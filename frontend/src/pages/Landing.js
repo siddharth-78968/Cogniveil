@@ -1675,7 +1675,7 @@ const Landing = () => {
                   </div>
 
                   <div className="cv-svg-graph-wrapper">
-                    <svg viewBox="0 0 540 210" className="cv-chart-svg">
+                    <svg viewBox="0 0 540 225" className="cv-chart-svg">
                       {/* Grid Lines */}
                       <line x1="40" y1="30" x2="520" y2="30" stroke="currentColor" strokeOpacity="0.1" />
                       <line x1="40" y1="80" x2="520" y2="80" stroke="currentColor" strokeOpacity="0.1" />
@@ -1783,18 +1783,21 @@ const Landing = () => {
                         </circle>
                       </g>
 
-                      {/* Change Point Callout */}
-                      <rect x="330" y="165" width="180" height="34" rx="6" fill="#1b261a" stroke="#f87171" strokeWidth="1.2" />
-                      <text x="340" y="180" fill="#f1f5ee" fontSize="10" fontWeight="bold" fontFamily="'Mulish', sans-serif">DRIFT FLAGGED</text>
-                      <text x="340" y="193" fill="#cbd5e1" fontSize="9" fontFamily="'JetBrains Mono', monospace">6–8 Mo Lead Time Window</text>
+                      {/* Change Point Floating Callout (Positioned neatly above change-point) */}
+                      <g className="cv-drift-callout-group">
+                        <line x1="440" y1="140" x2="440" y2="114" stroke="#f87171" strokeWidth="1" strokeDasharray="2 2" />
+                        <rect x="350" y="80" width="168" height="34" rx="6" fill="#152116" stroke="#f87171" strokeWidth="1.2" />
+                        <text x="360" y="94" fill="#f1f5ee" fontSize="10" fontWeight="bold" fontFamily="'Mulish', sans-serif">🚨 DRIFT DETECTED</text>
+                        <text x="360" y="106" fill="#34d399" fontSize="9" fontFamily="'JetBrains Mono', monospace">6–8 Mo Lead Time Gained</text>
+                      </g>
 
-                      {/* X-Axis Clickable Labels */}
-                      <text x="60" y="200" fill={selectedTrajectoryNode === 'm8' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm8' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'm8' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m8')}>M-8</text>
-                      <text x="140" y="200" fill={selectedTrajectoryNode === 'm6' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm6' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'm6' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m6')}>M-6</text>
-                      <text x="220" y="200" fill={selectedTrajectoryNode === 'm4' ? '#eab308' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm4' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'm4' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m4')}>M-4</text>
-                      <text x="340" y="200" fill={selectedTrajectoryNode === 'm2' ? '#f59e0b' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm2' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'm2' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m2')}>M-2</text>
-                      <text x="440" y="200" fill="#f87171" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('detected')}>Detected</text>
-                      <text x="500" y="200" fill={selectedTrajectoryNode === 'current' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'current' ? 1 : 0.6} fontSize="10" fontWeight={selectedTrajectoryNode === 'current' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('current')}>Current</text>
+                      {/* X-Axis Clickable Milestone Labels */}
+                      <text x="60" y="212" fill={selectedTrajectoryNode === 'm8' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm8' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'm8' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m8')}>M-8</text>
+                      <text x="140" y="212" fill={selectedTrajectoryNode === 'm6' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm6' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'm6' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m6')}>M-6</text>
+                      <text x="220" y="212" fill={selectedTrajectoryNode === 'm4' ? '#eab308' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm4' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'm4' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m4')}>M-4</text>
+                      <text x="340" y="212" fill={selectedTrajectoryNode === 'm2' ? '#f59e0b' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'm2' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'm2' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('m2')}>M-2</text>
+                      <text x="440" y="212" fill="#f87171" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('detected')}>Detected</text>
+                      <text x="500" y="212" fill={selectedTrajectoryNode === 'current' ? '#34d399' : 'currentColor'} fillOpacity={selectedTrajectoryNode === 'current' ? 1 : 0.6} fontSize="11" fontWeight={selectedTrajectoryNode === 'current' ? 'bold' : 'normal'} textAnchor="middle" fontFamily="'JetBrains Mono', monospace" className="cv-axis-label" onClick={() => setSelectedTrajectoryNode('current')}>Current</text>
                     </svg>
                   </div>
 
