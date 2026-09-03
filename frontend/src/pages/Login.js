@@ -68,6 +68,7 @@ const Login = () => {
 
 
   const demoAccounts = [
+    { label: 'Dr. Riya (Clinical Supervisor)', email: 'riyamehta55@gmail.com', tier: 'Clinician / Supervisor', tierClass: 'level-clinician' },
     { label: 'Rajan Pillai (MCI trajectory drift)', email: 'rajan@demo.com', tier: 'High risk (Tier 3)', tierClass: 'level-3' },
     { label: 'Meena Krishnan (Prodromal drift)', email: 'meena@demo.com', tier: 'Moderate risk (Tier 2)', tierClass: 'level-2' },
     { label: 'Arjun Sharma (Normal baseline)', email: 'arjun@demo.com', tier: 'Low risk (Tier 1)', tierClass: 'level-1' },

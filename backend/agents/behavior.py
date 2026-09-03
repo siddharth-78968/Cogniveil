@@ -127,6 +127,8 @@ class BehaviorAnalysisAgent:
                 "interpretation": f"↑ {backspace_delta_pct:.1f}%" if backspace_delta_pct > 0 else f"↓ {abs(backspace_delta_pct):.1f}%"
             }
         }
+        # Backward-compatible alias for downstream consumers
+        metrics_table["typing_speed"] = metrics_table["text_keystrokes_per_min"]
 
         # Non-diagnostic clinical reasoning
         if status == "declining":
@@ -248,6 +250,8 @@ class BehaviorAnalysisAgent:
                 "interpretation": f"↑ {rev_delta_pct:.1f}%" if rev_delta_pct > 0 else f"↓ {abs(rev_delta_pct):.1f}%"
             }
         }
+        # Backward-compatible alias for downstream consumers
+        metrics_table["scroll_hesitation"] = metrics_table["pauses_per_min"]
 
         # Reasoning
         if status == "elevated_hesitation":

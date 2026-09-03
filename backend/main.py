@@ -1272,12 +1272,8 @@ def get_appointments(
     """Retrieves appointment requests scoped strictly by caller role and identity."""
     is_clinician = (getattr(current_user, 'role', None) == "clinician" or current_user.is_caregiver)
     if is_clinician:
-        # Clinician sees appointments assigned to them, created by them, or unassigned clinic triage requests
-        appts = db.query(models.Appointment).filter(
-            (models.Appointment.clinician_id == current_user.id) |
-            (models.Appointment.user_id == current_user.id) |
-            (models.Appointment.clinician_id == None)
-        ).order_by(models.Appointment.created_at.desc()).all()
+        # Clinicians see all clinic consultations and triage requests in the department
+        appts = db.query(models.Appointment).order_by(models.Appointment.created_at.desc()).all()
     else:
         # Patient sees ONLY their own appointments (strictly isolated by authenticated patient_id)
         appts = db.query(models.Appointment).filter(
