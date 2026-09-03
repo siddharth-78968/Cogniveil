@@ -44,14 +44,14 @@ html[data-font-scale="xl"] {
   font-size: 20.5px !important;
 }
 
-/* Warm Ivory / Cream Light Mode Background Pattern */
+/* Pastel Green Light Mode Background Pattern */
 html.light-mode, body.light-mode, .light-mode {
-  background-color: #FAF7F2;
+  background-color: #f2f6f1;
   background-image: 
-    linear-gradient(rgba(28, 25, 23, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(28, 25, 23, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(13, 23, 14, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 23, 14, 0.025) 1px, transparent 1px);
   background-size: 36px 36px;
-  color: #1C1917;
+  color: #0d170e;
 }
 
 #root {
