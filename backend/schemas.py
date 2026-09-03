@@ -275,4 +275,13 @@ class DementiaPatternProfileResponse(BaseModel):
         "and Level 2 clinical biomarkers to support clinician review. It is not an autonomous medical diagnosis."
     )
 
+class UserProfileUpdate(BaseModel):
+    name: str
+    email: str
+    age: Optional[int] = None
+    gender: Optional[str] = "Not specified"
+    current_password: str
+    new_password: Optional[str] = None
+    verification_code: Optional[str] = None
+
 

@@ -18,6 +18,7 @@ import AuditTimelineWidget from '../components/AuditTimelineWidget';
 import EvidenceDrawer from '../components/EvidenceDrawer';
 import EvidenceGraphModal from '../components/EvidenceGraphModal';
 import AgentPipelineModal from '../components/AgentPipelineModal';
+import ProfileEditModal from '../components/ProfileEditModal';
 import DoctorLayout from '../components/DoctorLayout';
 import ChatWidget from '../components/ChatWidget';
 import { 
@@ -73,6 +74,7 @@ const Dashboard = () => {
   const [selectedEvidenceId, setSelectedEvidenceId] = useState('E1');
   const [showEvidenceGraphModal, setShowEvidenceGraphModal] = useState(false);
   const [showAgentPipelineModal, setShowAgentPipelineModal] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [referralPayload, setReferralPayload] = useState(null);
   const [dashboardAppointments, setDashboardAppointments] = useState([]);
   const [clinicianPatients, setClinicianPatients] = useState([]);
@@ -276,13 +278,29 @@ const Dashboard = () => {
                 <button 
                   style={{
                     ...styles.startTestsBtn,
-                    backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
                     border: `1.5px solid ${theme.border}`,
                     color: theme.text
                   }}
                   onClick={() => navigate('/appointments?action=new')}
                 >
                   <span>Book Consultation</span>
+                </button>
+                <button 
+                  style={{
+                    ...styles.startTestsBtn,
+                    backgroundColor: isDark ? '#162216' : '#e8efe6',
+                    border: `1.5px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
+                    color: isDark ? '#a3b18a' : '#273822',
+                  }}
+                  onClick={() => setIsProfileModalOpen(true)}
+                  title="Edit your name, email, age, gender or security details with verification"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <span>Edit Profile</span>
                 </button>
               </div>
             </div>
@@ -1093,20 +1111,77 @@ const Dashboard = () => {
           {/* ── RIGHT PROFILE & METRICS SIDE PANEL ── */}
           <div style={styles.rightCol}>
             
-            {/* Profile Card with Professional Monogram Avatar (Photo Removed) */}
+            {/* Profile Card with Professional Monogram Avatar */}
             <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
               <div style={styles.profileWrapper}>
-                <div style={{ ...styles.profileAvatarBox, backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff', borderColor: isDark ? '#312e81' : '#c7d2fe' }}>
+                <div 
+                  onClick={() => setIsProfileModalOpen(true)}
+                  style={{ 
+                    ...styles.profileAvatarBox, 
+                    backgroundColor: isDark ? '#162216' : '#e8efe6', 
+                    borderColor: isDark ? '#3d5236' : '#d2ded0',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}
+                  title="Click to edit profile with verification"
+                >
                   <div style={styles.doctorMonogram}>
                     {(user?.name || user?.email || 'D')[0].toUpperCase()}
                   </div>
+                  <span style={{
+                    position: 'absolute',
+                    bottom: '-4px',
+                    right: '-4px',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    backgroundColor: '#273822',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #ffffff'
+                  }} title="Edit profile">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                  </span>
                 </div>
-                <h3 style={styles.doctorName}>
+                <h3 
+                  onClick={() => setIsProfileModalOpen(true)}
+                  style={{ ...styles.doctorName, cursor: 'pointer' }}
+                  title="Click to edit profile"
+                >
                   {user?.name ? (user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`) : `Dr. Jackson Santos`}
                 </h3>
                 <p style={{ ...styles.doctorSpecialty, color: theme.subtext }}>
                   {user?.is_caregiver ? 'Caregiver Supervisor' : 'Clinical Cognitive Supervisor'}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setIsProfileModalOpen(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
+                    backgroundColor: isDark ? '#162216' : '#e8efe6',
+                    color: isDark ? '#a3b18a' : '#273822',
+                    fontSize: '0.74rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    marginTop: '2px',
+                    marginBottom: '1rem'
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <span>Edit Profile</span>
+                </button>
               </div>
 
               {/* Limit Progress Bar */}
@@ -1293,6 +1368,11 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+      {/* Profile Edit Modal */}
+      <ProfileEditModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
+      />
     </DoctorLayout>
   );
 };

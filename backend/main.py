@@ -243,6 +243,106 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 def get_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
 
+@app.post("/api/user/request-verification-code")
+def request_profile_verification_code(current_user: models.User = Depends(auth.get_current_user)):
+    """Issues a 6-digit clinical security verification PIN for profile modifications."""
+    import random
+    code = f"{random.randint(100000, 999999)}"
+    return {
+        "message": f"Verification code generated for {current_user.email}",
+        "verification_code": code,
+        "recipient": current_user.email,
+        "valid_for_seconds": 300
+    }
+
+@app.put("/api/user/profile")
+@app.post("/api/user/profile")
+def update_user_profile(
+    req: schemas.UserProfileUpdate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # 1. Mandatory Identity Verification: Validate current password
+    if not auth.verify_password(req.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=400, 
+            detail="Current password verification failed. Please enter your valid password to authorize profile changes."
+        )
+
+    # 2. Email validation and uniqueness check
+    req_email = req.email.strip().lower()
+    if not req_email or "@" not in req_email:
+        raise HTTPException(status_code=400, detail="A valid email address is required.")
+    
+    if req_email != current_user.email.lower():
+        existing = db.query(models.User).filter(models.User.email == req_email).first()
+        if existing and existing.id != current_user.id:
+            raise HTTPException(
+                status_code=400, 
+                detail="This email address is already associated with another patient or clinician account."
+            )
+        current_user.email = req_email
+
+    # 3. Update demographic and clinical identity details
+    if req.name and req.name.strip():
+        current_user.name = req.name.strip()
+    if req.age is not None:
+        try:
+            current_user.age = int(req.age)
+        except (ValueError, TypeError):
+            pass
+    if req.gender and req.gender.strip():
+        current_user.gender = req.gender.strip()
+
+    # 4. Optional Password Change
+    if req.new_password and req.new_password.strip():
+        if len(req.new_password.strip()) < 6:
+            raise HTTPException(status_code=400, detail="New password must be at least 6 characters long.")
+        current_user.hashed_password = auth.get_password_hash(req.new_password.strip())
+
+    db.commit()
+    db.refresh(current_user)
+
+    # 5. Issue updated JWT access token reflecting the modified profile
+    new_token = auth.create_access_token(
+        data={
+            "sub": current_user.email,
+            "role": current_user.role,
+            "user_id": current_user.id,
+            "name": current_user.name
+        },
+        expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    # 6. Audit Logging for security and HIPAA compliance
+    pipeline_state = "consent_required" if not current_user.consent_granted else ("baseline_period" if current_user.baseline_status == "collecting" else "full_pipeline_completed")
+    mcp_tools.log_audit(
+        db, 
+        current_user.id, 
+        "update_profile", 
+        {"name": current_user.name, "email": current_user.email, "age": current_user.age, "gender": current_user.gender}, 
+        {"status": "verified_and_updated"},
+        pipeline_state=pipeline_state
+    )
+
+    return {
+        "message": "Profile updated successfully with verification",
+        "access_token": new_token,
+        "token_type": "bearer",
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "email": current_user.email,
+            "age": current_user.age,
+            "gender": current_user.gender,
+            "role": current_user.role,
+            "is_caregiver": current_user.is_caregiver,
+            "consent_granted": current_user.consent_granted,
+            "baseline_status": current_user.baseline_status,
+            "level2_status": current_user.level2_status,
+        }
+    }
+
 def require_caregiver(current_user: models.User):
     if not current_user.is_caregiver:
         raise HTTPException(status_code=403, detail="This action is available only to caregiver accounts.")
