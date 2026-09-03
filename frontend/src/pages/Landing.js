@@ -172,35 +172,35 @@ const Landing = () => {
   return (
     <div className={`cv-landing ${isDark ? 'cv-theme-dark' : 'cv-theme-light'}`}>
       
-      {/* ── STICKY TOP NAVBAR ── */}
-      <header className="cv-nav">
-        <div className="cv-nav-inner">
-          <div className="cv-brand" onClick={() => navigate('/')}>
-            <span className="cv-brand-mark">C</span>
-            <span className="cv-brand-text">CogniVeil</span>
-            <span className="cv-brand-tag">CLINICAL INTELLIGENCE</span>
+      {/* ── MODERN FLOATING PILL NAVBAR ── */}
+      <header className="cv-floating-nav-wrapper">
+        <nav className="cv-pill-nav">
+          <div className="cv-pill-brand" onClick={() => navigate('/')}>
+            <span className="cv-pill-mark">C</span>
+            <span className="cv-pill-brand-text">CogniVeil</span>
+            <span className="cv-pill-status-dot" />
           </div>
 
-          <nav className="cv-nav-links">
-            <a href="#topology">Evidence Graph</a>
-            <a href="#vectors">Biomarker Vectors</a>
-            <a href="#pipeline">10-Agent Pipeline</a>
-            <a href="#attribution">TreeSHAP Nodes</a>
-            <a href="#faq">Governance & FAQ</a>
-          </nav>
+          <div className="cv-pill-links">
+            <a href="#topology">Architecture</a>
+            <a href="#vectors">Biomarkers</a>
+            <a href="#pipeline">Multi-Agent</a>
+            <a href="#attribution">TreeSHAP</a>
+            <a href="#faq">Governance</a>
+          </div>
 
-          <div className="cv-nav-actions">
-            <button className="cv-theme-toggle" onClick={toggleTheme}>
-              {isDark ? 'LIGHT MODE' : 'DARK MODE'}
+          <div className="cv-pill-actions">
+            <button className="cv-pill-theme-btn" onClick={toggleTheme} title="Toggle theme">
+              {isDark ? 'LIGHT' : 'DARK'}
             </button>
-            <Link to="/login" className="cv-link-btn">
+            <Link to="/login" className="cv-pill-signin">
               Sign In
             </Link>
-            <button className="cv-btn-primary" onClick={() => navigate('/login')}>
-              Launch Workstation
+            <button className="cv-pill-cta-btn" onClick={() => navigate('/login')}>
+              Workstation →
             </button>
           </div>
-        </div>
+        </nav>
       </header>
 
       {/* ── HERO SECTION ── */}

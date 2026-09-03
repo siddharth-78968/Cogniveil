@@ -64,119 +64,161 @@
   padding: 0 28px;
 }
 
-/* ── STICKY TOP NAVBAR ── */
-.cv-nav {
+/* ── MODERN FLOATING PILL NAVBAR ── */
+.cv-floating-nav-wrapper {
   position: sticky;
-  top: 0;
-  background-color: var(--cv-bg);
-  border-bottom: 1px solid var(--cv-border);
+  top: 18px;
+  left: 0;
+  right: 0;
   z-index: 1000;
-  height: 68px;
+  display: flex;
+  justify-content: center;
+  padding: 0 24px;
+  pointer-events: none;
 }
 
-.cv-nav-inner {
-  max-width: 1220px;
-  margin: 0 auto;
-  height: 100%;
-  padding: 0 28px;
+.cv-pill-nav {
+  pointer-events: auto;
+  max-width: 1160px;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 8px 10px 8px 20px;
+  border-radius: 9999px;
+  border: 1px solid var(--cv-border);
+  box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.25s ease;
 }
 
-.cv-brand {
+.cv-theme-dark .cv-pill-nav {
+  background-color: rgba(18, 24, 19, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+.cv-theme-light .cv-pill-nav {
+  background-color: rgba(255, 255, 255, 0.90);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 32px -8px rgba(18, 30, 18, 0.08), 0 2px 8px rgba(18, 30, 18, 0.04);
+}
+
+.cv-pill-brand {
   display: flex;
   align-items: center;
   gap: 10px;
   cursor: pointer;
+  user-select: none;
 }
 
-.cv-brand-mark {
-  width: 32px;
-  height: 32px;
+.cv-pill-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   background-color: var(--cv-text);
   color: var(--cv-bg);
-  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  letter-spacing: -0.02em;
 }
 
-.cv-brand-text {
-  font-size: 1.25rem;
+.cv-pill-brand-text {
+  font-size: 1.2rem;
   font-weight: 900;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   color: var(--cv-text);
 }
 
-.cv-brand-tag {
-  font-size: 0.72rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 700;
-  color: var(--cv-text-dim);
-  letter-spacing: 0.08em;
-  margin-left: 6px;
+.cv-pill-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #34d399;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
 }
 
-.cv-nav-links {
+.cv-pill-links {
   display: flex;
   align-items: center;
-  gap: 26px;
+  gap: 4px;
 }
 
-.cv-nav-links a {
+.cv-pill-links a {
   color: var(--cv-text-muted);
   text-decoration: none;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  transition: color 0.15s;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  transition: all 0.15s ease;
 }
 
-.cv-nav-links a:hover {
+.cv-pill-links a:hover {
   color: var(--cv-text);
+  background-color: var(--cv-surface-subtle);
 }
 
-.cv-nav-actions {
+.cv-pill-actions {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 10px;
 }
 
-.cv-theme-toggle {
+.cv-pill-theme-btn {
   background: none;
   border: 1px solid var(--cv-border);
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 0.78rem;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  font-size: 0.74rem;
   font-family: 'JetBrains Mono', monospace;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--cv-text-muted);
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.cv-link-btn {
+.cv-pill-theme-btn:hover {
+  border-color: var(--cv-text);
+  color: var(--cv-text);
+}
+
+.cv-pill-signin {
   color: var(--cv-text);
   text-decoration: none;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  transition: background-color 0.15s ease;
 }
 
-.cv-btn-primary {
+.cv-pill-signin:hover {
+  background-color: var(--cv-surface-subtle);
+}
+
+.cv-pill-cta-btn {
   background-color: var(--cv-btn-bg);
   color: var(--cv-btn-text);
   border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 10px 22px;
+  border-radius: 9999px;
   font-size: 0.9rem;
   font-weight: 800;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.cv-btn-primary:hover {
+.cv-pill-cta-btn:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 /* ── HERO SECTION ── */
