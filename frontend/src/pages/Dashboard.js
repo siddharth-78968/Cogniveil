@@ -818,613 +818,525 @@ const Dashboard = () => {
           </div>
         </div>
       ) : (
-        /* ── CAREGIVER / DOCTOR SUPERVISOR DASHBOARD ── */
-        <div style={styles.dashboardGrid}>
+        /* ── CLINICIAN SUPERVISOR WORKSTATION (FULL-WIDTH BALANCED DASHBOARD) ── */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
           
-          {/* ── LEFT & CENTER MAIN WORKSPACE ── */}
-          <div style={styles.leftCol}>
-            
-            {/* 1. Welcome Banner */}
+          {/* 1. Welcome Banner */}
+          <div style={{
+            ...styles.welcomeBanner,
+            background: isDark 
+              ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #1e293b 100%)' 
+              : 'linear-gradient(135deg, #4338CA 0%, #3730A3 70%, #1e1b4b 100%)',
+            border: `1px solid ${isDark ? '#4338CA' : 'transparent'}`,
+            boxShadow: '0 10px 30px rgba(67, 56, 202, 0.25)',
+            padding: '1.75rem 2.25rem',
+            borderRadius: '20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1.5rem'
+          }}>
+            <div style={styles.welcomeContent}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ 
+                  fontSize: '0.72rem', 
+                  fontWeight: '800', 
+                  letterSpacing: '0.08em', 
+                  backgroundColor: 'rgba(255, 255, 255, 0.18)', 
+                  color: '#ffffff', 
+                  padding: '3px 12px', 
+                  borderRadius: '20px',
+                  backdropFilter: 'blur(6px)'
+                }}>
+                  CLINICAL COGNITIVE SUPERVISOR · MEMORY CLINIC WORKSTATION
+                </span>
+              </div>
+              <h2 style={{ ...styles.welcomeTitle, fontSize: '1.75rem', marginBottom: '0.5rem' }}>
+                Welcome, {user?.name ? (user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`) : `Dr. Sham`}
+              </h2>
+              <p style={{ ...styles.welcomeSub, maxWidth: '680px', color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.88rem', lineHeight: '1.5', margin: 0 }}>
+                Continuous neuromotor, acoustic, and psychometric screening intelligence. <strong>{clinicianPatients.filter(p => p.is_deviating || p.risk_level === 'High').length || 1} cohort patient</strong> currently exhibits active statistical baseline drift requiring clinical review.
+              </p>
+            </div>
+
+            {/* Supervisor Profile Chip */}
             <div style={{
-              ...styles.welcomeBanner,
-              background: isDark 
-                ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #1e293b 100%)' 
-                : 'linear-gradient(135deg, #4338CA 0%, #3730A3 70%, #1e1b4b 100%)',
-              border: `1px solid ${isDark ? '#4338CA' : 'transparent'}`,
-              boxShadow: '0 10px 30px rgba(67, 56, 202, 0.25)',
-              padding: '1.75rem 2rem',
-              borderRadius: '20px'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.12)',
+              padding: '0.85rem 1.25rem',
+              borderRadius: '16px',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)'
             }}>
-              <div style={styles.welcomeContent}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span style={{ 
-                    fontSize: '0.72rem', 
-                    fontWeight: '800', 
-                    letterSpacing: '0.08em', 
-                    backgroundColor: 'rgba(255, 255, 255, 0.18)', 
-                    color: '#ffffff', 
-                    padding: '3px 12px', 
-                    borderRadius: '20px',
-                    backdropFilter: 'blur(6px)'
-                  }}>
-                    CLINICAL COGNITIVE SUPERVISOR · MEMORY CLINIC WORKSTATION
-                  </span>
-                </div>
-                <h2 style={{ ...styles.welcomeTitle, fontSize: '1.65rem', marginBottom: '0.5rem' }}>
-                  Welcome, {user?.name ? (user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`) : `Dr. Jackson Santos`}
-                </h2>
-                <p style={{ ...styles.welcomeSub, maxWidth: '620px', color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.86rem', lineHeight: '1.5', margin: 0 }}>
-                  Continuous neuromotor, acoustic, and psychometric screening intelligence. <strong>{clinicianPatients.filter(p => p.is_deviating || p.risk_level === 'High').length || 3} cohort patients</strong> currently exhibit statistical baseline drift requiring clinical review.
-                </p>
-
-                {/* 3 Quick KPI Badges */}
-                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
-                  <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)', padding: '6px 14px', borderRadius: '10px', backdropFilter: 'blur(6px)', border: '1px solid rgba(255, 255, 255, 0.18)' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.8)', fontWeight: '600' }}>Active Cohort</span>
-                    <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff' }}>{clinicianPatients.length || 7} Patients</div>
-                  </div>
-                  <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.25)', padding: '6px 14px', borderRadius: '10px', backdropFilter: 'blur(6px)', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#fca5a5', fontWeight: '600' }}>Drift Concerns</span>
-                    <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#fef2f2' }}>
-                      {clinicianPatients.filter(p => p.is_deviating || p.risk_level === 'High').length || 3} Awaiting Triage
-                    </div>
-                  </div>
-                  <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.22)', padding: '6px 14px', borderRadius: '10px', backdropFilter: 'blur(6px)', border: '1px solid rgba(245, 158, 11, 0.35)' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#fde68a', fontWeight: '600' }}>Early Window Gained</span>
-                    <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff' }}>⏱️ 6–8 Months Lead Time</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Subtle medical backdrop illustration */}
-              <div style={styles.welcomeDecor}>
-                <svg width="150" height="100" viewBox="0 0 200 120" fill="none" opacity="0.3">
-                  <path d="M10 60 Q 50 10, 90 60 T 170 60 T 250 60" stroke="#ffffff" strokeWidth="4" fill="none"/>
-                  <circle cx="90" cy="60" r="14" fill="#ffffff" fillOpacity="0.4"/>
-                  <circle cx="170" cy="60" r="18" fill="#ffffff" fillOpacity="0.3"/>
-                </svg>
-              </div>
-            </div>
-
-            {/* 2. Activity Dual Spline Wave Chart */}
-            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <div style={styles.cardHeader}>
-                <div>
-                  <h3 style={{ ...styles.cardTitle, color: theme.text }}>Activity</h3>
-                </div>
-                <div 
-                  style={{ 
-                    ...styles.dropdownSelector, 
-                    backgroundColor: theme.statBoxBg, 
-                    borderColor: theme.border,
-                    color: theme.text,
-                    cursor: 'pointer' 
-                  }}
-                  onClick={() => setChartTimeframe(prev => prev === 'This Year' ? 'Past 7 Days' : 'This Year')}
-                  title="Click to toggle timeframe"
-                >
-                  <span>{chartTimeframe}</span>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </div>
-              </div>
-
-              {/* Spline Chart */}
-              <div style={{ width: '100%', height: 230, marginTop: '0.5rem' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={activityData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="consultGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#4338CA" stopOpacity={0.25}/>
-                        <stop offset="95%" stopColor="#4338CA" stopOpacity={0.0}/>
-                      </linearGradient>
-                      <linearGradient id="patientGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} vertical={false} />
-                    <XAxis dataKey="month" stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                      type="natural" 
-                      dataKey={isClinician ? "consultations" : "score"} 
-                      stroke="#4338CA" 
-                      strokeWidth={3} 
-                      fillOpacity={1} 
-                      fill="url(#consultGrad)" 
-                      name={isClinician ? "Clinical Consultations" : "CogniScore"} 
-                    />
-                    <Area 
-                      type="natural" 
-                      dataKey={isClinician ? "patients" : "baseline"} 
-                      stroke="#06b6d4" 
-                      strokeWidth={3} 
-                      fillOpacity={1} 
-                      fill="url(#patientGrad)" 
-                      name={isClinician ? "Monitored Patients" : "Personal Baseline"} 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Chart Legend */}
-              <div style={{ ...styles.chartLegend, borderTop: `1px solid ${theme.borderSubtle}` }}>
-                <div style={styles.legendItem}>
-                  <span style={{ width: '10px', height: '10px', backgroundColor: '#4338CA', borderRadius: '3px' }} />
-                  <span style={{ color: theme.subtext }}>{isClinician ? "Clinical Consultations" : "Consultations"}</span>
-                </div>
-                <div style={styles.legendItem}>
-                  <span style={{ width: '10px', height: '10px', backgroundColor: '#06b6d4', borderRadius: '3px' }} />
-                  <span style={{ color: theme.subtext }}>{isClinician ? "Monitored Cohort" : "Patients"}</span>
-                </div>
-                {isClinician && (
-                  <div style={styles.legendItem}>
-                    <span style={{ width: '8px', height: '8px', backgroundColor: '#ef4444', borderRadius: '50%' }} />
-                    <span style={{ color: '#ef4444', fontWeight: '700' }}>3 Patients Drifting</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 3. Middle 2-Column Row: Appointment Request & Appointment */}
-            {apptToast && (
               <div style={{
-                padding: '0.6rem 1rem',
-                backgroundColor: 'rgba(47, 125, 91, 0.15)',
-                color: '#2F7D5B',
-                borderRadius: '8px',
-                border: '1px solid #2F7D5B',
-                fontSize: '0.8rem',
-                fontWeight: '700',
-                marginBottom: '1rem'
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                backgroundColor: '#ffffff',
+                color: '#4338CA',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: '900',
+                fontSize: '1.25rem',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
               }}>
-                ✓ {apptToast}
+                {(user?.name || user?.email || 'D')[0].toUpperCase()}
               </div>
-            )}
-            <div style={styles.middleTwoCol}>
-              
-              {/* Left: Appointment Request */}
-              <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-                <div style={styles.cardHeader}>
-                  <h3 style={{ ...styles.cardTitle, color: theme.text }}>Appointment Request</h3>
-                  <span style={styles.seeAllLink} onClick={() => navigate('/appointments?tab=Due')}>See All</span>
+              <div>
+                <div style={{ color: '#ffffff', fontWeight: '800', fontSize: '0.95rem' }}>
+                  {user?.name ? (user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`) : `Dr. Sham`}
                 </div>
-                <div style={styles.requestList}>
-                  {(() => {
-                    const requests = dashboardAppointments.filter(a => a.status === 'Due' || a.status === 'Pending' || a.status === 'Rejected');
-                    
-                    if (requests.length === 0) {
-                      return (
-                        <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext, fontSize: '0.82rem' }}>
-                          No pending appointment requests at this time.
-                        </div>
-                      );
-                    }
-                    
-                    return requests.slice(0, 4).map((req, idx) => {
-                      const patientDisplay = req.patient_name || req.name || 'Patient';
-                      const conditionDisplay = req.appointment_type || req.condition || 'Neurological Evaluation';
-                      const timeDisplay = req.scheduled_time || req.time || 'Upcoming';
-                      const statusDisplay = req.status || 'Pending';
-                      const isAccepted = statusDisplay === 'Accepted';
-                      const isRejected = statusDisplay === 'Rejected';
-
-                      return (
-                        <div 
-                          key={req.id || idx} 
-                          style={{ ...styles.requestRow, cursor: 'pointer' }}
-                          onClick={() => navigate('/appointments?tab=Due')}
-                        >
-                          <div style={{ ...styles.personAvatar, backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>
-                            {patientDisplay.charAt(0).toUpperCase()}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0, marginLeft: '8px' }}>
-                            <p style={{ ...styles.personName, color: theme.text }}>{patientDisplay}</p>
-                            <p style={{ ...styles.personSub, color: theme.subtext }}>{conditionDisplay}</p>
-                          </div>
-                          <span style={{ ...styles.requestTime, color: theme.subtext, fontSize: '0.74rem' }}>{timeDisplay}</span>
-                          
-                          {isAccepted ? (
-                            <span style={styles.acceptedPill}>Accepted</span>
-                          ) : isRejected ? (
-                            <span style={{ ...styles.acceptedPill, backgroundColor: 'rgba(201, 76, 76, 0.15)', color: '#C94C4C' }}>Rejected</span>
-                          ) : (
-                            <div style={styles.actionCircles} onClick={(e) => e.stopPropagation()}>
-                              <button 
-                                style={styles.checkCircle} 
-                                title="Accept Consultation"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (req.id) handleDashboardStatusChange(req.id, 'Accepted');
-                                  else navigate('/appointments?tab=Due');
-                                }}
-                              >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                              </button>
-                              <button 
-                                style={styles.crossCircle} 
-                                title="Reject Consultation" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (req.id) handleDashboardStatusChange(req.id, 'Rejected');
-                                  else navigate('/appointments?tab=Due');
-                                }}
-                              >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    });
-                  })()}
+                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.74rem' }}>
+                  {user?.is_caregiver ? 'Caregiver Supervisor' : 'Clinical Cognitive Supervisor'}
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Right: Appointment Schedule */}
-              <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-                <div style={styles.cardHeader}>
-                  <h3 style={{ ...styles.cardTitle, color: theme.text }}>Appointment Schedule</h3>
-                  <span style={styles.seeAllLink} onClick={() => navigate('/appointments?tab=Accepted')}>View All</span>
-                </div>
-                <div style={styles.requestList}>
-                  {(() => {
-                    const scheduled = dashboardAppointments.filter(a => a.status === 'Accepted' || a.status === 'Finished');
-                    
-                    if (scheduled.length === 0) {
-                      return (
-                        <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext, fontSize: '0.82rem' }}>
-                          No confirmed appointments scheduled.
-                        </div>
-                      );
-                    }
-
-                    return scheduled.slice(0, 4).map((item, idx) => {
-                      const patientDisplay = item.patient_name || item.name || 'Patient';
-                      const conditionDisplay = item.appointment_type || item.condition || 'Clinical Consultation';
-                      const isFinished = item.status === 'Finished' || item.statusPill === 'Finished';
-                      const timeDisplay = item.scheduled_time || item.time || '10:00 AM';
-
-                      return (
-                        <div 
-                          key={item.id || idx} 
-                          style={{
-                            ...styles.requestRow,
-                            backgroundColor: isFinished ? (isDark ? '#1e1b4b' : '#f5f3ff') : 'transparent',
-                            borderRadius: '10px',
-                            padding: isFinished ? '0.6rem 0.75rem' : '0.6rem 0',
-                            cursor: 'pointer'
-                          }}
-                          onClick={() => navigate('/appointments?tab=Accepted')}
-                        >
-                          <div style={{ ...styles.personAvatar, backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>
-                            {patientDisplay.charAt(0).toUpperCase()}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0, marginLeft: '8px' }}>
-                            <p style={{ ...styles.personName, color: isFinished ? '#4338CA' : theme.text }}>
-                              {patientDisplay}
-                            </p>
-                            <p style={{ ...styles.personSub, color: theme.subtext }}>{conditionDisplay}</p>
-                          </div>
-                          {isFinished ? (
-                            <span style={styles.finishedPill}>Completed</span>
-                          ) : (
-                            <span style={{ ...styles.timeLabel, color: theme.text, fontSize: '0.74rem' }}>{timeDisplay}</span>
-                          )}
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
+          {/* 2. Executive Cohort Status Cards (4-Column Balanced Grid across 100% width) */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: '1.25rem'
+          }}>
+            {/* Card 1: Active Monitored Cohort */}
+            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: theme.subtext, letterSpacing: '0.05em' }}>ACTIVE COHORT</span>
+                <span style={{ fontSize: '1.1rem' }}>👥</span>
               </div>
-
+              <div style={{ fontSize: '1.6rem', fontWeight: '900', color: theme.text }}>
+                {clinicianPatients.length || 7} <span style={{ fontSize: '0.85rem', fontWeight: '600', color: theme.subtext }}>Patients</span>
+              </div>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.74rem', color: '#10b981', fontWeight: '700' }}>
+                ✓ 100% active passive/active telemetry stream
+              </p>
             </div>
 
-            {/* 4. Bottom Table: Recent Patients */}
+            {/* Card 2: Cohort Drift Triage */}
+            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#ef4444', letterSpacing: '0.05em' }}>COHORT RISK & DRIFT</span>
+                <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                <span style={{ fontSize: '1.6rem', fontWeight: '900', color: '#ef4444' }}>
+                  {clinicianPatients.filter(p => p.is_deviating || p.risk_level === 'High').length || 1}
+                </span>
+                <span style={{ fontSize: '0.78rem', color: theme.subtext, fontWeight: '700' }}>High Risk Alert Awaiting Review</span>
+              </div>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.74rem', color: theme.subtext }}>
+                {clinicianPatients.filter(p => p.risk_level === 'Moderate').length || 1} Moderate · {clinicianPatients.filter(p => p.risk_level === 'Low').length || 5} Stable
+              </p>
+            </div>
+
+            {/* Card 3: Clinical Lead Time Window */}
+            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#6366f1', letterSpacing: '0.05em' }}>CLINICAL LEAD TIME</span>
+                <span style={{ fontSize: '1.1rem' }}>⏱️</span>
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#4338CA' }}>
+                6–8 <span style={{ fontSize: '0.85rem', fontWeight: '700', color: theme.subtext }}>Months Gained</span>
+              </div>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.74rem', color: theme.subtext }}>
+                Catches drift months before standard clinical visits
+              </p>
+            </div>
+
+            {/* Card 4: Multi-Tier Diagnostic Cascade */}
+            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#06b6d4', letterSpacing: '0.05em' }}>DIAGNOSTIC CASCADE</span>
+                <span style={{ fontSize: '1.1rem' }}>🔬</span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '4px' }}>
+                <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '6px', backgroundColor: isDark ? 'rgba(99,102,241,0.2)' : '#e0e7ff', color: '#4338CA', fontWeight: '800' }}>T1: 7</span>
+                <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '6px', backgroundColor: isDark ? 'rgba(217,119,6,0.2)' : '#fef3c7', color: '#d97706', fontWeight: '800' }}>T2: 2</span>
+                <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '6px', backgroundColor: isDark ? 'rgba(6,182,212,0.2)' : '#ecfeff', color: '#0891b2', fontWeight: '800' }}>T3: 1</span>
+              </div>
+              <p style={{ margin: '6px 0 0 0', fontSize: '0.74rem', color: theme.subtext }}>
+                Tri-modal passive/active, ML risk & MRI Grad-CAM
+              </p>
+            </div>
+          </div>
+
+          {/* 3. Clinical Decision Fast-Action Tools (Full-Width Symmetrical Bar) */}
+          <div style={{
+            ...styles.card,
+            backgroundColor: theme.cardBg,
+            borderColor: theme.border,
+            padding: '1.15rem 1.5rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: '1rem',
+            alignItems: 'center'
+          }}>
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '12px',
+                backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff',
+                border: '1px solid #6366f1',
+                color: isDark ? '#c7d2fe' : '#4338CA',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s'
+              }}
+              onClick={() => setShowAgentPipelineModal(true)}
+            >
+              <span style={{ fontSize: '1.25rem' }}>⚡</span>
+              <div>
+                <div style={{ fontWeight: '800' }}>10-Agent Pipeline</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>View multi-agent execution pipeline</div>
+              </div>
+            </button>
+
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '12px',
+                backgroundColor: isDark ? '#083344' : '#ecfeff',
+                border: '1px solid #06b6d4',
+                color: isDark ? '#a5f3fc' : '#0891b2',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s'
+              }}
+              onClick={() => setShowEvidenceGraphModal(true)}
+            >
+              <span style={{ fontSize: '1.25rem' }}>📊</span>
+              <div>
+                <div style={{ fontWeight: '800' }}>Evidence Graph Topology</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Multimodal signal correlation view</div>
+              </div>
+            </button>
+
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '12px',
+                backgroundColor: isDark ? '#064e3b' : '#ecfdf5',
+                border: '1px solid #10b981',
+                color: isDark ? '#a7f3d0' : '#059669',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s'
+              }}
+              onClick={() => navigate('/referral')}
+            >
+              <span style={{ fontSize: '1.25rem' }}>📋</span>
+              <div>
+                <div style={{ fontWeight: '800' }}>MedGemma Clinical Dossier</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Plain language & specialist view</div>
+              </div>
+            </button>
+
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '12px',
+                backgroundColor: isDark ? '#312e81' : '#4338CA',
+                border: '1px solid #6366f1',
+                color: '#ffffff',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s'
+              }}
+              onClick={fetchData}
+              disabled={calculating}
+            >
+              <span style={{ fontSize: '1.25rem' }}>🔄</span>
+              <div>
+                <div style={{ fontWeight: '800' }}>Sync Clinical Roster</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.85 }}>Real-time database refresh</div>
+              </div>
+            </button>
+          </div>
+
+          {/* 4. Middle 2-Column Row: Appointment Request & Appointment Schedule */}
+          {apptToast && (
+            <div style={{
+              padding: '0.6rem 1rem',
+              backgroundColor: 'rgba(47, 125, 91, 0.15)',
+              color: '#2F7D5B',
+              borderRadius: '8px',
+              border: '1px solid #2F7D5B',
+              fontSize: '0.8rem',
+              fontWeight: '700'
+            }}>
+              ✓ {apptToast}
+            </div>
+          )}
+
+          <div style={styles.middleTwoCol}>
+            
+            {/* Left: Appointment Request */}
             <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
               <div style={styles.cardHeader}>
-                <h3 style={{ ...styles.cardTitle, color: theme.text }}>Recent Patients</h3>
+                <h3 style={{ ...styles.cardTitle, color: theme.text }}>Appointment Request</h3>
+                <span style={styles.seeAllLink} onClick={() => navigate('/appointments?tab=Due')}>See All</span>
               </div>
-              <div style={styles.tableWrapper}>
-                <table style={styles.patientTable}>
-                  <thead>
-                    <tr>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Name</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Gender</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Age</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Status / Tier</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Screening Date</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>CogniScore</th>
-                      <th style={{ ...styles.th, color: theme.tableTh }}>Risk & Drift</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clinicianPatients.length === 0 ? (
-                      <tr>
-                        <td colSpan="7" style={{ ...styles.td, textAlign: 'center', color: theme.subtext, padding: '2rem' }}>
-                          No monitored patients available in clinical directory.
-                        </td>
-                      </tr>
-                    ) : (
-                      clinicianPatients.slice(0, 6).map((p, idx) => {
-                        const isDrift = p.is_deviating || p.risk_level === 'High';
-                        const riskBadgeBg = isDrift 
-                          ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2')
-                          : (isDark ? 'rgba(47, 125, 91, 0.2)' : '#dcfce7');
-                        const riskBadgeColor = isDrift ? '#ef4444' : '#2F7D5B';
-                        return (
-                          <tr key={p.id || idx} style={{ borderBottom: `1px solid ${theme.tableTrBorder}`, cursor: 'pointer' }} onClick={() => navigate('/patients')}>
-                            <td style={styles.td}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                <div style={{ backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.78rem', borderRadius: '50%', width: '28px', height: '28px', minWidth: '28px' }}>
-                                  {(p.name || 'P').charAt(0).toUpperCase()}
-                                </div>
-                                <span style={{ fontWeight: '700', color: theme.text }}>{p.name}</span>
-                              </div>
-                            </td>
-                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.gender || 'N/A'}</td>
-                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.age ? `${p.age} yrs` : 'N/A'}</td>
-                            <td style={{ ...styles.td, color: theme.tableTd }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: p.level2_status === 'triggered' ? '#D97745' : theme.text }}>
-                                {p.level2_status === 'triggered' ? '⚠️ Tier 2 Triggered' : 'Tier 1 Baseline'}
-                              </span>
-                            </td>
-                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Active'}</td>
-                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.score != null ? `${Math.round(p.score)} pts` : (p.cogni_score != null ? `${Math.round(p.cogni_score)} pts` : 'Enrolled')}</td>
-                            <td style={styles.td}>
-                              <span style={{
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '20px',
-                                fontSize: '0.72rem',
-                                fontWeight: '700',
-                                color: riskBadgeColor,
-                                backgroundColor: riskBadgeBg,
-                                display: 'inline-block'
-                              }}>
-                                {p.risk_level || 'Active'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+              <div style={styles.requestList}>
+                {(() => {
+                  const requests = dashboardAppointments.filter(a => a.status === 'Due' || a.status === 'Pending' || a.status === 'Rejected');
+                  
+                  if (requests.length === 0) {
+                    return (
+                      <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext, fontSize: '0.82rem' }}>
+                        No pending appointment requests at this time.
+                      </div>
+                    );
+                  }
+                  
+                  return requests.slice(0, 4).map((req, idx) => {
+                    const patientDisplay = req.patient_name || req.name || 'Patient';
+                    const conditionDisplay = req.appointment_type || req.condition || 'Neurological Evaluation';
+                    const timeDisplay = req.scheduled_time || req.time || 'Upcoming';
+                    const statusDisplay = req.status || 'Pending';
+                    const isAccepted = statusDisplay === 'Accepted';
+                    const isRejected = statusDisplay === 'Rejected';
+
+                    return (
+                      <div 
+                        key={req.id || idx} 
+                        style={{ ...styles.requestRow, cursor: 'pointer' }}
+                        onClick={() => navigate('/appointments?tab=Due')}
+                      >
+                        <div style={{ ...styles.personAvatar, backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>
+                          {patientDisplay.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, marginLeft: '8px' }}>
+                          <p style={{ ...styles.personName, color: theme.text }}>{patientDisplay}</p>
+                          <p style={{ ...styles.personSub, color: theme.subtext }}>{conditionDisplay}</p>
+                        </div>
+                        <span style={{ ...styles.requestTime, color: theme.subtext, fontSize: '0.74rem' }}>{timeDisplay}</span>
+                        
+                        {isAccepted ? (
+                          <span style={styles.acceptedPill}>Accepted</span>
+                        ) : isRejected ? (
+                          <span style={{ ...styles.acceptedPill, backgroundColor: 'rgba(201, 76, 76, 0.15)', color: '#C94C4C' }}>Rejected</span>
+                        ) : (
+                          <div style={styles.actionCircles} onClick={(e) => e.stopPropagation()}>
+                            <button 
+                              style={styles.checkCircle} 
+                              title="Accept Consultation"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (req.id) handleDashboardStatusChange(req.id, 'Accepted');
+                                else navigate('/appointments?tab=Due');
+                              }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                              </svg>
+                            </button>
+                            <button 
+                              style={styles.crossCircle} 
+                              title="Reject Consultation" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (req.id) handleDashboardStatusChange(req.id, 'Rejected');
+                                else navigate('/appointments?tab=Due');
+                              }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            {/* Right: Appointment Schedule */}
+            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={styles.cardHeader}>
+                <h3 style={{ ...styles.cardTitle, color: theme.text }}>Appointment Schedule</h3>
+                <span style={styles.seeAllLink} onClick={() => navigate('/appointments?tab=Accepted')}>View All</span>
+              </div>
+              <div style={styles.requestList}>
+                {(() => {
+                  const scheduled = dashboardAppointments.filter(a => a.status === 'Accepted' || a.status === 'Finished');
+                  
+                  if (scheduled.length === 0) {
+                    return (
+                      <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext, fontSize: '0.82rem' }}>
+                        No confirmed appointments scheduled.
+                      </div>
+                    );
+                  }
+
+                  return scheduled.slice(0, 4).map((item, idx) => {
+                    const patientDisplay = item.patient_name || item.name || 'Patient';
+                    const conditionDisplay = item.appointment_type || item.condition || 'Clinical Consultation';
+                    const isFinished = item.status === 'Finished' || item.statusPill === 'Finished';
+                    const timeDisplay = item.scheduled_time || item.time || '10:00 AM';
+
+                    return (
+                      <div 
+                        key={item.id || idx} 
+                        style={{
+                          ...styles.requestRow,
+                          backgroundColor: isFinished ? (isDark ? '#1e1b4b' : '#f5f3ff') : 'transparent',
+                          borderRadius: '10px',
+                          padding: isFinished ? '0.6rem 0.75rem' : '0.6rem 0',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => navigate('/appointments?tab=Accepted')}
+                      >
+                        <div style={{ ...styles.personAvatar, backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>
+                          {patientDisplay.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, marginLeft: '8px' }}>
+                          <p style={{ ...styles.personName, color: isFinished ? '#4338CA' : theme.text }}>
+                            {patientDisplay}
+                          </p>
+                          <p style={{ ...styles.personSub, color: theme.subtext }}>{conditionDisplay}</p>
+                        </div>
+                        {isFinished ? (
+                          <span style={styles.finishedPill}>Completed</span>
+                        ) : (
+                          <span style={{ ...styles.timeLabel, color: theme.text, fontSize: '0.74rem' }}>{timeDisplay}</span>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
 
           </div>
 
-
-          {/* ── RIGHT PROFILE & METRICS SIDE PANEL ── */}
-          <div style={styles.rightCol}>
-            
-            {/* Profile Card with Professional Monogram Avatar (Photo Removed) */}
-            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <div style={styles.profileWrapper}>
-                <div style={{ ...styles.profileAvatarBox, backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff', borderColor: isDark ? '#312e81' : '#c7d2fe' }}>
-                  <div style={styles.doctorMonogram}>
-                    {(user?.name || user?.email || 'D')[0].toUpperCase()}
-                  </div>
-                </div>
-                <h3 style={styles.doctorName}>
-                  {user?.name ? (user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`) : `Dr. Jackson Santos`}
-                </h3>
-                <p style={{ ...styles.doctorSpecialty, color: theme.subtext }}>
-                  {user?.is_caregiver ? 'Caregiver Supervisor' : 'Clinical Cognitive Supervisor'}
+          {/* 5. Bottom Full-Width Table: Recent Patients */}
+          <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+            <div style={styles.cardHeader}>
+              <div>
+                <h3 style={{ ...styles.cardTitle, color: theme.text }}>Monitored Clinical Cohort Directory</h3>
+                <p style={{ color: theme.subtext, fontSize: '0.8rem', margin: '2px 0 0 0' }}>
+                  Real-time psychometric, acoustic, and neuromotor screening trajectories across all enrolled cohort patients.
                 </p>
               </div>
-
-              {/* Active Duty & Department */}
-              <div style={{ ...styles.limitBox, backgroundColor: theme.statBoxBg, borderColor: theme.border, marginTop: '1rem' }}>
-                <div style={styles.limitHeader}>
-                  <span style={{ ...styles.limitTitle, color: theme.text, fontSize: '0.85rem', fontWeight: '800' }}>Active Cohort Roster</span>
-                  <span style={{ ...styles.limitFraction, color: '#4338CA', fontWeight: '800' }}>{clinicianPatients.length || 7} Patients</span>
-                </div>
-                <p style={{ ...styles.limitSub, color: theme.subtext, fontSize: '0.74rem', margin: '2px 0 6px 0' }}>Enrolled in continuous passive/active tracking</p>
-                <div style={styles.progressBarTrack}>
-                  <div style={{ ...styles.progressBarFill, width: '100%', background: 'linear-gradient(90deg, #4338CA, #06b6d4)' }} />
-                </div>
-              </div>
-
-              {/* Cohort Risk Stratification Breakdown */}
-              <div style={{ marginTop: '1.25rem', padding: '0.85rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: '800', color: theme.text }}>COHORT RISK STATUS</span>
-                  <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#ef4444' }}>
-                    {clinicianPatients.filter(p => p.is_deviating || p.risk_level === 'High').length || 3} Drift Alerts
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: theme.text }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
-                      High Risk / Active Drift
-                    </span>
-                    <strong style={{ color: '#ef4444' }}>
-                      {clinicianPatients.filter(p => p.risk_level === 'High' || p.is_deviating).length || 3} (43%)
-                    </strong>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: theme.text }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
-                      Moderate Concern
-                    </span>
-                    <strong style={{ color: '#f59e0b' }}>
-                      {clinicianPatients.filter(p => p.risk_level === 'Moderate').length || 2} (29%)
-                    </strong>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: theme.text }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                      Stable Baseline
-                    </span>
-                    <strong style={{ color: '#10b981' }}>
-                      {clinicianPatients.filter(p => p.risk_level === 'Low').length || 2} (28%)
-                    </strong>
-                  </div>
-                </div>
-
-                {/* Lead Time Gained Pill */}
-                <div style={{
-                  marginTop: '0.75rem',
-                  padding: '0.55rem 0.75rem',
-                  borderRadius: '8px',
-                  backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#e0e7ff',
-                  border: '1px solid rgba(99, 102, 241, 0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  <span style={{ fontSize: '1rem' }}>⏱️</span>
-                  <div style={{ fontSize: '0.73rem', lineHeight: '1.3' }}>
-                    <strong style={{ color: '#4338CA', display: 'block' }}>6–8 Months Clinical Lead Time</strong>
-                    <span style={{ color: theme.subtext }}>Drift caught prior to typical clinical visit.</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3-Tier Diagnostic Cascade Summary */}
-              <div style={{ marginTop: '1rem', padding: '0.85rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: theme.text, display: 'block', marginBottom: '0.5rem' }}>
-                  DIAGNOSTIC CASCADE TIERS
-                </span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.76rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: theme.subtext }}>Tier 1: Active + Passive</span>
-                    <strong style={{ color: theme.text }}>7 Enrolled</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: theme.subtext }}>Tier 2: CatBoost ML Risk</span>
-                    <strong style={{ color: '#d97706' }}>2 Completed</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: theme.subtext }}>Tier 3: ResNet-18 MRI Scans</span>
-                    <strong style={{ color: '#4338CA' }}>1 Scanned</strong>
-                  </div>
-                </div>
-              </div>
+              <span style={styles.seeAllLink} onClick={() => navigate('/patients')}>Open Full Directory →</span>
             </div>
-
-            {/* Clinical Decision Support Fast-Actions Card */}
-            <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <h4 style={{ ...styles.cardTitle, color: theme.text, fontSize: '0.92rem', marginBottom: '0.85rem' }}>
-                Clinical Decision Tools
-              </h4>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                <button
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.65rem',
-                    padding: '0.65rem 0.85rem',
-                    borderRadius: '10px',
-                    backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff',
-                    border: '1px solid #6366f1',
-                    color: isDark ? '#c7d2fe' : '#4338CA',
-                    fontSize: '0.8rem',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s'
-                  }}
-                  onClick={() => setShowAgentPipelineModal(true)}
-                >
-                  <span style={{ fontSize: '1rem' }}>⚡</span>
-                  <div>
-                    <div style={{ fontWeight: '800' }}>10-Agent Pipeline</div>
-                    <div style={{ fontSize: '0.68rem', opacity: 0.8 }}>View multi-agent execution status</div>
-                  </div>
-                </button>
-
-                <button
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.65rem',
-                    padding: '0.65rem 0.85rem',
-                    borderRadius: '10px',
-                    backgroundColor: isDark ? '#083344' : '#ecfeff',
-                    border: '1px solid #06b6d4',
-                    color: isDark ? '#a5f3fc' : '#0891b2',
-                    fontSize: '0.8rem',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s'
-                  }}
-                  onClick={() => setShowEvidenceGraphModal(true)}
-                >
-                  <span style={{ fontSize: '1rem' }}>📊</span>
-                  <div>
-                    <div style={{ fontWeight: '800' }}>Evidence Graph Topology</div>
-                    <div style={{ fontSize: '0.68rem', opacity: 0.8 }}>Multimodal signal correlation view</div>
-                  </div>
-                </button>
-
-                <button
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.65rem',
-                    padding: '0.65rem 0.85rem',
-                    borderRadius: '10px',
-                    backgroundColor: isDark ? '#064e3b' : '#ecfdf5',
-                    border: '1px solid #10b981',
-                    color: isDark ? '#a7f3d0' : '#059669',
-                    fontSize: '0.8rem',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s'
-                  }}
-                  onClick={() => navigate('/referral')}
-                >
-                  <span style={{ fontSize: '1rem' }}>📋</span>
-                  <div>
-                    <div style={{ fontWeight: '800' }}>MedGemma Clinical Dossier</div>
-                    <div style={{ fontSize: '0.68rem', opacity: 0.8 }}>Plain language & specialist view</div>
-                  </div>
-                </button>
-              </div>
-
-              <div style={{ marginTop: '1rem', borderTop: `1px solid ${theme.borderSubtle}`, paddingTop: '0.85rem' }}>
-                <button 
-                  style={{ 
-                    ...styles.recalculateBtn, 
-                    backgroundColor: isDark ? '#312e81' : '#4338CA', 
-                    borderColor: '#6366f1',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    fontWeight: '700'
-                  }} 
-                  onClick={fetchData}
-                  disabled={calculating}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 4v6h-6M1 20v-6h6"></path>
-                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                  </svg>
-                  <span>Sync Live Clinical Roster</span>
-                </button>
-              </div>
+            <div style={styles.tableWrapper}>
+              <table style={styles.patientTable}>
+                <thead>
+                  <tr>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Name</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Gender</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Age</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Diagnostic Tier</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Screening Date</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>CogniScore</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Risk & Drift</th>
+                    <th style={{ ...styles.th, color: theme.tableTh }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clinicianPatients.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ ...styles.td, textAlign: 'center', color: theme.subtext, padding: '2rem' }}>
+                        No monitored patients available in clinical directory.
+                      </td>
+                    </tr>
+                  ) : (
+                    clinicianPatients.slice(0, 7).map((p, idx) => {
+                      const isDrift = p.is_deviating || p.risk_level === 'High';
+                      const riskBadgeBg = isDrift 
+                        ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2')
+                        : p.risk_level === 'Moderate'
+                        ? (isDark ? 'rgba(217, 119, 6, 0.2)' : '#fef3c7')
+                        : (isDark ? 'rgba(47, 125, 91, 0.2)' : '#dcfce7');
+                      const riskBadgeColor = isDrift ? '#ef4444' : p.risk_level === 'Moderate' ? '#d97706' : '#2F7D5B';
+                      return (
+                        <tr key={p.id || idx} style={{ borderBottom: `1px solid ${theme.tableTrBorder}`, cursor: 'pointer' }} onClick={() => navigate('/patients')}>
+                          <td style={styles.td}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <div style={{ backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.78rem', borderRadius: '50%', width: '28px', height: '28px', minWidth: '28px' }}>
+                                {(p.name || 'P').charAt(0).toUpperCase()}
+                              </div>
+                              <span style={{ fontWeight: '700', color: theme.text }}>{p.name}</span>
+                            </div>
+                          </td>
+                          <td style={{ ...styles.td, color: theme.tableTd }}>{p.gender || 'N/A'}</td>
+                          <td style={{ ...styles.td, color: theme.tableTd }}>{p.age ? `${p.age} yrs` : 'N/A'}</td>
+                          <td style={{ ...styles.td, color: theme.tableTd }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: p.level2_status === 'triggered' ? '#D97745' : theme.text }}>
+                              {p.level2_status === 'triggered' ? '⚠️ Tier 2 Triggered' : 'Tier 1 Baseline'}
+                            </span>
+                          </td>
+                          <td style={{ ...styles.td, color: theme.tableTd }}>{p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Active'}</td>
+                          <td style={{ ...styles.td, color: theme.tableTd }}>{p.score != null ? `${Math.round(p.score)} pts` : (p.cogni_score != null ? `${Math.round(p.cogni_score)} pts` : 'Enrolled')}</td>
+                          <td style={styles.td}>
+                            <span style={{
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '20px',
+                              fontSize: '0.72rem',
+                              fontWeight: '700',
+                              color: riskBadgeColor,
+                              backgroundColor: riskBadgeBg,
+                              display: 'inline-block'
+                            }}>
+                              {p.risk_level || 'Active'}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            <button
+                              style={{
+                                padding: '0.3rem 0.65rem',
+                                borderRadius: '6px',
+                                backgroundColor: isDark ? '#1e1b4b' : '#f5f3ff',
+                                border: '1px solid #6366f1',
+                                color: isDark ? '#c7d2fe' : '#4338CA',
+                                fontSize: '0.72rem',
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate('/patients');
+                              }}
+                            >
+                              Inspect Dossier →
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
-
           </div>
 
         </div>
