@@ -82,16 +82,16 @@ const IntroSplash = ({ isOpen, onClose, onComplete }) => {
               cx="320"
               cy="70"
               r="24"
-              stroke="rgba(34, 211, 238, 0.6)"
+              stroke="rgba(163, 177, 138, 0.65)"
               fill="none"
             />
 
             {/* 2. Left Mechanical Sliding Probe Arm */}
             <g className="mech-arm-left">
               {/* Outer Connecting Rods */}
-              <line x1="20" y1="70" x2="200" y2="70" stroke="rgba(148, 163, 184, 0.45)" strokeWidth="3" />
-              <line x1="30" y1="62" x2="190" y2="62" stroke="rgba(148, 163, 184, 0.25)" strokeWidth="1.5" />
-              <line x1="30" y1="78" x2="190" y2="78" stroke="rgba(148, 163, 184, 0.25)" strokeWidth="1.5" />
+              <line x1="20" y1="70" x2="200" y2="70" stroke="rgba(163, 177, 138, 0.35)" strokeWidth="3" />
+              <line x1="30" y1="62" x2="190" y2="62" stroke="rgba(163, 177, 138, 0.2)" strokeWidth="1.5" />
+              <line x1="30" y1="78" x2="190" y2="78" stroke="rgba(163, 177, 138, 0.2)" strokeWidth="1.5" />
 
               {/* Energy stream pulse along the rod */}
               <line
@@ -100,19 +100,19 @@ const IntroSplash = ({ isOpen, onClose, onComplete }) => {
                 y1="70"
                 x2="195"
                 y2="70"
-                stroke="#22d3ee"
+                stroke="#a3b18a"
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
 
               {/* Left Joint Bearing Ring */}
-              <circle cx="50" cy="70" r="14" fill="var(--cv-ink, #0a0f16)" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="2.5" />
-              <circle cx="50" cy="70" r="5" fill="rgba(148, 163, 184, 0.5)" />
+              <circle cx="50" cy="70" r="14" fill="var(--cv-ink, #0b100c)" stroke="rgba(163, 177, 138, 0.45)" strokeWidth="2.5" />
+              <circle cx="50" cy="70" r="5" fill="rgba(163, 177, 138, 0.6)" />
 
               {/* Left Rotating Sensor Gear Hub */}
               <g transform="translate(220, 70)">
-                <circle cx="0" cy="0" r="28" fill="var(--cv-ink, #0a0f16)" stroke="rgba(34, 211, 238, 0.7)" strokeWidth="2" />
-                <circle cx="0" cy="0" r="20" fill="none" stroke="rgba(16, 185, 129, 0.4)" strokeWidth="1" strokeDasharray="3 3" />
+                <circle cx="0" cy="0" r="28" fill="var(--cv-ink, #0b100c)" stroke="rgba(163, 177, 138, 0.75)" strokeWidth="2" />
+                <circle cx="0" cy="0" r="20" fill="none" stroke="rgba(115, 132, 102, 0.5)" strokeWidth="1" strokeDasharray="3 3" />
                 
                 {/* Rotating Notches Group */}
                 <g>
@@ -131,25 +131,25 @@ const IntroSplash = ({ isOpen, onClose, onComplete }) => {
                       y1="-28"
                       x2="0"
                       y2="-23"
-                      stroke="rgba(34, 211, 238, 0.85)"
+                      stroke="rgba(163, 177, 138, 0.9)"
                       strokeWidth="2.5"
                       transform={`rotate(${deg})`}
                     />
                   ))}
                 </g>
-                <circle cx="0" cy="0" r="6" fill="#22d3ee" />
+                <circle cx="0" cy="0" r="6" fill="#a3b18a" />
               </g>
 
               {/* Coupling Link to Center */}
-              <line x1="248" y1="70" x2="278" y2="70" stroke="rgba(34, 211, 238, 0.55)" strokeWidth="2.5" />
+              <line x1="248" y1="70" x2="278" y2="70" stroke="rgba(163, 177, 138, 0.55)" strokeWidth="2.5" />
             </g>
 
             {/* 3. Right Mechanical Sliding Probe Arm */}
             <g className="mech-arm-right">
               {/* Outer Connecting Rods */}
-              <line x1="620" y1="70" x2="440" y2="70" stroke="rgba(148, 163, 184, 0.45)" strokeWidth="3" />
-              <line x1="610" y1="62" x2="450" y2="62" stroke="rgba(148, 163, 184, 0.25)" strokeWidth="1.5" />
-              <line x1="610" y1="78" x2="450" y2="78" stroke="rgba(148, 163, 184, 0.25)" strokeWidth="1.5" />
+              <line x1="620" y1="70" x2="440" y2="70" stroke="rgba(163, 177, 138, 0.35)" strokeWidth="3" />
+              <line x1="610" y1="62" x2="450" y2="62" stroke="rgba(163, 177, 138, 0.2)" strokeWidth="1.5" />
+              <line x1="610" y1="78" x2="450" y2="78" stroke="rgba(163, 177, 138, 0.2)" strokeWidth="1.5" />
 
               {/* Energy stream pulse along the rod */}
               <line
@@ -158,19 +158,19 @@ const IntroSplash = ({ isOpen, onClose, onComplete }) => {
                 y1="70"
                 x2="445"
                 y2="70"
-                stroke="#10b981"
+                stroke="#738466"
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
 
               {/* Right Joint Bearing Ring */}
-              <circle cx="590" cy="70" r="14" fill="var(--cv-ink, #0a0f16)" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="2.5" />
-              <circle cx="590" cy="70" r="5" fill="rgba(148, 163, 184, 0.5)" />
+              <circle cx="590" cy="70" r="14" fill="var(--cv-ink, #0b100c)" stroke="rgba(163, 177, 138, 0.45)" strokeWidth="2.5" />
+              <circle cx="590" cy="70" r="5" fill="rgba(163, 177, 138, 0.6)" />
 
               {/* Right Rotating Sensor Gear Hub */}
               <g transform="translate(420, 70)">
-                <circle cx="0" cy="0" r="28" fill="var(--cv-ink, #0a0f16)" stroke="rgba(16, 185, 129, 0.7)" strokeWidth="2" />
-                <circle cx="0" cy="0" r="20" fill="none" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="1" strokeDasharray="3 3" />
+                <circle cx="0" cy="0" r="28" fill="var(--cv-ink, #0b100c)" stroke="rgba(115, 132, 102, 0.75)" strokeWidth="2" />
+                <circle cx="0" cy="0" r="20" fill="none" stroke="rgba(163, 177, 138, 0.4)" strokeWidth="1" strokeDasharray="3 3" />
                 
                 {/* Rotating Notches Group (Counter-Clockwise) */}
                 <g>
@@ -189,37 +189,37 @@ const IntroSplash = ({ isOpen, onClose, onComplete }) => {
                       y1="-28"
                       x2="0"
                       y2="-23"
-                      stroke="rgba(16, 185, 129, 0.85)"
+                      stroke="rgba(115, 132, 102, 0.9)"
                       strokeWidth="2.5"
                       transform={`rotate(${deg})`}
                     />
                   ))}
                 </g>
-                <circle cx="0" cy="0" r="6" fill="#10b981" />
+                <circle cx="0" cy="0" r="6" fill="#738466" />
               </g>
 
               {/* Coupling Link to Center */}
-              <line x1="392" y1="70" x2="362" y2="70" stroke="rgba(16, 185, 129, 0.55)" strokeWidth="2.5" />
+              <line x1="392" y1="70" x2="362" y2="70" stroke="rgba(115, 132, 102, 0.55)" strokeWidth="2.5" />
             </g>
 
             {/* 4. Central Diagnostic Focus Reticle [ ] */}
             <g className="intro-central-reticle">
               {/* Corner Brackets */}
-              <path d="M 283 52 L 283 45 L 290 45" stroke="#94a3b8" strokeWidth="2.2" strokeLinecap="round" />
-              <path d="M 357 52 L 357 45 L 350 45" stroke="#94a3b8" strokeWidth="2.2" strokeLinecap="round" />
-              <path d="M 283 88 L 283 95 L 290 95" stroke="#94a3b8" strokeWidth="2.2" strokeLinecap="round" />
-              <path d="M 357 88 L 357 95 L 350 95" stroke="#94a3b8" strokeWidth="2.2" strokeLinecap="round" />
+              <path d="M 283 52 L 283 45 L 290 45" stroke="#a3b18a" strokeWidth="2.2" strokeLinecap="round" />
+              <path d="M 357 52 L 357 45 L 350 45" stroke="#a3b18a" strokeWidth="2.2" strokeLinecap="round" />
+              <path d="M 283 88 L 283 95 L 290 95" stroke="#a3b18a" strokeWidth="2.2" strokeLinecap="round" />
+              <path d="M 357 88 L 357 95 L 350 95" stroke="#a3b18a" strokeWidth="2.2" strokeLinecap="round" />
 
               {/* Inner Focus Frame */}
-              <rect x="288" y="47" width="64" height="46" rx="6" fill="rgba(34, 211, 238, 0.05)" stroke="rgba(34, 211, 238, 0.3)" strokeWidth="1.5" />
+              <rect x="288" y="47" width="64" height="46" rx="6" fill="rgba(163, 177, 138, 0.08)" stroke="rgba(163, 177, 138, 0.35)" strokeWidth="1.5" />
 
               {/* Dynamic Equalizer / Acoustic Signal Bars */}
               <g>
-                <rect className="eq-bar eq-bar-1" x="303" y="62" width="3.5" height="16" rx="1.75" fill="#22d3ee" />
-                <rect className="eq-bar eq-bar-2" x="311" y="55" width="3.5" height="30" rx="1.75" fill="#10b981" />
-                <rect className="eq-bar eq-bar-3" x="319" y="49" width="3.5" height="42" rx="1.75" fill="#22d3ee" />
-                <rect className="eq-bar eq-bar-4" x="327" y="56" width="3.5" height="28" rx="1.75" fill="#10b981" />
-                <rect className="eq-bar eq-bar-5" x="335" y="63" width="3.5" height="14" rx="1.75" fill="#22d3ee" />
+                <rect className="eq-bar eq-bar-1" x="303" y="62" width="3.5" height="16" rx="1.75" fill="#a3b18a" />
+                <rect className="eq-bar eq-bar-2" x="311" y="55" width="3.5" height="30" rx="1.75" fill="#526e49" />
+                <rect className="eq-bar eq-bar-3" x="319" y="49" width="3.5" height="42" rx="1.75" fill="#a3b18a" />
+                <rect className="eq-bar eq-bar-4" x="327" y="56" width="3.5" height="28" rx="1.75" fill="#526e49" />
+                <rect className="eq-bar eq-bar-5" x="335" y="63" width="3.5" height="14" rx="1.75" fill="#a3b18a" />
               </g>
             </g>
           </svg>

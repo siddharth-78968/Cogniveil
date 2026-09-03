@@ -1,13 +1,13 @@
-/* IntroSplash.css - Clean Animated Clinical Mechanism (ForgeOps Style) */
+/* IntroSplash.css - Calibrated Clinical Mechanism Animation in Olive & Sage Theme */
 
 .intro-splash-screen {
   position: fixed;
   inset: 0;
   z-index: 99999;
-  background-color: var(--cv-ink, #0a0f16);
+  background-color: var(--cv-ink, #0b100c);
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
   background-size: 36px 36px;
   display: flex;
   flex-direction: column;
@@ -18,8 +18,8 @@
   transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.6s;
   user-select: none;
   overflow: hidden;
-  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-  color: #f1f5f9;
+  font-family: var(--cv-font-grotesk, 'Mulish', -apple-system, sans-serif);
+  color: var(--cv-fog, #f1f5ee);
 }
 
 .intro-splash-screen.closing {
@@ -34,43 +34,45 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-family: var(--cv-font-mono, 'JetBrains Mono', monospace);
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .intro-hud-left-title {
-  color: #64748b;
+  color: var(--cv-fog-subtle, #738466);
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-weight: 700;
 }
 
 .intro-hud-right-status {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  color: #64748b;
+  color: var(--cv-fog-subtle, #738466);
+  font-weight: 700;
   transition: color 0.3s ease;
 }
 
 .intro-hud-right-status.ready {
-  color: #10b981;
+  color: #a3b18a;
 }
 
 .intro-status-pulse-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: #22d3ee;
-  box-shadow: 0 0 8px #22d3ee;
+  background-color: #738466;
+  box-shadow: 0 0 8px rgba(115, 132, 102, 0.6);
   animation: introDotPulse 1.2s infinite ease-in-out;
 }
 
 .intro-hud-right-status.ready .intro-status-pulse-dot {
-  background-color: #10b981;
-  box-shadow: 0 0 10px #10b981;
+  background-color: #a3b18a;
+  box-shadow: 0 0 10px rgba(163, 177, 138, 0.8);
 }
 
 @keyframes introDotPulse {
@@ -249,37 +251,43 @@
 }
 
 .intro-kicker-title {
-  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-family: var(--cv-font-mono, 'JetBrains Mono', monospace);
   font-size: 0.72rem;
   letter-spacing: 0.22em;
-  color: #64748b;
+  color: var(--cv-fog-subtle, #738466);
   text-transform: uppercase;
   margin-bottom: 0.65rem;
+  font-weight: 700;
   animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
 }
 
 .intro-main-brand {
   font-size: clamp(2.8rem, 5.5vw, 4.2rem);
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-weight: 900;
+  letter-spacing: 0.04em;
   line-height: 1;
-  color: #f8fafc;
+  color: var(--cv-fog, #f1f5ee);
   margin: 0;
   display: flex;
   align-items: center;
+  font-family: var(--cv-font-grotesk, 'Mulish', sans-serif);
   animation: zoomFadeIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1.0s both;
 }
 
 .intro-brand-highlight {
-  color: #22d3ee;
-  text-shadow: 0 0 24px rgba(34, 211, 238, 0.4);
+  font-family: var(--cv-font-serif, 'Newsreader', Georgia, serif);
+  font-style: italic;
+  font-weight: 500;
+  color: #a3b18a;
+  text-shadow: 0 0 24px rgba(163, 177, 138, 0.35);
+  margin-left: 4px;
 }
 
 .intro-sub-statement {
   font-size: clamp(0.85rem, 1.6vw, 1.02rem);
-  color: #94a3b8;
+  color: var(--cv-fog-muted, #a3b18a);
   margin-top: 0.85rem;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   font-weight: 400;
   animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.2s both;
 }
@@ -290,8 +298,8 @@
 }
 
 @keyframes zoomFadeIn {
-  0% { opacity: 0; transform: scale(0.92); letter-spacing: 0.16em; }
-  100% { opacity: 1; transform: scale(1); letter-spacing: 0.08em; }
+  0% { opacity: 0; transform: scale(0.92); letter-spacing: 0.1em; }
+  100% { opacity: 1; transform: scale(1); letter-spacing: 0.04em; }
 }
 
 @keyframes fadeInUp {
@@ -311,11 +319,11 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-family: var(--cv-font-mono, 'JetBrains Mono', monospace);
   font-size: 0.68rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #475569;
+  color: var(--cv-fog-subtle, #738466);
 }
 
 .milestone-item {
@@ -327,46 +335,50 @@
 
 .milestone-bullet {
   font-size: 0.85rem;
-  color: #334155;
+  color: #273822;
   transition: color 0.3s ease, transform 0.3s ease;
 }
 
 .milestone-item.active {
-  color: #cbd5e1;
+  color: var(--cv-fog, #f1f5ee);
 }
 
 .milestone-item.active .milestone-bullet {
-  color: #22d3ee;
+  color: #a3b18a;
   transform: scale(1.3);
 }
 
 .milestone-item.completed {
-  color: #94a3b8;
+  color: var(--cv-fog-muted, #a3b18a);
 }
 
 .milestone-item.completed .milestone-bullet {
-  color: #10b981;
+  color: #526e49;
 }
 
 /* Skip Intro Button */
 .intro-skip-btn {
-  background: transparent;
-  border: none;
-  font-family: 'JetBrains Mono', Consolas, monospace;
-  font-size: 0.76rem;
+  background: rgba(163, 177, 138, 0.08);
+  border: 1px solid rgba(163, 177, 138, 0.3);
+  border-radius: 9999px;
+  font-family: var(--cv-font-mono, 'JetBrains Mono', monospace);
+  font-size: 0.74rem;
+  font-weight: 700;
   letter-spacing: 0.1em;
-  color: #64748b;
+  color: #a3b18a;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  transition: color 0.2s ease, transform 0.2s ease;
-  padding: 0.4rem 0.6rem;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  padding: 0.5rem 1.1rem;
 }
 
 .intro-skip-btn:hover {
-  color: #f1f5f9;
-  transform: translateX(2px);
+  background: rgba(163, 177, 138, 0.18);
+  border-color: #a3b18a;
+  color: var(--cv-fog, #f1f5ee);
+  transform: translateY(-1px);
 }
 
 .intro-skip-btn .arrow {

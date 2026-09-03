@@ -1,11 +1,19 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import IntroSplash from '../components/IntroSplash';
 import './Landing.css';
 
 const Landing = () => {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
+
+  // Intro Splash Animation State (plays on initial visit / refresh)
+  const [showIntro, setShowIntro] = useState(true);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
 
   // Active states for interactive components
   const [activeStep, setActiveStep] = useState(5); // Default to LongitudinalTrendAgent (index 5)
@@ -172,6 +180,13 @@ const Landing = () => {
   return (
     <div className={`cv-landing ${isDark ? 'cv-theme-dark' : 'cv-theme-light'}`}>
       
+      {/* ── CLINICAL INTRO SPLASH ANIMATION ── */}
+      <IntroSplash
+        isOpen={showIntro}
+        onClose={() => setShowIntro(false)}
+        onComplete={handleIntroComplete}
+      />
+
       {/* ── MODERN FLOATING PILL NAVBAR ── */}
       <header className="cv-floating-nav-wrapper">
         <nav className="cv-pill-nav">
@@ -190,6 +205,14 @@ const Landing = () => {
           </div>
 
           <div className="cv-pill-actions">
+            <button 
+              className="cv-pill-theme-btn" 
+              onClick={() => setShowIntro(true)} 
+              title="Watch System Intro Animation"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', letterSpacing: '0.06em', padding: '6px 12px' }}
+            >
+              ▶ INTRO
+            </button>
             <button className="cv-pill-theme-btn" onClick={toggleTheme} title="Toggle theme">
               {isDark ? 'LIGHT' : 'DARK'}
             </button>
@@ -224,6 +247,13 @@ const Landing = () => {
           <div className="cv-hero-cta-group">
             <button className="cv-hero-primary-btn" onClick={() => navigate('/login')}>
               Launch clinical workstation
+            </button>
+            <button 
+              className="cv-hero-secondary-btn" 
+              onClick={() => setShowIntro(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}
+            >
+              ▶ Watch system intro
             </button>
             <a href="#challenge" className="cv-hero-secondary-btn">
               Run reaction agility test
