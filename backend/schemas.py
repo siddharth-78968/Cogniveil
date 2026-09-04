@@ -294,4 +294,21 @@ class UserProfileUpdate(BaseModel):
     new_password: Optional[str] = None
     verification_code: Optional[str] = None
 
+class ClinicianPatientCreate(BaseModel):
+    name: str
+    email: str
+    age: Optional[int] = None
+    gender: Optional[str] = "Not specified"
+    risk_level: Optional[str] = "Low"
+    initial_score: Optional[float] = 75.0
+    notes: Optional[str] = None
+
+class ClinicianPatientUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    risk_level: Optional[str] = None
+    score: Optional[float] = None
+
 

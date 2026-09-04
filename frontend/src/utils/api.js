@@ -81,8 +81,11 @@ export const deleteAppointment = (id) => API.delete(`/api/appointments/${id}`);
 export const searchApi = (query) => API.get(`/api/search?q=${encodeURIComponent(query)}`);
 export const demoAuth = (email) => API.post(`/api/auth/demo?email=${encodeURIComponent(email)}`);
 
-// Clinician Patient Inspection APIs
+// Clinician Patient Management & Inspection APIs
 export const getClinicianPatients = () => API.get('/api/clinician/patients');
+export const createClinicianPatient = (patientData) => API.post('/api/clinician/patients', patientData);
+export const updateClinicianPatient = (patientId, patientData) => API.put(`/api/clinician/patients/${patientId}`, patientData);
+export const deleteClinicianPatient = (patientId) => API.delete(`/api/clinician/patients/${patientId}`);
 export const getClinicianPatientOverview = (patientId) => API.get(`/api/clinician/patients/${patientId}/overview`);
 export const getClinicianPatientTests = (patientId) => API.get(`/api/clinician/patients/${patientId}/tests`);
 export const getClinicianPatientVoice = (patientId) => API.get(`/api/clinician/patients/${patientId}/voice`);

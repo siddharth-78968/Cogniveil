@@ -11,6 +11,9 @@ import {
   getAppointments,
   updateAppointmentStatus,
   getClinicianPatients,
+  createClinicianPatient,
+  updateClinicianPatient,
+  deleteClinicianPatient,
   getStreak
 } from '../utils/api';
 import ReferralReportModal from '../components/ReferralReportModal';
@@ -81,6 +84,109 @@ const Dashboard = () => {
   const [dashboardAppointments, setDashboardAppointments] = useState([]);
   const [clinicianPatients, setClinicianPatients] = useState([]);
   const [apptToast, setApptToast] = useState(null);
+
+  // Patient CRUD state for Recent Patients
+  const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
+  const [newPatientForm, setNewPatientForm] = useState({
+    name: '',
+    email: '',
+    age: '',
+    gender: 'Female',
+    risk_level: 'Low',
+    initial_score: 75
+  });
+  const [editingPatient, setEditingPatient] = useState(null);
+  const [deletingPatient, setDeletingPatient] = useState(null);
+  const [patientActionLoading, setPatientActionLoading] = useState(false);
+  const [patientActionError, setPatientActionError] = useState(null);
+  const [patientToast, setPatientToast] = useState(null);
+
+  const handleCreatePatient = async (e) => {
+    e.preventDefault();
+    if (!newPatientForm.name.trim() || !newPatientForm.email.trim()) {
+      setPatientActionError('Name and email are required');
+      return;
+    }
+    setPatientActionLoading(true);
+    setPatientActionError(null);
+    try {
+      const res = await createClinicianPatient({
+        name: newPatientForm.name.trim(),
+        email: newPatientForm.email.trim(),
+        age: newPatientForm.age ? parseInt(newPatientForm.age, 10) : undefined,
+        gender: newPatientForm.gender,
+        risk_level: newPatientForm.risk_level,
+        initial_score: newPatientForm.initial_score ? parseFloat(newPatientForm.initial_score) : 75.0
+      });
+      setClinicianPatients((prev) => [res.data, ...prev]);
+      setIsAddPatientModalOpen(false);
+      setNewPatientForm({
+        name: '',
+        email: '',
+        age: '',
+        gender: 'Female',
+        risk_level: 'Low',
+        initial_score: 75
+      });
+      setPatientToast({ type: 'success', text: `Patient "${res.data.name}" enrolled successfully.` });
+      setTimeout(() => setPatientToast(null), 4500);
+    } catch (err) {
+      console.error('Error creating patient:', err);
+      const errMsg = err.response?.data?.detail || 'Failed to enroll patient.';
+      setPatientActionError(errMsg);
+    } finally {
+      setPatientActionLoading(false);
+    }
+  };
+
+  const handleUpdatePatient = async (e) => {
+    e.preventDefault();
+    if (!editingPatient) return;
+    setPatientActionLoading(true);
+    setPatientActionError(null);
+    try {
+      const res = await updateClinicianPatient(editingPatient.id, {
+        name: editingPatient.name.trim(),
+        email: editingPatient.email.trim(),
+        age: editingPatient.age ? parseInt(editingPatient.age, 10) : undefined,
+        gender: editingPatient.gender,
+        risk_level: editingPatient.risk_level,
+        score: editingPatient.score !== '' && editingPatient.score != null ? parseFloat(editingPatient.score) : undefined
+      });
+      setClinicianPatients((prev) =>
+        prev.map((p) => (p.id === editingPatient.id ? { ...p, ...res.data } : p))
+      );
+      setEditingPatient(null);
+      setPatientToast({ type: 'success', text: `Patient "${res.data.name}" records updated.` });
+      setTimeout(() => setPatientToast(null), 4500);
+    } catch (err) {
+      console.error('Error updating patient:', err);
+      const errMsg = err.response?.data?.detail || 'Failed to update patient.';
+      setPatientActionError(errMsg);
+    } finally {
+      setPatientActionLoading(false);
+    }
+  };
+
+  const handleDeletePatient = async () => {
+    if (!deletingPatient) return;
+    setPatientActionLoading(true);
+    setPatientActionError(null);
+    try {
+      await deleteClinicianPatient(deletingPatient.id);
+      setClinicianPatients((prev) => prev.filter((p) => p.id !== deletingPatient.id));
+      const deletedName = deletingPatient.name || deletingPatient.email;
+      setDeletingPatient(null);
+      setPatientToast({ type: 'success', text: `Patient "${deletedName}" removed from cohort.` });
+      setTimeout(() => setPatientToast(null), 4500);
+    } catch (err) {
+      console.error('Error deleting patient:', err);
+      const errMsg = err.response?.data?.detail || 'Failed to delete patient.';
+      setPatientActionError(errMsg);
+    } finally {
+      setPatientActionLoading(false);
+    }
+  };
 
   const handleInspectEvidence = (eId) => {
     setSelectedEvidenceId(eId);
@@ -1278,8 +1384,50 @@ const Dashboard = () => {
 
             {/* 4. Bottom Table: Recent Patients */}
             <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <div style={styles.cardHeader}>
-                <h3 style={{ ...styles.cardTitle, color: theme.text }}>Recent Patients</h3>
+              <div style={{ ...styles.cardHeader, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3 style={{ ...styles.cardTitle, color: theme.text, margin: 0 }}>Recent Patients</h3>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    letterSpacing: '0.03em',
+                    color: isDark ? '#a3b18a' : '#273822',
+                    backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#eaf1e8',
+                    padding: '2px 8px',
+                    borderRadius: '5px',
+                    border: `1px solid ${isDark ? '#3d5236' : '#d2ded0'}`
+                  }}>
+                    {clinicianPatients.length} Enrolled
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setPatientActionError(null);
+                    setIsAddPatientModalOpen(true);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: '#273822',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    lineHeight: '18px',
+                    cursor: 'pointer',
+                    fontFamily: "Inter, system-ui, sans-serif",
+                    transition: 'opacity 0.15s ease'
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Add Patient
+                </button>
               </div>
               <div style={styles.tableWrapper}>
                 <table style={styles.patientTable}>
@@ -1292,17 +1440,18 @@ const Dashboard = () => {
                       <th style={{ ...styles.th, color: theme.tableTh }}>Screening Date</th>
                       <th style={{ ...styles.th, color: theme.tableTh }}>CogniScore</th>
                       <th style={{ ...styles.th, color: theme.tableTh }}>Risk & Drift</th>
+                      <th style={{ ...styles.th, color: theme.tableTh, textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {clinicianPatients.length === 0 ? (
                       <tr>
-                        <td colSpan="7" style={{ ...styles.td, textAlign: 'center', color: theme.subtext, padding: '2rem' }}>
+                        <td colSpan="8" style={{ ...styles.td, textAlign: 'center', color: theme.subtext, padding: '2rem' }}>
                           No monitored patients available in clinical directory.
                         </td>
                       </tr>
                     ) : (
-                      clinicianPatients.slice(0, 6).map((p, idx) => {
+                      clinicianPatients.slice(0, 8).map((p, idx) => {
                         const isDrift = p.is_deviating || p.risk_level === 'High';
                         const riskBadgeBg = isDrift 
                           ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2')
@@ -1326,19 +1475,88 @@ const Dashboard = () => {
                               </span>
                             </td>
                             <td style={{ ...styles.td, color: theme.tableTd }}>{p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Active'}</td>
-                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.score != null ? `${Math.round(p.score)} pts` : (p.cogni_score != null ? `${Math.round(p.cogni_score)} pts` : 'Enrolled')}</td>
+                            <td style={{ ...styles.td, color: theme.tableTd }}>{p.score != null ? `${Math.round(p.score)} pts` : (p.cogni_score != null ? `${Math.round(p.cogni_score)} pts` : (p.latest_score != null ? `${Math.round(p.latest_score)} pts` : 'Enrolled'))}</td>
                             <td style={styles.td}>
                               <span style={{
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '20px',
-                                fontSize: '0.72rem',
-                                fontWeight: '700',
+                                padding: '3px 8px',
+                                borderRadius: '5px',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                letterSpacing: '0.03em',
                                 color: riskBadgeColor,
                                 backgroundColor: riskBadgeBg,
-                                display: 'inline-block'
+                                display: 'inline-block',
+                                textTransform: 'uppercase'
                               }}>
                                 {p.risk_level || 'Active'}
                               </span>
+                            </td>
+                            <td style={{ ...styles.td, textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPatientActionError(null);
+                                    setEditingPatient({
+                                      id: p.id,
+                                      name: p.name || '',
+                                      email: p.email || '',
+                                      age: p.age || '',
+                                      gender: p.gender || 'Not specified',
+                                      risk_level: p.risk_level || 'Low',
+                                      score: p.score ?? p.latest_score ?? 75
+                                    });
+                                  }}
+                                  title="Modify patient information"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '4px 8px',
+                                    borderRadius: '5px',
+                                    border: `1px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
+                                    backgroundColor: isDark ? '#162216' : '#f8faf7',
+                                    color: isDark ? '#cdd8c5' : '#273822',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    fontFamily: "Inter, system-ui, sans-serif"
+                                  }}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                  </svg>
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPatientActionError(null);
+                                    setDeletingPatient(p);
+                                  }}
+                                  title="Delete patient from cohort"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '4px 8px',
+                                    borderRadius: '5px',
+                                    border: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #fca5a5',
+                                    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
+                                    color: '#ef4444',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    fontFamily: "Inter, system-ui, sans-serif"
+                                  }}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                  </svg>
+                                  Delete
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1617,6 +1835,454 @@ const Dashboard = () => {
         isOpen={isProfileModalOpen} 
         onClose={() => setIsProfileModalOpen(false)} 
       />
+
+      {/* Add Patient Modal */}
+      {isAddPatientModalOpen && (
+        <div style={styles.modalOverlay} onClick={() => !patientActionLoading && setIsAddPatientModalOpen(false)}>
+          <div 
+            style={{ 
+              ...styles.crudModalBox, 
+              backgroundColor: theme.cardBg, 
+              borderColor: theme.border,
+              boxShadow: isDark ? '0 16px 40px rgba(0,0,0,0.6)' : '0 16px 40px rgba(0,0,0,0.12)'
+            }} 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', borderBottom: `1px solid ${theme.borderSubtle || theme.border}`, paddingBottom: '12px' }}>
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: isDark ? '#a3b18a' : '#273822', display: 'block', marginBottom: '2px' }}>
+                  Clinical Roster Enrollment
+                </span>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: theme.text, letterSpacing: '-0.01em' }}>
+                  Enroll New Patient
+                </h3>
+              </div>
+              <button 
+                style={{ background: 'none', border: 'none', fontSize: '16px', color: theme.subtext, cursor: 'pointer', padding: '4px' }} 
+                onClick={() => setIsAddPatientModalOpen(false)}
+                disabled={patientActionLoading}
+              >
+                ✕
+              </button>
+            </div>
+
+            {patientActionError && (
+              <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2', color: '#ef4444', fontSize: '12px', fontWeight: 600, marginBottom: '14px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                {patientActionError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreatePatient} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                  Patient Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Eleanor Vance"
+                  value={newPatientForm.name}
+                  onChange={(e) => setNewPatientForm({ ...newPatientForm, name: e.target.value })}
+                  style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. eleanor.vance@example.com"
+                  value={newPatientForm.email}
+                  onChange={(e) => setNewPatientForm({ ...newPatientForm, email: e.target.value })}
+                  style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                    Age (Years)
+                  </label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="110"
+                    placeholder="e.g. 71"
+                    value={newPatientForm.age}
+                    onChange={(e) => setNewPatientForm({ ...newPatientForm, age: e.target.value })}
+                    style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                    Biological Gender
+                  </label>
+                  <select
+                    value={newPatientForm.gender}
+                    onChange={(e) => setNewPatientForm({ ...newPatientForm, gender: e.target.value })}
+                    style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
+                    <option value="Not specified">Not specified</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                    Initial Risk Level
+                  </label>
+                  <select
+                    value={newPatientForm.risk_level}
+                    onChange={(e) => setNewPatientForm({ ...newPatientForm, risk_level: e.target.value })}
+                    style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                  >
+                    <option value="Low">Low Risk</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="High">High Risk</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                    Initial CogniScore
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={newPatientForm.initial_score}
+                    onChange={(e) => setNewPatientForm({ ...newPatientForm, initial_score: e.target.value })}
+                    style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  disabled={patientActionLoading}
+                  onClick={() => setIsAddPatientModalOpen(false)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.border}`,
+                    backgroundColor: 'transparent',
+                    color: theme.subtext,
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={patientActionLoading}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: '#273822',
+                    color: '#ffffff',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: patientActionLoading ? 'not-allowed' : 'pointer',
+                    opacity: patientActionLoading ? 0.7 : 1
+                  }}
+                >
+                  {patientActionLoading ? 'Enrolling...' : 'Enroll Patient'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Patient Modal */}
+      {editingPatient && (
+        <div style={styles.modalOverlay} onClick={() => !patientActionLoading && setEditingPatient(null)}>
+          <div 
+            style={{ 
+              ...styles.crudModalBox, 
+              backgroundColor: theme.cardBg, 
+              borderColor: theme.border,
+              boxShadow: isDark ? '0 16px 40px rgba(0,0,0,0.6)' : '0 16px 40px rgba(0,0,0,0.12)'
+            }} 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', borderBottom: `1px solid ${theme.borderSubtle || theme.border}`, paddingBottom: '12px' }}>
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: isDark ? '#a3b18a' : '#273822', display: 'block', marginBottom: '2px' }}>
+                  Patient Record Management
+                </span>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: theme.text, letterSpacing: '-0.01em' }}>
+                  Modify Patient Details
+                </h3>
+              </div>
+              <button 
+                style={{ background: 'none', border: 'none', fontSize: '16px', color: theme.subtext, cursor: 'pointer', padding: '4px' }} 
+                onClick={() => setEditingPatient(null)}
+                disabled={patientActionLoading}
+              >
+                ✕
+              </button>
+            </div>
+
+            {patientActionError && (
+              <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2', color: '#ef4444', fontSize: '12px', fontWeight: 600, marginBottom: '14px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                {patientActionError}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdatePatient} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingPatient.name}
+                  onChange={(e) => setEditingPatient({ ...editingPatient, name: e.target.value })}
+                  style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={editingPatient.email}
+                  onChange={(e) => setEditingPatient({ ...editingPatient, email: e.target.value })}
+                  style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="110"
+                    value={editingPatient.age}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, age: e.target.value })}
+                    style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                    Gender
+                  </label>
+                  <select
+                    value={editingPatient.gender}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, gender: e.target.value })}
+                    style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
+                    <option value="Not specified">Not specified</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                    Risk Level
+                  </label>
+                  <select
+                    value={editingPatient.risk_level}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, risk_level: e.target.value })}
+                    style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                  >
+                    <option value="Low">Low Risk</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="High">High Risk</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', color: theme.text, marginBottom: '4px' }}>
+                    CogniScore
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={editingPatient.score ?? ''}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, score: e.target.value })}
+                    style={{ ...styles.crudInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  disabled={patientActionLoading}
+                  onClick={() => setEditingPatient(null)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.border}`,
+                    backgroundColor: 'transparent',
+                    color: theme.subtext,
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={patientActionLoading}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: '#273822',
+                    color: '#ffffff',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: patientActionLoading ? 'not-allowed' : 'pointer',
+                    opacity: patientActionLoading ? 0.7 : 1
+                  }}
+                >
+                  {patientActionLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Patient Confirmation Modal */}
+      {deletingPatient && (
+        <div style={styles.modalOverlay} onClick={() => !patientActionLoading && setDeletingPatient(null)}>
+          <div 
+            style={{ 
+              ...styles.crudModalBox, 
+              backgroundColor: theme.cardBg, 
+              borderColor: theme.border,
+              maxWidth: '440px',
+              boxShadow: isDark ? '0 16px 40px rgba(0,0,0,0.6)' : '0 16px 40px rgba(0,0,0,0.12)'
+            }} 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.16)' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: theme.text }}>
+                  Remove Patient from Cohort
+                </h3>
+                <span style={{ fontSize: '12px', color: theme.subtext }}>
+                  Permanent clinical cohort deletion
+                </span>
+              </div>
+            </div>
+
+            {patientActionError && (
+              <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2', color: '#ef4444', fontSize: '12px', fontWeight: 600, marginBottom: '14px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                {patientActionError}
+              </div>
+            )}
+
+            <p style={{ fontSize: '13px', lineHeight: '20px', color: theme.text, margin: '0 0 12px 0' }}>
+              Are you sure you want to remove <strong>{deletingPatient.name || deletingPatient.email}</strong> from surveillance?
+            </p>
+            <p style={{ fontSize: '12px', lineHeight: '18px', color: theme.subtext, margin: '0 0 16px 0' }}>
+              All linked longitudinal screenings, baseline psychometrics, and telemetry packets for this patient will be permanently removed.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                disabled={patientActionLoading}
+                onClick={() => setDeletingPatient(null)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: 'transparent',
+                  color: theme.subtext,
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={patientActionLoading}
+                onClick={handleDeletePatient}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: patientActionLoading ? 'not-allowed' : 'pointer',
+                  opacity: patientActionLoading ? 0.7 : 1
+                }}
+              >
+                {patientActionLoading ? 'Removing...' : 'Delete Patient'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Toast Feedback */}
+      {patientToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '12px 18px',
+          borderRadius: '8px',
+          backgroundColor: patientToast.type === 'error' ? (isDark ? '#450a0a' : '#fee2e2') : (isDark ? '#052e16' : '#dcfce7'),
+          color: patientToast.type === 'error' ? (isDark ? '#f87171' : '#991b1b') : (isDark ? '#86efac' : '#166534'),
+          border: `1px solid ${patientToast.type === 'error' ? '#f87171' : '#86efac'}`,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+          fontSize: '13px',
+          fontWeight: 600,
+          fontFamily: "Inter, system-ui, sans-serif"
+        }}>
+          <span>{patientToast.type === 'error' ? '⚠️' : '✓'}</span>
+          <span>{patientToast.text}</span>
+        </div>
+      )}
     </DoctorLayout>
   );
 };
@@ -2220,6 +2886,25 @@ const styles = {
     fontWeight: '700',
     cursor: 'pointer',
     boxShadow: '0 4px 14px rgba(39, 56, 34, 0.2)',
+  },
+  crudModalBox: {
+    width: '100%',
+    maxWidth: '480px',
+    border: '1px solid',
+    borderRadius: '12px',
+    padding: '24px',
+    fontFamily: "Inter, system-ui, sans-serif",
+  },
+  crudInput: {
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    border: '1px solid',
+    fontSize: '13px',
+    fontWeight: 400,
+    outline: 'none',
+    fontFamily: "Inter, system-ui, sans-serif",
   },
 };
 

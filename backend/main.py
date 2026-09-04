@@ -1867,6 +1867,187 @@ def get_clinician_patients_list(
     # Return official demo accounts first, then registered accounts
     return demo_patients + registered_patients
 
+@app.post("/api/clinician/patients")
+def create_clinician_patient(
+    req: schemas.ClinicianPatientCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_clinician)
+):
+    """Enrolls a new patient in the clinician cohort with baseline initialization."""
+    clean_email = req.email.strip().lower()
+    existing = db.query(models.User).filter(models.User.email == clean_email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"A user with email '{clean_email}' already exists in registry.")
+
+    new_patient = models.User(
+        name=req.name.strip(),
+        email=clean_email,
+        hashed_password=auth.get_password_hash("CogniVeil2026!"),
+        age=req.age,
+        gender=req.gender or "Not specified",
+        role="patient",
+        is_caregiver=False,
+        consent_granted=True,
+        consent_granted_at=datetime.utcnow(),
+        baseline_status="collecting"
+    )
+    db.add(new_patient)
+    db.commit()
+    db.refresh(new_patient)
+
+    score_val = float(req.initial_score if req.initial_score is not None else 75.0)
+    risk = req.risk_level or ("Low" if score_val >= 65 else "Moderate" if score_val >= 40 else "High")
+    init_score = models.CogniScore(
+        user_id=new_patient.id,
+        score=round(score_val, 2),
+        active_score=round(score_val, 2),
+        passive_score=round(score_val, 2),
+        risk_level=risk,
+        ewma_score=round(score_val, 2),
+        cusum_value=0.0,
+        baseline_mean=round(score_val, 2),
+        baseline_status="collecting",
+        level2_status="not_collected",
+        is_deviating=False
+    )
+    db.add(init_score)
+    
+    # Audit log
+    db.add(models.AuditLog(
+        user_id=current_user.id,
+        tool_name="clinician_enroll_patient",
+        input_summary=f"Clinician {current_user.name} enrolled new patient {new_patient.name} ({clean_email})",
+        output_summary=f"Created patient ID {new_patient.id}",
+        guardrail_passed=True
+    ))
+    db.commit()
+
+    return {
+        "id": new_patient.id,
+        "name": new_patient.name,
+        "email": new_patient.email,
+        "age": new_patient.age,
+        "gender": new_patient.gender,
+        "is_demo": False,
+        "baseline_status": new_patient.baseline_status,
+        "level2_status": new_patient.level2_status,
+        "latest_score": init_score.score,
+        "risk_level": init_score.risk_level,
+        "is_deviating": False,
+        "ewma_score": init_score.ewma_score,
+        "cusum_value": init_score.cusum_value,
+        "active_score": init_score.active_score,
+        "passive_score": init_score.passive_score,
+        "total_tests": 0,
+        "total_signals": 0,
+        "last_screening": init_score.created_at
+    }
+
+@app.put("/api/clinician/patients/{patient_id}")
+def update_clinician_patient(
+    patient_id: int,
+    req: schemas.ClinicianPatientUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_clinician)
+):
+    """Updates demographic and clinical risk attributes for an enrolled patient."""
+    patient = db.query(models.User).filter(models.User.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    if req.name is not None and req.name.strip():
+        patient.name = req.name.strip()
+    if req.email is not None and req.email.strip():
+        clean_email = req.email.strip().lower()
+        conflict = db.query(models.User).filter(models.User.email == clean_email, models.User.id != patient_id).first()
+        if conflict:
+            raise HTTPException(status_code=400, detail="Email is already used by another patient")
+        patient.email = clean_email
+    if req.age is not None:
+        patient.age = req.age
+    if req.gender is not None:
+        patient.gender = req.gender
+
+    latest_score = db.query(models.CogniScore).filter(
+        models.CogniScore.user_id == patient_id
+    ).order_by(models.CogniScore.created_at.desc()).first()
+
+    if req.score is not None or req.risk_level is not None:
+        if latest_score:
+            if req.score is not None:
+                latest_score.score = round(float(req.score), 2)
+            if req.risk_level is not None:
+                latest_score.risk_level = req.risk_level
+        else:
+            s_val = float(req.score if req.score is not None else 70.0)
+            r_val = req.risk_level or "Low"
+            latest_score = models.CogniScore(
+                user_id=patient_id,
+                score=round(s_val, 2),
+                active_score=round(s_val, 2),
+                passive_score=round(s_val, 2),
+                risk_level=r_val,
+                ewma_score=round(s_val, 2),
+                cusum_value=0.0
+            )
+            db.add(latest_score)
+
+    db.commit()
+    db.refresh(patient)
+
+    return {
+        "id": patient.id,
+        "name": patient.name,
+        "email": patient.email,
+        "age": patient.age,
+        "gender": patient.gender,
+        "is_demo": (patient.email or "").lower().strip() in OFFICIAL_DEMO_PATIENT_EMAILS,
+        "baseline_status": patient.baseline_status,
+        "level2_status": patient.level2_status,
+        "latest_score": latest_score.score if latest_score else None,
+        "risk_level": latest_score.risk_level if latest_score else "Low",
+        "is_deviating": bool(latest_score.is_deviating) if latest_score else False
+    }
+
+@app.delete("/api/clinician/patients/{patient_id}")
+def delete_clinician_patient(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_clinician)
+):
+    """Safely removes a patient and cascades linked telemetry from the clinician cohort."""
+    patient = db.query(models.User).filter(models.User.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    if patient.role == "clinician":
+        raise HTTPException(status_code=400, detail="Cannot delete clinician accounts")
+
+    patient_name = patient.name or patient.email
+
+    # Cascade delete records associated with this patient
+    db.query(models.CogniScore).filter(models.CogniScore.user_id == patient_id).delete(synchronize_session=False)
+    db.query(models.PassiveSignal).filter(models.PassiveSignal.user_id == patient_id).delete(synchronize_session=False)
+    db.query(models.TestResult).filter(models.TestResult.user_id == patient_id).delete(synchronize_session=False)
+    db.query(models.ClinicalReport).filter(models.ClinicalReport.user_id == patient_id).delete(synchronize_session=False)
+    db.query(models.Appointment).filter(
+        (models.Appointment.user_id == patient_id) | (models.Appointment.patient_id == patient_id)
+    ).delete(synchronize_session=False)
+    db.query(models.Notification).filter(models.Notification.user_id == patient_id).delete(synchronize_session=False)
+    db.query(models.CaregiverAccess).filter(
+        (models.CaregiverAccess.patient_id == patient_id) | (models.CaregiverAccess.caregiver_id == patient_id)
+    ).delete(synchronize_session=False)
+    db.query(models.AuditLog).filter(models.AuditLog.user_id == patient_id).delete(synchronize_session=False)
+
+    db.delete(patient)
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Patient '{patient_name}' successfully removed from monitored cohort",
+        "deleted_id": patient_id
+    }
+
 @app.get("/api/clinician/patients/{patient_id}/overview")
 def get_clinician_patient_overview(
     patient_id: int,
