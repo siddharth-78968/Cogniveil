@@ -51,26 +51,6 @@ function getRiskColor(cat) {
   return '#10b981';
 }
 
-const VERNACULAR_LANGUAGES = [
-  { code: 'en', name: 'English', native: 'Indian English', flag: '🌐' },
-  { code: 'hi', name: 'Hindi', native: 'हिंदी', flag: '🇮🇳' },
-  { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ', flag: '🇮🇳' },
-  { code: 'ta', name: 'Tamil', native: 'தமிழ்', flag: '🇮🇳' },
-  { code: 'te', name: 'Telugu', native: 'తెలుగు', flag: '🇮🇳' },
-  { code: 'mr', name: 'Marathi', native: 'मराठी', flag: '🇮🇳' },
-  { code: 'bn', name: 'Bengali', native: 'বাংলা', flag: '🇮🇳' },
-];
-
-const VERNACULAR_PROMPTS = {
-  en: "Describe what you typically see when looking out your front door in the morning...",
-  hi: "सुबह अपने घर के मुख्य दरवाजे से बाहर देखने पर आपको जो कुछ भी दिखाई देता है, उसका वर्णन करें...",
-  kn: "ಬೆಳಿಗ್ಗೆ ನಿಮ್ಮ ಮನೆಯ ಮುಖ್ಯ ಬಾಗಿಲಿನಿಂದ ಹೊರಗೆ ನೋಡಿದಾಗ ನೀವು ಸಾಮಾನ್ಯವಾಗಿ ಕಾಣುವ ದೃಶ್ಯವನ್ನು ವಿವರಿಸಿ...",
-  ta: "காலையில் உங்கள் வீட்டின் முன் கதவைத் திறந்து பார்க்கும்போது நீங்கள் காணும் காட்சியை விவரிக்கவும்...",
-  te: "ఉదయం మీ ఇంటి ప్రధాన ద్వారం నుండి బయటకు చూసినప్పుడు మీకు కనిపించే సాధారణ దృశ్యాన్ని వివరించండి...",
-  mr: "सकाळी तुमच्या घराच्या मुख्य दरवाजातून बाहेर पाहताना तुम्हाला काय दिसते याचे वर्णन करा...",
-  bn: "সকালে আপনার বাড়ির সদর দরজা খুলে বাইরে তাকালে আপনি সাধারণত কী দেখতে পান তা বর্ণনা করুন..."
-};
-
 const VoiceJournal = () => {
   const navigate = useNavigate();
   const [recording, setRecording] = useState(false);
@@ -79,12 +59,9 @@ const VoiceJournal = () => {
   const [result, setResult] = useState(null);
   const [qualityError, setQualityError] = useState(null);
   const [timer, setTimer] = useState(0);
+  const [prompt, setPrompt] = useState('');
+  const [ripple, setRipple] = useState(false);
   const [selectedLang, setSelectedLang] = useState('en');
-  const [prompt, setPrompt] = useState(VERNACULAR_PROMPTS.en);
-
-  useEffect(() => {
-    setPrompt(VERNACULAR_PROMPTS[selectedLang] || VERNACULAR_PROMPTS.en);
-  }, [selectedLang]);
   const [langInfo, setLangInfo] = useState(null);
   const [transcript, setTranscript] = useState('');
   const [simulateMic, setSimulateMic] = useState(false);
@@ -602,66 +579,37 @@ const VoiceJournal = () => {
             <h1 style={styles.pageTitle}>Voice Journal & Early Screening</h1>
             <p style={styles.pageSub}>Speak naturally in your preferred language. AI measures cadence, pause patterns, and personal baseline trends.</p>
           </div>
-        </div>
-
-        {/* ── 7 VERNACULAR INDIAN LANGUAGES SELECTOR (WINNING STRATEGY DIFFERENTIATOR) ── */}
-        <div style={{
-          marginTop: '1.25rem',
-          marginBottom: '1.5rem',
-          padding: '1.15rem 1.4rem',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '16px',
-          border: '1.5px solid #e2e8f0',
-          boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '1.2rem' }}>🇮🇳</span>
-              <span style={{ fontSize: '0.88rem', fontWeight: '800', color: '#1e293b', letterSpacing: '-0.01em' }}>
-                7 Vernacular Indian Languages Supported
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+            <label style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: '700' }}>SELECT LANGUAGE</label>
+            <select
+              value={selectedLang}
+              onChange={(e) => setSelectedLang(e.target.value)}
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '10px',
+                color: '#4338CA',
+                padding: '0.5rem 0.8rem',
+                fontSize: '0.85rem',
+                fontWeight: '700',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="en">English (en)</option>
+              <option value="hi">Hindi (hi)</option>
+              <option value="ta">Tamil (ta)</option>
+              <option value="te">Telugu (te)</option>
+              <option value="es">Spanish (es)</option>
+              <option value="mr">Marathi (mr)</option>
+              <option value="bn">Bengali (bn)</option>
+            </select>
+            {langInfo && (
+              <span style={{ color: '#a78bfa', fontSize: '0.72rem', fontWeight: '600' }}>
+                🌐 Routed to: {langInfo.whisper_mode}
               </span>
-              <span style={{ fontSize: '0.72rem', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', backgroundColor: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}>
-                Rural & Non-English Screening Priority
-              </span>
-            </div>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600' }}>
-              Designed for higher rural dementia prevalence where traditional Western tools fail
-            </span>
+            )}
           </div>
-
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {VERNACULAR_LANGUAGES.map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setSelectedLang(lang.code)}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '10px',
-                  border: selectedLang === lang.code ? '2px solid #4338ca' : '1px solid #e2e8f0',
-                  backgroundColor: selectedLang === lang.code ? '#eef2ff' : '#f8fafc',
-                  color: selectedLang === lang.code ? '#312e81' : '#475569',
-                  fontSize: '0.86rem',
-                  fontWeight: selectedLang === lang.code ? '800' : '600',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <span>{lang.flag}</span>
-                <span>{lang.name}</span>
-                <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>({lang.native})</span>
-              </button>
-            ))}
-          </div>
-
-          {langInfo && (
-            <div style={{ marginTop: '10px', fontSize: '0.75rem', color: '#6366f1', fontWeight: '700' }}>
-              🌐 Whisper ASR Pipeline: {langInfo.whisper_mode} (Native phoneme & pause extraction active)
-            </div>
-          )}
         </div>
 
         <VoiceGuideBar scriptKey="voice_journal_intro" defaultLang={selectedLang} />
