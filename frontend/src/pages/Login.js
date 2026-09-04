@@ -6,11 +6,17 @@ import { pingBackend } from '../utils/api';
 import { triggerGoogleSignIn, GoogleIcon } from '../utils/googleAuth';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('rememberMe') === 'true';
+  });
+  const [email, setEmail] = useState(() => {
+    return localStorage.getItem('rememberedEmail') || '';
+  });
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [googleRole, setGoogleRole] = useState('patient');
   const { login, googleLogin } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -24,8 +30,27 @@ const Login = () => {
     setLoading(true);
     setError('');
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      if (rememberMe) {
+        localStorage.setItem('rememberMe', 'true');
+        localStorage.setItem('rememberedEmail', email);
+        localStorage.setItem('remember_device_choice', 'remembered');
+      } else {
+        localStorage.removeItem('rememberMe');
+        localStorage.removeItem('rememberedEmail');
+        // Prompt user right after entering inside if they want to remember on this workstation
+        sessionStorage.setItem('just_logged_in_prompt', 'true');
+        sessionStorage.setItem('candidate_remember_email', email);
+      }
+      const res = await login(email, password);
+      const userObj = res.data?.user;
+      const isClinician = userObj?.role === 'clinician' || userObj?.is_caregiver;
+      if (isClinician) {
+        navigate('/patients');
+      } else if (userObj && userObj.consent_granted === false) {
+        navigate('/consent');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       if (err.code === 'ERR_NETWORK' || !err.response) {
         setError('Cannot connect to backend server. Please ensure the Python backend is running on port 8000.');
@@ -44,12 +69,20 @@ const Login = () => {
     setLoading(true);
     setError('');
     triggerGoogleSignIn({
-      role: 'clinician',
+      role: googleRole,
       onSuccess: async (googleData) => {
         try {
+          if (rememberMe) {
+            localStorage.setItem('rememberMe', 'true');
+            localStorage.setItem('rememberedEmail', googleData.email);
+            localStorage.setItem('remember_device_choice', 'remembered');
+          }
           const res = await googleLogin(googleData);
           const userObj = res.data?.user;
-          if (userObj && userObj.consent_granted === false) {
+          const isClinician = userObj?.role === 'clinician' || userObj?.is_caregiver;
+          if (isClinician) {
+            navigate('/patients');
+          } else if (userObj && userObj.consent_granted === false) {
             navigate('/consent');
           } else {
             navigate('/dashboard');
@@ -74,12 +107,24 @@ const Login = () => {
     setLoading(true);
     setError('');
     try {
-      await login(demoEmail, demoPass);
-      navigate('/dashboard');
+      const res = await login(demoEmail, demoPass);
+      const userObj = res.data?.user;
+      const isClinician = userObj?.role === 'clinician' || userObj?.is_caregiver;
+      if (isClinician) {
+        navigate('/patients');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       try {
-        await login(demoEmail, 'password123');
-        navigate('/dashboard');
+        const res2 = await login(demoEmail, 'password123');
+        const userObj2 = res2.data?.user;
+        const isClinician2 = userObj2?.role === 'clinician' || userObj2?.is_caregiver;
+        if (isClinician2) {
+          navigate('/patients');
+        } else {
+          navigate('/dashboard');
+        }
       } catch (err2) {
         if (err.code === 'ERR_NETWORK' || !err.response) {
           setError('Cannot connect to backend server. Please ensure the Python backend is running on port 8000.');
@@ -466,128 +511,13 @@ const Login = () => {
             boxShadow: isDark ? '0 16px 44px rgba(0,0,0,0.4)' : '0 10px 36px rgba(0,0,0,0.05)'
           }}>
 
-            {/* Fast 1-Click Action Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* Primary Google Sign-In Button */}
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '0.92rem 1.25rem',
-                  borderRadius: '12px',
-                  backgroundColor: isDark ? '#19241b' : '#ffffff',
-                  border: `1.5px solid ${isDark ? '#364b34' : '#c7d5c4'}`,
-                  color: isDark ? '#f4f8f1' : '#141e13',
-                  fontSize: '0.95rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  boxShadow: isDark ? '0 4px 14px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = isDark ? '#4ade80' : '#2e7d32';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = isDark ? '0 6px 18px rgba(0,0,0,0.45)' : '0 4px 12px rgba(0,0,0,0.09)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = isDark ? '#364b34' : '#c7d5c4';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = isDark ? '0 4px 14px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)';
-                }}
-              >
-                <GoogleIcon size={20} />
-                <span>Continue with Google</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('riyamehta55@gmail.com', 'demo1234', 'riya')}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem 1.25rem',
-                  borderRadius: '12px',
-                  backgroundColor: isDark ? '#141c15' : '#f0f5ee',
-                  border: `1px solid ${isDark ? '#263624' : '#cdd8cb'}`,
-                  color: isDark ? '#dce6d8' : '#2b3b27',
-                  fontSize: '0.88rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  transition: 'all 0.15s'
-                }}
-              >
-                <span>Demo Supervisor: Dr. Riya Mehta</span>
-                <span style={{
-                  fontSize: '0.68rem',
-                  padding: '3px 8px',
-                  borderRadius: '4px',
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
-                  color: isDark ? '#cdd8c5' : '#475a42',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: '0.04em'
-                }}>
-                  SUPERVISOR
-                </span>
-              </button>
-
-              {/* 3 Quick Patient Evaluation Role Pills */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                {demoAccounts.filter(d => d.id !== 'riya').map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => handleDemoLogin(d.email, 'demo1234', d.id)}
-                    style={{
-                      padding: '8px 6px',
-                      borderRadius: '10px',
-                      backgroundColor: isDark ? '#161e17' : '#f7faf5',
-                      border: `1px solid ${isDark ? '#263525' : '#dbe5d8'}`,
-                      color: isDark ? '#b8c7b4' : '#455641',
-                      fontSize: '0.76rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    {d.name.split(' ')[0]} ({d.code})
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Claude-Style OR Divider */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              margin: '1.4rem 0',
-              gap: '14px'
-            }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: isDark ? '#233022' : '#dce5da' }} />
-              <span style={{
-                fontSize: '0.72rem',
-                fontFamily: "'JetBrains Mono', monospace",
-                fontWeight: '700',
-                color: isDark ? '#6f8269' : '#889e83'
-              }}>
-                OR
-              </span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: isDark ? '#233022' : '#dce5da' }} />
-            </div>
-
-            {/* Email & Password Input Fields */}
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* 1. Email & Password Input Fields at TOP */}
+            <form onSubmit={handleSubmit} method="post" action="#" autoComplete="on" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input
                 type="email"
+                name="email"
+                id="login-email"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
@@ -610,6 +540,9 @@ const Login = () => {
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPass ? 'text' : 'password'}
+                  name="password"
+                  id="login-password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
@@ -651,6 +584,33 @@ const Login = () => {
                 </button>
               </div>
 
+              {/* Remember Me Checkbox */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '2px 0'
+              }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  fontSize: '0.82rem',
+                  color: isDark ? '#a8bda3' : '#4d6547',
+                  fontWeight: '600'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    style={{ width: '15px', height: '15px', accentColor: '#10b981', cursor: 'pointer' }}
+                  />
+                  <span>Remember me on this workstation</span>
+                </label>
+              </div>
+
               {error && (
                 <div style={{
                   padding: '0.75rem 1rem',
@@ -666,7 +626,7 @@ const Login = () => {
                 </div>
               )}
 
-              {/* Claude-Style Solid Button */}
+              {/* Continue with Email Button */}
               <button
                 type="submit"
                 disabled={loading}
@@ -682,12 +642,212 @@ const Login = () => {
                   fontFamily: "'Mulish', sans-serif",
                   cursor: 'pointer',
                   transition: 'opacity 0.15s',
-                  marginTop: '6px'
+                  marginTop: '4px'
                 }}
               >
                 {loading ? 'Signing in...' : 'Continue with email'}
               </button>
             </form>
+
+            {/* 2. OR Divider */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              margin: '1.4rem 0 1.1rem 0',
+              gap: '14px'
+            }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: isDark ? '#233022' : '#dce5da' }} />
+              <span style={{
+                fontSize: '0.72rem',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: '700',
+                color: isDark ? '#6f8269' : '#889e83',
+                letterSpacing: '0.04em'
+              }}>
+                OR SIGN IN WITH GOOGLE
+              </span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: isDark ? '#233022' : '#dce5da' }} />
+            </div>
+
+            {/* 3. Role Selector for Google Sign-In */}
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '6px'
+              }}>
+                <span style={{
+                  fontSize: '0.72rem',
+                  fontWeight: '700',
+                  color: isDark ? '#8ca086' : '#627a5d',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  fontFamily: "'JetBrains Mono', monospace"
+                }}>
+                  Sign in / Enroll as:
+                </span>
+                <span style={{
+                  fontSize: '0.7rem',
+                  color: googleRole === 'patient' ? '#10b981' : '#0ea5e9',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontWeight: '700'
+                }}>
+                  {googleRole === 'patient' ? '● PATIENT MODE' : '● CLINICIAN MODE'}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setGoogleRole('patient')}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    border: googleRole === 'patient'
+                      ? '1.5px solid #10b981'
+                      : `1px solid ${isDark ? '#253524' : '#d5e0d3'}`,
+                    backgroundColor: googleRole === 'patient'
+                      ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#eaf6ec')
+                      : (isDark ? '#141c14' : '#f7faf5'),
+                    color: googleRole === 'patient' ? '#10b981' : (isDark ? '#9db099' : '#576c52'),
+                    fontSize: '0.82rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <span>👤</span>
+                  <span>Patient</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGoogleRole('clinician')}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    border: googleRole === 'clinician'
+                      ? '1.5px solid #0ea5e9'
+                      : `1px solid ${isDark ? '#253524' : '#d5e0d3'}`,
+                    backgroundColor: googleRole === 'clinician'
+                      ? (isDark ? 'rgba(14, 165, 233, 0.15)' : '#eaf4fa')
+                      : (isDark ? '#141c14' : '#f7faf5'),
+                    color: googleRole === 'clinician' ? '#0ea5e9' : (isDark ? '#9db099' : '#576c52'),
+                    fontSize: '0.82rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <span>🩺</span>
+                  <span>Clinician / Doctor</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 4. Continue with Google Button (AT THE BOTTOM) */}
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.92rem 1.25rem',
+                borderRadius: '12px',
+                backgroundColor: isDark ? '#19241b' : '#ffffff',
+                border: `1.5px solid ${isDark ? '#364b34' : '#c7d5c4'}`,
+                color: isDark ? '#f4f8f1' : '#141e13',
+                fontSize: '0.95rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                boxShadow: isDark ? '0 4px 14px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+                transition: 'all 0.15s ease',
+                marginBottom: '14px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = isDark ? '#4ade80' : '#2e7d32';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = isDark ? '#364b34' : '#c7d5c4';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <GoogleIcon size={20} />
+              <span>Continue with Google</span>
+            </button>
+
+            {/* 5. Fast Presets (Subtle shortcuts at the very bottom) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('riyamehta55@gmail.com', 'demo1234')}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '10px',
+                  backgroundColor: isDark ? '#141c15' : '#f0f5ee',
+                  border: `1px solid ${isDark ? '#263624' : '#cdd8cb'}`,
+                  color: isDark ? '#dce6d8' : '#2b3b27',
+                  fontSize: '0.82rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span>Demo Supervisor: Dr. Riya Mehta</span>
+                <span style={{
+                  fontSize: '0.65rem',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+                  color: isDark ? '#cdd8c5' : '#475a42',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.04em'
+                }}>
+                  SUPERVISOR
+                </span>
+              </button>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                {demoAccounts.filter(d => d.id !== 'riya').map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => handleDemoLogin(d.email, 'demo1234')}
+                    style={{
+                      padding: '7px 4px',
+                      borderRadius: '8px',
+                      backgroundColor: isDark ? '#161e17' : '#f7faf5',
+                      border: `1px solid ${isDark ? '#263525' : '#dbe5d8'}`,
+                      color: isDark ? '#b8c7b4' : '#455641',
+                      fontSize: '0.74rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    {d.name.split(' ')[0]} ({d.code})
+                  </button>
+                ))}
+              </div>
+            </div>
 
           </div>
 

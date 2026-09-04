@@ -309,9 +309,16 @@ def google_login(req: schemas.GoogleLoginRequest, db: Session = Depends(get_db))
         db.refresh(db_user)
         mcp_tools.log_audit(db, db_user.id, "google_register", {"email": clean_email, "role": assigned_role}, {"status": "enrolled_via_google", "terms_pending": True}, pipeline_state="baseline_period")
     else:
-        if not hasattr(db_user, 'role') or not db_user.role:
+        # If user explicitly specified role (e.g. toggled between Patient and Clinician)
+        if req.role in ["clinician", "patient"] and db_user.role != req.role:
+            db_user.role = req.role
+            db_user.is_caregiver = (req.role == "clinician")
+            db.commit()
+            db.refresh(db_user)
+        elif not hasattr(db_user, 'role') or not db_user.role:
             db_user.role = "clinician" if db_user.is_caregiver else "patient"
             db.commit()
+            db.refresh(db_user)
         mcp_tools.log_audit(db, db_user.id, "google_login", {"email": clean_email, "role": db_user.role}, {"status": "authenticated_via_google"}, pipeline_state="baseline_period")
 
     token = auth.create_access_token(

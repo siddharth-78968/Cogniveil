@@ -34,6 +34,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isCaregiver, setIsCaregiver] = useState(false);
+  const [googleRole, setGoogleRole] = useState('patient');
   const { register, login, googleLogin } = useAuth();
   const { isDark, toggleTheme, theme } = useTheme();
   const navigate = useNavigate();
@@ -42,12 +43,15 @@ const Register = () => {
     setLoading(true);
     setError('');
     triggerGoogleSignIn({
-      role: isCaregiver ? 'clinician' : 'patient',
+      role: googleRole,
       onSuccess: async (googleData) => {
         try {
           const res = await googleLogin(googleData);
           const userObj = res.data?.user;
-          if (userObj && userObj.consent_granted === false) {
+          const isClinician = userObj?.role === 'clinician' || userObj?.is_caregiver;
+          if (isClinician) {
+            navigate('/patients');
+          } else if (userObj && userObj.consent_granted === false) {
             navigate('/consent');
           } else {
             navigate('/dashboard');
@@ -78,11 +82,19 @@ const Register = () => {
       return;
     }
 
+    const assignedRole = isCaregiver ? 'clinician' : 'patient';
+
     try {
-      await register(name, email, password, parsedAge, gender, isCaregiver);
+      await register(name, email, password, parsedAge, gender, isCaregiver, assignedRole);
       try {
-        await login(email, password);
-        navigate('/consent');
+        const loginRes = await login(email, password);
+        const loggedUser = loginRes.data?.user;
+        const isClin = loggedUser?.role === 'clinician' || isCaregiver;
+        if (isClin) {
+          navigate('/patients');
+        } else {
+          navigate('/consent');
+        }
       } catch (loginErr) {
         navigate('/login');
       }
@@ -190,63 +202,6 @@ const Register = () => {
             </p>
           </div>
 
-          {/* 1-Click Fast Enrollment with Google */}
-          <div style={{ marginBottom: '1.4rem' }}>
-            <button
-              type="button"
-              onClick={handleGoogleSignUp}
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.9rem 1.25rem',
-                borderRadius: '10px',
-                backgroundColor: isDark ? '#19241b' : '#ffffff',
-                border: `1.5px solid ${isDark ? '#364b34' : '#c7d5c4'}`,
-                color: isDark ? '#f4f8f1' : '#141e13',
-                fontSize: '0.94rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '12px',
-                boxShadow: isDark ? '0 4px 14px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = isDark ? '#4ade80' : '#2e7d32';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = isDark ? '#364b34' : '#c7d5c4';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              <GoogleIcon size={20} />
-              <span>Continue with Google</span>
-            </button>
-
-            {/* Divider */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              margin: '1.25rem 0 0.4rem 0',
-              gap: '14px'
-            }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
-              <span style={{
-                fontSize: '0.72rem',
-                fontFamily: "'JetBrains Mono', monospace",
-                fontWeight: '700',
-                color: theme.subtext,
-                letterSpacing: '0.04em'
-              }}>
-                OR ENROLL WITH EMAIL
-              </span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
-            </div>
-          </div>
-
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.inputGroup}>
               <label style={{ ...styles.label, color: theme.text }}>Full legal name</label>
@@ -350,7 +305,10 @@ const Register = () => {
                 type="checkbox"
                 id="isCaregiver"
                 checked={isCaregiver}
-                onChange={(e) => setIsCaregiver(e.target.checked)}
+                onChange={(e) => {
+                  setIsCaregiver(e.target.checked);
+                  setGoogleRole(e.target.checked ? 'clinician' : 'patient');
+                }}
                 style={{ width: '16px', height: '16px', accentColor: '#0284C7', cursor: 'pointer' }}
               />
               <label htmlFor="isCaregiver" style={{ fontSize: '13px', color: theme.subtext, cursor: 'pointer' }}>
@@ -373,6 +331,151 @@ const Register = () => {
               {loading ? 'Enrolling profile...' : 'Complete profile enrollment'}
             </button>
           </form>
+
+          {/* Divider */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            margin: '1.5rem 0 1.1rem 0',
+            gap: '14px'
+          }}>
+            <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
+            <span style={{
+              fontSize: '0.72rem',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: '700',
+              color: theme.subtext,
+              letterSpacing: '0.04em'
+            }}>
+              OR ENROLL FAST WITH GOOGLE
+            </span>
+            <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
+          </div>
+
+          {/* Role Selector for Google Sign-In */}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '6px'
+            }}>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: '700',
+                color: isDark ? '#8ca086' : '#627a5d',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                fontFamily: "'JetBrains Mono', monospace"
+              }}>
+                Enroll Google Account as:
+              </span>
+              <span style={{
+                fontSize: '0.7rem',
+                color: googleRole === 'patient' ? '#10b981' : '#0ea5e9',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: '700'
+              }}>
+                {googleRole === 'patient' ? '● PATIENT PROFILE' : '● CLINICIAN / DOCTOR'}
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setGoogleRole('patient');
+                  setIsCaregiver(false);
+                }}
+                style={{
+                  padding: '9px 10px',
+                  borderRadius: '10px',
+                  border: googleRole === 'patient'
+                    ? '1.5px solid #10b981'
+                    : `1px solid ${isDark ? '#253524' : '#d5e0d3'}`,
+                  backgroundColor: googleRole === 'patient'
+                    ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#eaf6ec')
+                    : (isDark ? '#141c14' : '#f7faf5'),
+                  color: googleRole === 'patient' ? '#10b981' : (isDark ? '#9db099' : '#576c52'),
+                  fontSize: '0.82rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span>👤</span>
+                <span>Patient</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setGoogleRole('clinician');
+                  setIsCaregiver(true);
+                }}
+                style={{
+                  padding: '9px 10px',
+                  borderRadius: '10px',
+                  border: googleRole === 'clinician'
+                    ? '1.5px solid #0ea5e9'
+                    : `1px solid ${isDark ? '#253524' : '#d5e0d3'}`,
+                  backgroundColor: googleRole === 'clinician'
+                    ? (isDark ? 'rgba(14, 165, 233, 0.15)' : '#eaf4fa')
+                    : (isDark ? '#141c14' : '#f7faf5'),
+                  color: googleRole === 'clinician' ? '#0ea5e9' : (isDark ? '#9db099' : '#576c52'),
+                  fontSize: '0.82rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span>🩺</span>
+                <span>Clinician / Doctor</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 1-Click Fast Enrollment with Google (AT THE BOTTOM) */}
+          <button
+            type="button"
+            onClick={handleGoogleSignUp}
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '0.9rem 1.25rem',
+              borderRadius: '10px',
+              backgroundColor: isDark ? '#19241b' : '#ffffff',
+              border: `1.5px solid ${isDark ? '#364b34' : '#c7d5c4'}`,
+              color: isDark ? '#f4f8f1' : '#141e13',
+              fontSize: '0.94rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              boxShadow: isDark ? '0 4px 14px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+              transition: 'all 0.15s ease',
+              marginBottom: '1rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = isDark ? '#4ade80' : '#2e7d32';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = isDark ? '#364b34' : '#c7d5c4';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <GoogleIcon size={20} />
+            <span>Continue with Google</span>
+          </button>
 
           <div style={{ ...styles.footerNote, color: theme.subtext, textAlign: 'center' }}>
             <div>

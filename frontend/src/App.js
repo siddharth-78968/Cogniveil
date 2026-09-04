@@ -17,6 +17,7 @@ import Appointments from './pages/Appointments';
 import Patients from './pages/Patients';
 import ReferralReport from './pages/ReferralReport';
 import DementiaProfiling from './pages/DementiaProfiling';
+import RememberSessionModal from './components/RememberSessionModal';
 import { pingBackend } from './utils/api';
 
 
@@ -52,6 +53,7 @@ const AppContent = () => {
   return (
     <>
       {user && <PassiveTracker />}
+      {user && <RememberSessionModal />}
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
