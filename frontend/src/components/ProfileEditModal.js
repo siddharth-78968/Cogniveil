@@ -153,12 +153,13 @@ const ProfileEditModal = ({ isOpen, onClose }) => {
               </span>
             </div>
             <h2 style={{
-              fontFamily: "'Newsreader', Georgia, serif",
-              fontSize: '1.6rem',
-              fontWeight: '400',
+              fontFamily: "Inter, system-ui, sans-serif",
+              fontSize: '20px',
+              lineHeight: '28px',
+              fontWeight: 600,
               margin: '0.35rem 0 0 0',
               color: theme.text,
-              letterSpacing: '-0.02em'
+              letterSpacing: '-0.015em'
             }}>
               Edit Profile Details
             </h2>

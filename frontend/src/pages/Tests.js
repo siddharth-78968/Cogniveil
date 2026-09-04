@@ -1806,13 +1806,13 @@ const Tests = () => {
         <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', color: '#4ade80', marginBottom: '0.75rem' }}>
           ✓
         </div>
-        <h2 style={{ fontFamily: 'Newsreader', fontSize: '1.6rem', color: theme.text, margin: '0 0 0.5rem 0' }}>
+        <h2 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: '24px', fontWeight: 600, color: theme.text, margin: '0 0 0.5rem 0', letterSpacing: '-0.015em' }}>
           Today's Battery Completed
         </h2>
         <p style={{ color: theme.subtext, fontSize: '0.88rem', lineHeight: '1.5', margin: '0 0 1rem 0' }}>
           You have already recorded your standardized psychometric metrics for today. Come back tomorrow for longitudinal tracking.
         </p>
-        <p style={{ color: theme.subtext, fontSize: '0.78rem', marginBottom: '1.5rem', fontFamily: 'JetBrains Mono', fontWeight: '600' }}>
+        <p style={{ color: theme.subtext, fontSize: '0.78rem', marginBottom: '1.5rem', fontFamily: 'Inter, system-ui, sans-serif', fontWeight: '500' }}>
           Next session available: Tomorrow ({new Date(Date.now() + 86400000).toLocaleDateString()})
         </p>
         <button 
@@ -1843,7 +1843,7 @@ const Tests = () => {
         <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#4ade80', marginBottom: '0.75rem' }}>
           🎉
         </div>
-        <h2 style={{ fontFamily: 'Newsreader', fontSize: '1.65rem', color: theme.text, margin: '0 0 0.5rem 0' }}>
+        <h2 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: '24px', fontWeight: 600, color: theme.text, margin: '0 0 0.5rem 0', letterSpacing: '-0.015em' }}>
           Daily Battery Complete!
         </h2>
         <p style={{ color: theme.subtext, fontSize: '0.88rem', lineHeight: '1.5', margin: '0 0 1.25rem 0' }}>

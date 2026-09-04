@@ -303,7 +303,7 @@ const DoctorLayout = ({
                 backgroundColor: isDark ? '#162018' : '#eaf1e8',
                 borderColor: isDark ? '#202e21' : '#d2ded0',
                 color: isDark ? '#f1f5ee' : '#273822',
-                fontFamily: "'Mulish', 'Inter', sans-serif"
+                fontFamily: "'Inter', system-ui, sans-serif"
               }}
               title="View Multimodal Signal Topology"
             >
@@ -324,7 +324,7 @@ const DoctorLayout = ({
                 backgroundColor: isDark ? '#162018' : '#eaf1e8',
                 borderColor: isDark ? '#202e21' : '#d2ded0',
                 color: isDark ? '#f1f5ee' : '#273822',
-                fontFamily: "'Mulish', 'Inter', sans-serif"
+                fontFamily: "'Inter', system-ui, sans-serif"
               }}
               title="View 10-Node Agent Execution Pipeline"
             >
@@ -519,9 +519,9 @@ const styles = {
   searchBox: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.65rem',
-    padding: '0.5rem 1rem',
-    borderRadius: '10px',
+    gap: '8px',
+    padding: '8px 14px',
+    borderRadius: '6px',
     width: '440px',
     position: 'relative'
   },
@@ -529,15 +529,17 @@ const styles = {
     border: 'none',
     outline: 'none',
     background: 'transparent',
-    fontSize: '0.84rem',
-    width: '100%'
+    fontSize: '13px',
+    fontWeight: '400',
+    width: '100%',
+    fontFamily: "'Inter', system-ui, sans-serif"
   },
   clearSearchBtn: {
     background: 'none',
     border: 'none',
     color: '#829ab1',
     cursor: 'pointer',
-    fontSize: '0.8rem',
+    fontSize: '12px',
     padding: '0 4px'
   },
   searchDropdown: {
@@ -545,7 +547,7 @@ const styles = {
     top: '46px',
     left: 0,
     width: '520px',
-    borderRadius: '12px',
+    borderRadius: '10px',
     border: '1px solid',
     zIndex: 100,
     overflow: 'hidden'
@@ -554,63 +556,70 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '0.6rem 1rem',
-    borderBottom: '1px solid rgba(128,128,128,0.2)',
-    fontSize: '0.7rem',
-    fontWeight: '700',
-    letterSpacing: '0.05em',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    padding: '8px 16px',
+    borderBottom: '1px solid rgba(128,128,128,0.15)',
+    fontSize: '11px',
+    fontWeight: '600',
+    letterSpacing: '0.04em',
+    fontFamily: "'Inter', system-ui, sans-serif"
   },
   dropdownTitle: {
     color: '#3d5236',
-    fontFamily: "'Mulish', 'Inter', sans-serif",
-    fontWeight: '700'
+    fontFamily: "'Inter', system-ui, sans-serif",
+    fontWeight: '600',
+    fontSize: '11px',
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase'
   },
   dropdownCount: {
     color: '#768d71',
-    fontFamily: "'JetBrains Mono', monospace"
+    fontFamily: "'Inter', system-ui, sans-serif",
+    fontSize: '11px',
+    fontWeight: '500'
   },
   dropdownList: {
     maxHeight: '340px',
     overflowY: 'auto'
   },
   searchItem: {
-    padding: '0.75rem 1rem',
+    padding: '10px 16px',
     display: 'flex',
     flexDirection: 'column',
     cursor: 'pointer',
     transition: 'background-color 0.15s ease'
   },
   categoryBadge: {
-    fontSize: '0.65rem',
-    fontWeight: '800',
+    fontSize: '10px',
+    fontWeight: '600',
     textTransform: 'uppercase',
     padding: '2px 6px',
-    borderRadius: '4px',
-    letterSpacing: '0.04em',
-    fontFamily: "'JetBrains Mono', monospace"
+    borderRadius: '5px',
+    letterSpacing: '0.03em',
+    fontFamily: "'Inter', system-ui, sans-serif"
   },
   headerRightActions: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem'
+    gap: '12px'
   },
   graphBtn: {
     border: '1px solid',
-    borderRadius: '10px',
-    padding: '0.5rem 0.95rem',
-    fontSize: '0.82rem',
-    fontWeight: '700',
+    borderRadius: '6px',
+    padding: '6px 14px',
+    fontSize: '13px',
+    fontWeight: '600',
+    lineHeight: '18px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
+    fontFamily: "'Inter', system-ui, sans-serif",
     transition: 'all 0.15s ease'
   },
   notificationBtn: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
+    width: '34px',
+    height: '34px',
+    borderRadius: '6px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -623,20 +632,20 @@ const styles = {
     right: '-4px',
     backgroundColor: '#C94C4C',
     color: '#FFFFFF',
-    fontSize: '0.65rem',
-    fontWeight: '800',
-    borderRadius: '10px',
+    fontSize: '10px',
+    fontWeight: '600',
+    borderRadius: '5px',
     padding: '1px 5px',
     minWidth: '16px',
     textAlign: 'center',
-    fontFamily: "'JetBrains Mono', monospace"
+    fontFamily: "'Inter', system-ui, sans-serif"
   },
   notificationDrawer: {
     position: 'absolute',
-    top: '46px',
+    top: '44px',
     right: 0,
     width: '360px',
-    borderRadius: '12px',
+    borderRadius: '10px',
     border: '1px solid',
     zIndex: 100,
     overflow: 'hidden'
@@ -645,24 +654,24 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '0.75rem 1rem'
+    padding: '10px 16px'
   },
   markAllBtn: {
     background: 'none',
     border: 'none',
     color: '#3d5236',
-    fontSize: '0.72rem',
-    fontWeight: '700',
+    fontSize: '12px',
+    fontWeight: '600',
     cursor: 'pointer',
     textDecoration: 'underline',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    fontFamily: "'Inter', system-ui, sans-serif"
   },
   notifList: {
     maxHeight: '360px',
     overflowY: 'auto'
   },
   notifItem: {
-    padding: '0.75rem 1rem',
+    padding: '10px 16px',
     cursor: 'pointer',
     transition: 'background-color 0.15s ease'
   },
@@ -674,10 +683,12 @@ const styles = {
     marginTop: '4px'
   },
   typeTag: {
-    fontSize: '0.62rem',
-    fontWeight: '800',
-    padding: '2px 5px',
-    borderRadius: '3px'
+    fontSize: '10px',
+    fontWeight: '600',
+    letterSpacing: '0.03em',
+    padding: '2px 6px',
+    borderRadius: '5px',
+    fontFamily: "'Inter', system-ui, sans-serif"
   },
   emptyState: {
     padding: '1.5rem',

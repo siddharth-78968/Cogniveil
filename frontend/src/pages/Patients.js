@@ -215,15 +215,15 @@ const Patients = () => {
                             <h3 style={{ ...styles.patientName, color: theme.text, margin: 0 }}>{p.name}</h3>
                             {p.is_demo ? (
                               <span style={{
-                                fontSize: '0.62rem',
-                                fontWeight: '800',
-                                letterSpacing: '0.04em',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                letterSpacing: '0.03em',
                                 color: isDark ? '#cdd8c5' : '#3d5438',
                                 backgroundColor: isDark ? '#202e21' : '#eaf1e8',
-                                padding: '1px 6px',
-                                borderRadius: '4px',
+                                padding: '2px 6px',
+                                borderRadius: '5px',
                                 border: `1px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
-                                fontFamily: "'JetBrains Mono', monospace"
+                                fontFamily: "Inter, system-ui, sans-serif"
                               }}>
                                 DEMO
                               </span>
@@ -252,7 +252,7 @@ const Patients = () => {
                     <div style={styles.scoreRow}>
                       <div style={styles.scoreItem}>
                         <span style={{ ...styles.scoreLabel, color: theme.subtext }}>CogniScore</span>
-                        <strong style={{ ...styles.scoreNum, color: theme.text }}>{p.latest_score} <span style={{ fontSize: '0.7rem' }}>/ 100</span></strong>
+                        <strong style={{ ...styles.scoreNum, color: theme.text }}>{p.latest_score} <span style={{ fontSize: '11px', fontWeight: 400, color: theme.subtext }}>/ 100</span></strong>
                       </div>
                       <div style={styles.scoreItem}>
                         <span style={{ ...styles.scoreLabel, color: theme.subtext }}>Active Battery</span>
@@ -271,10 +271,10 @@ const Patients = () => {
                     </div>
 
                     <div style={styles.cardFooterRow}>
-                      <span style={{ fontSize: '0.72rem', color: theme.subtext, fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                      <span style={{ fontSize: '11px', lineHeight: '18px', color: theme.subtext, fontFamily: "Inter, system-ui, sans-serif" }}>
                         {p.total_tests} test sessions · {p.total_signals} telemetry packets
                       </span>
-                      <span style={{ fontSize: '0.74rem', fontWeight: '700', color: isDark ? '#a3b18a' : '#273822', fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: isDark ? '#a3b18a' : '#273822', fontFamily: "Inter, system-ui, sans-serif" }}>
                         Inspect Dossier →
                       </span>
                     </div>
@@ -287,19 +287,19 @@ const Patients = () => {
           {/* Right Column: In-Depth Patient Dossier Inspector */}
           <div style={{ ...styles.detailInspectorCol, backgroundColor: theme.cardBg, borderColor: theme.border }}>
             {loadingDetail ? (
-              <div style={{ padding: '3rem', textAlign: 'center', color: theme.subtext }}>Loading patient clinical dossier...</div>
+              <div style={{ padding: '32px', textAlign: 'center', color: theme.subtext, fontSize: '13px' }}>Loading patient clinical dossier...</div>
             ) : patientDetail ? (
               <div style={styles.inspectorContent}>
                 <div style={styles.inspectorTop}>
                   <div>
                     <span style={{ ...styles.inspectorEyebrow, color: isDark ? '#a3b18a' : '#3d5438' }}>PATIENT DOSSIER INSPECTOR</span>
                     <h2 style={{ ...styles.inspectorTitle, color: theme.text }}>{patientDetail.patient.name}</h2>
-                    <span style={{ fontSize: '0.8rem', color: theme.subtext, fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                    <span style={{ fontSize: '12px', lineHeight: '18px', color: theme.subtext, fontFamily: "Inter, system-ui, sans-serif" }}>
                       {patientDetail.patient.email} · Age: {patientDetail.patient.age} · Gender: {patientDetail.patient.gender}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <button
                       onClick={() => navigate('/tests')}
                       style={{ ...styles.navActionBtn, backgroundColor: '#273822', color: '#FFFFFF' }}
@@ -331,11 +331,11 @@ const Patients = () => {
                 {patientDetail.latest_score ? (
                   <div style={{ ...styles.cogniBanner, backgroundColor: isDark ? '#162018' : '#eaf1e8', borderColor: theme.borderSubtle }}>
                     <div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: theme.subtext, textTransform: 'uppercase', fontFamily: "'Mulish', 'Inter', sans-serif" }}>Current CogniScore</span>
-                      <div style={{ fontSize: '2.2rem', fontWeight: '800', color: theme.text, lineHeight: '1.1', fontFamily: "'JetBrains Mono', monospace" }}>
-                        {patientDetail.latest_score.score} <span style={{ fontSize: '0.9rem', color: theme.subtext }}>/ 100</span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', color: theme.subtext, textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>Current CogniScore</span>
+                      <div style={{ fontSize: '32px', fontWeight: 600, color: theme.text, lineHeight: 1.1, letterSpacing: '-0.02em', fontFamily: "Inter, system-ui, sans-serif" }}>
+                        {patientDetail.latest_score.score} <span style={{ fontSize: '14px', fontWeight: 400, color: theme.subtext }}>/ 100</span>
                       </div>
-                      <span style={{ fontSize: '0.76rem', color: getRiskColor(patientDetail.latest_score.risk_level), fontWeight: '800', fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span style={{ fontSize: '11px', color: getRiskColor(patientDetail.latest_score.risk_level), fontWeight: 600, letterSpacing: '0.03em', fontFamily: "Inter, system-ui, sans-serif" }}>
                         {patientDetail.latest_score.risk_level} Risk Category
                       </span>
                     </div>
@@ -343,11 +343,11 @@ const Patients = () => {
                     <div style={{ ...styles.bannerDivider, backgroundColor: isDark ? '#202e21' : '#d2ded0' }} />
 
                     <div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: theme.subtext, textTransform: 'uppercase', fontFamily: "'Mulish', 'Inter', sans-serif" }}>EWMA & CUSUM Tracking</span>
-                      <div style={{ fontSize: '0.95rem', fontWeight: '800', color: theme.text, marginTop: '2px', fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', color: theme.subtext, textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>EWMA & CUSUM Tracking</span>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: theme.text, marginTop: '2px', fontFamily: "var(--cv-font-mono, monospace)" }}>
                         EWMA: {patientDetail.latest_score.ewma_score} · CUSUM: {patientDetail.latest_score.cusum_value}
                       </div>
-                      <span style={{ fontSize: '0.74rem', color: patientDetail.latest_score.is_deviating ? '#C94C4C' : '#2F7D5B', fontWeight: '700', fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                      <span style={{ fontSize: '12px', lineHeight: '18px', color: patientDetail.latest_score.is_deviating ? '#C94C4C' : '#2F7D5B', fontWeight: 500, fontFamily: "Inter, system-ui, sans-serif" }}>
                         {patientDetail.latest_score.is_deviating ? 'Statistically Significant Change-Point Drift' : 'Trajectory within calibrated baseline confidence interval'}
                       </span>
                     </div>
@@ -355,11 +355,11 @@ const Patients = () => {
                 ) : (
                   <div style={{ ...styles.cogniBanner, backgroundColor: isDark ? '#162018' : '#eaf1e8', borderColor: theme.borderSubtle }}>
                     <div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: theme.subtext, textTransform: 'uppercase', fontFamily: "'Mulish', 'Inter', sans-serif" }}>Current CogniScore</span>
-                      <div style={{ fontSize: '1.4rem', fontWeight: '800', color: theme.subtext, lineHeight: '1.2', marginTop: '4px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', color: theme.subtext, textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>Current CogniScore</span>
+                      <div style={{ fontSize: '20px', fontWeight: 600, color: theme.subtext, lineHeight: 1.2, marginTop: '4px', fontFamily: "Inter, system-ui, sans-serif" }}>
                         Not available
                       </div>
-                      <span style={{ fontSize: '0.76rem', color: theme.subtext, fontWeight: '700', fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                      <span style={{ fontSize: '12px', color: theme.subtext, fontWeight: 500, fontFamily: "Inter, system-ui, sans-serif" }}>
                         Awaiting initial cognitive battery
                       </span>
                     </div>
@@ -367,11 +367,11 @@ const Patients = () => {
                     <div style={{ ...styles.bannerDivider, backgroundColor: isDark ? '#202e21' : '#d2ded0' }} />
 
                     <div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: theme.subtext, textTransform: 'uppercase', fontFamily: "'Mulish', 'Inter', sans-serif" }}>Surveillance Status</span>
-                      <div style={{ fontSize: '0.95rem', fontWeight: '800', color: theme.text, marginTop: '2px', fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', color: theme.subtext, textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>Surveillance Status</span>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: theme.text, marginTop: '2px', fontFamily: "Inter, system-ui, sans-serif" }}>
                         Enrolled in Active Cohort
                       </div>
-                      <span style={{ fontSize: '0.74rem', color: theme.subtext, fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                      <span style={{ fontSize: '12px', lineHeight: '18px', color: theme.subtext, fontFamily: "Inter, system-ui, sans-serif" }}>
                         Baseline surveillance calibration collecting (0 of 7 sessions)
                       </span>
                     </div>
@@ -384,34 +384,34 @@ const Patients = () => {
                   <div style={styles.subtestGrid}>
                     {Object.entries(patientDetail.subtest_averages).map(([testKey, val]) => (
                       <div key={testKey} style={{ ...styles.subtestBox, backgroundColor: isDark ? '#141c15' : '#f8faf7', borderColor: theme.borderSubtle }}>
-                        <span style={{ fontSize: '0.7rem', fontWeight: '700', color: theme.subtext, textTransform: 'uppercase', fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', color: theme.subtext, textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>
                           {testKey.replace('_', ' ')}
                         </span>
-                        <strong style={{ fontSize: '1.1rem', color: theme.text, fontFamily: "'JetBrains Mono', monospace" }}>{val} <span style={{ fontSize: '0.7rem' }}>pts</span></strong>
+                        <strong style={{ fontSize: '16px', fontWeight: 600, color: theme.text, fontFamily: "Inter, system-ui, sans-serif" }}>{val} <span style={{ fontSize: '11px', fontWeight: 400 }}>pts</span></strong>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div style={{ padding: '1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '8px', border: `1px dashed ${theme.borderSubtle}`, color: theme.subtext, fontSize: '0.82rem' }}>
+                  <div style={{ padding: '24px', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '8px', border: `1px dashed ${theme.borderSubtle}`, color: theme.subtext, fontSize: '13px' }}>
                     No psychometric domain assessments recorded yet.
                   </div>
                 )}
 
                 {/* Tier 2 CatBoost SHAP Attribution */}
                 {patientDetail.tier2_risk && (
-                  <div style={{ marginTop: '1.25rem' }}>
+                  <div style={{ marginTop: '20px' }}>
                     <h4 style={{ ...styles.sectionHeading, color: theme.text }}>
                       Tier 2 Multivariate CatBoost Risk Assessment (Probability: {Math.round(patientDetail.tier2_risk.probability * 100)}%)
                     </h4>
                     <div style={{ ...styles.shapCard, backgroundColor: isDark ? '#141c15' : '#f8faf7', borderColor: theme.borderSubtle }}>
-                      <span style={{ fontSize: '0.72rem', fontWeight: '800', color: theme.subtext, display: 'block', marginBottom: '8px', fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                      <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em', color: theme.subtext, display: 'block', marginBottom: '8px', textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>
                         TOP SHAP RISK CONTRIBUTORS & MODIFIABLE DRIVERS:
                       </span>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {patientDetail.tier2_risk.top_features?.map((f, idx) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
-                            <span style={{ color: theme.text, fontWeight: '600' }}>{f.feature} ({String(f.value)})</span>
-                            <span style={{ color: f.importance > 0 ? '#C94C4C' : '#2F7D5B', fontWeight: '800', fontFamily: "'JetBrains Mono', monospace" }}>
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                            <span style={{ color: theme.text, fontWeight: 500 }}>{f.feature} ({String(f.value)})</span>
+                            <span style={{ color: f.importance > 0 ? '#C94C4C' : '#2F7D5B', fontWeight: 600, fontFamily: "var(--cv-font-mono, monospace)" }}>
                               {f.importance > 0 ? `+${f.importance.toFixed(2)} Risk` : `${f.importance.toFixed(2)} Protective`}
                             </span>
                           </div>
@@ -422,16 +422,16 @@ const Patients = () => {
                 )}
 
                 {/* DEMENTIA TYPE PROFILING (Summary Widget & Shortcut to Dedicated Workspace) */}
-                <div style={{ marginTop: '1.5rem', borderTop: `1px solid ${theme.borderSubtle}`, paddingTop: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <div style={{ marginTop: '24px', borderTop: `1px solid ${theme.borderSubtle}`, paddingTop: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isDark ? '#a3b18a' : '#273822' }} />
-                        <h4 style={{ ...styles.sectionHeading, color: theme.text, margin: 0, fontSize: '0.96rem' }}>
+                        <h4 style={{ ...styles.sectionHeading, color: theme.text, margin: 0, fontSize: '16px' }}>
                           Dementia Type Profiling (Decision Support)
                         </h4>
                       </div>
-                      <span style={{ fontSize: '0.74rem', color: theme.subtext, fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                      <span style={{ fontSize: '12px', lineHeight: '18px', color: theme.subtext, fontFamily: "Inter, system-ui, sans-serif" }}>
                         Cross-cutting pattern estimator combining Level 1 psychometrics/telemetry & Level 2 clinical biomarkers
                       </span>
                     </div>
@@ -439,18 +439,19 @@ const Patients = () => {
                     <button
                       onClick={() => navigate(`/dementia-profiling?patientId=${patientDetail.patient.id}`)}
                       style={{
-                        fontSize: '0.74rem',
-                        fontWeight: '800',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        lineHeight: '18px',
                         color: isDark ? '#f1f5ee' : '#273822',
                         backgroundColor: isDark ? '#1e2d1f' : '#eaf1e8',
                         padding: '6px 12px',
-                        borderRadius: '8px',
+                        borderRadius: '6px',
                         border: `1px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
-                        fontFamily: "'Mulish', 'Inter', sans-serif"
+                        fontFamily: "Inter, system-ui, sans-serif"
                       }}
                     >
                       Open Full Profiling Workspace →
@@ -458,26 +459,26 @@ const Patients = () => {
                   </div>
 
                   {loadingProfile ? (
-                    <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext, fontSize: '0.82rem' }}>
+                    <div style={{ padding: '24px', textAlign: 'center', color: theme.subtext, fontSize: '13px' }}>
                       Evaluating cross-cutting multimodal pattern profile...
                     </div>
                   ) : dementiaProfile?.status === 'insufficient_data' ? (
                     <div style={{
-                      padding: '1rem 1.25rem',
+                      padding: '16px 20px',
                       backgroundColor: isDark ? '#141c15' : '#f8faf7',
                       border: `1px dashed ${theme.borderSubtle}`,
-                      borderRadius: '10px',
+                      borderRadius: '8px',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center'
                     }}>
                       <div>
-                        <strong style={{ fontSize: '0.82rem', color: theme.text }}>Insufficient Screening Data</strong>
-                        <p style={{ fontSize: '0.76rem', color: theme.subtext, margin: '2px 0 0 0' }}>
+                        <strong style={{ fontSize: '13px', fontWeight: 600, color: theme.text }}>Insufficient Screening Data</strong>
+                        <p style={{ fontSize: '12px', lineHeight: '18px', color: theme.subtext, margin: '2px 0 0 0' }}>
                           {dementiaProfile.message}
                         </p>
                       </div>
-                      <span style={{ fontSize: '0.72rem', color: isDark ? '#a3b18a' : '#273822', fontWeight: '700', fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                      <span style={{ fontSize: '12px', color: isDark ? '#a3b18a' : '#273822', fontWeight: 600, fontFamily: "Inter, system-ui, sans-serif" }}>
                         {dementiaProfile.recommended_action}
                       </span>
                     </div>
@@ -486,28 +487,29 @@ const Patients = () => {
                       backgroundColor: isDark ? '#141c15' : '#f8faf7',
                       border: `1px solid ${theme.borderSubtle}`,
                       borderRadius: '10px',
-                      padding: '1rem 1.15rem',
+                      padding: '16px 20px',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center'
                     }}>
                       <div>
-                        <span style={{ fontSize: '0.68rem', fontWeight: '800', color: theme.subtext, textTransform: 'uppercase', fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', color: theme.subtext, textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>
                           Most Consistent Pattern
                         </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                          <span style={{ fontSize: '1.15rem', fontWeight: '800', color: theme.text, fontFamily: "'Newsreader', Georgia, serif" }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                          <span style={{ fontSize: '18px', fontWeight: 600, color: theme.text, fontFamily: "Inter, system-ui, sans-serif" }}>
                             {dementiaProfile.most_consistent_pattern}
                           </span>
                           <span style={{
-                            fontSize: '0.7rem',
-                            fontWeight: '800',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            letterSpacing: '0.03em',
+                            padding: '2px 8px',
+                            borderRadius: '5px',
                             backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#eaf1e8',
                             color: isDark ? '#a3b18a' : '#273822',
                             border: `1px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
-                            fontFamily: "'JetBrains Mono', monospace"
+                            fontFamily: "Inter, system-ui, sans-serif"
                           }}>
                             {Math.round((dementiaProfile.confidence_score || 0) * 100)}% Consistency
                           </span>
@@ -515,22 +517,23 @@ const Patients = () => {
                       </div>
 
                       <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.72rem', color: theme.subtext, display: 'block', fontFamily: "'Mulish', 'Inter', sans-serif" }}>
+                        <span style={{ fontSize: '12px', lineHeight: '18px', color: theme.subtext, display: 'block', fontFamily: "Inter, system-ui, sans-serif" }}>
                           Top Signal: <strong style={{ color: theme.text }}>{dementiaProfile.key_contributing_signals?.[0]?.signal_name || 'Psychometrics'}</strong>
                         </span>
                         <button
                           onClick={() => navigate(`/dementia-profiling?patientId=${patientDetail.patient.id}`)}
                           style={{
                             marginTop: '4px',
-                            fontSize: '0.74rem',
-                            fontWeight: '700',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            lineHeight: '18px',
                             color: isDark ? '#a3b18a' : '#273822',
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
                             textDecoration: 'underline',
                             padding: 0,
-                            fontFamily: "'Mulish', 'Inter', sans-serif"
+                            fontFamily: "Inter, system-ui, sans-serif"
                           }}
                         >
                           View Full Distribution & SHAP →
@@ -541,7 +544,7 @@ const Patients = () => {
                 </div>
               </div>
             ) : (
-              <div style={{ padding: '3rem', textAlign: 'center', color: theme.subtext }}>Select a patient on the left to view clinical dossier.</div>
+              <div style={{ padding: '32px', textAlign: 'center', color: theme.subtext, fontSize: '13px' }}>Select a patient on the left to view clinical dossier.</div>
             )}
           </div>
         </div>
@@ -554,8 +557,8 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1.25rem',
-    fontFamily: "'Mulish', 'Inter', -apple-system, sans-serif"
+    gap: '20px',
+    fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
   },
   header: {
     display: 'flex',
@@ -565,8 +568,8 @@ const styles = {
   eyebrowBox: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
-    marginBottom: '0.25rem'
+    gap: '8px',
+    marginBottom: '6px'
   },
   eyebrowDot: {
     width: '6px',
@@ -574,69 +577,75 @@ const styles = {
     borderRadius: '50%',
   },
   eyebrowText: {
-    fontSize: '0.72rem',
-    fontWeight: '800',
-    letterSpacing: '0.08em',
-    fontFamily: "'JetBrains Mono', monospace"
+    fontSize: '11px',
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   pageTitle: {
-    fontFamily: "'Newsreader', Georgia, serif",
-    fontSize: '2.1rem',
-    fontWeight: '400',
-    margin: '0 0 0.35rem 0',
-    letterSpacing: '-0.02em'
+    fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontSize: '28px',
+    fontWeight: 600,
+    lineHeight: '36px',
+    letterSpacing: '-0.02em',
+    margin: '0 0 6px 0'
   },
   pageSubtitle: {
-    fontSize: '0.92rem',
+    fontSize: '14px',
+    lineHeight: '21px',
+    fontWeight: 400,
     margin: 0,
-    maxWidth: '820px',
-    lineHeight: '1.5',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    maxWidth: '850px',
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   statsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '1rem'
+    gap: '16px'
   },
   statCard: {
     border: '1px solid',
-    borderRadius: '14px',
-    padding: '1.1rem 1.25rem',
+    borderRadius: '10px',
+    padding: '16px 20px',
     display: 'flex',
     flexDirection: 'column',
     gap: '4px'
   },
   statLabel: {
-    fontSize: '0.66rem',
-    fontWeight: '800',
-    letterSpacing: '0.05em',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    fontSize: '11px',
+    fontWeight: 600,
+    letterSpacing: '0.03em',
+    textTransform: 'uppercase',
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   statValue: {
-    fontSize: '1.9rem',
-    fontWeight: '800',
-    lineHeight: '1.1',
-    fontFamily: "'JetBrains Mono', monospace"
+    fontSize: '22px',
+    fontWeight: 600,
+    lineHeight: '26px',
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   statSub: {
-    fontSize: '0.74rem',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    fontSize: '12px',
+    lineHeight: '18px',
+    fontWeight: 400,
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   toolbar: {
     border: '1px solid',
-    borderRadius: '12px',
-    padding: '0.75rem 1rem',
+    borderRadius: '8px',
+    padding: '12px 16px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '1rem'
+    gap: '16px'
   },
   searchWrapper: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '0.45rem 0.85rem',
-    borderRadius: '8px',
+    padding: '8px 12px',
+    borderRadius: '6px',
     border: '1px solid',
     width: '320px'
   },
@@ -644,45 +653,47 @@ const styles = {
     border: 'none',
     outline: 'none',
     background: 'transparent',
-    fontSize: '0.84rem',
+    fontSize: '13px',
+    fontWeight: 400,
     width: '100%',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   filterTabs: {
     display: 'flex',
-    gap: '0.5rem'
+    gap: '8px'
   },
   filterBtn: {
     border: '1px solid',
-    borderRadius: '8px',
-    padding: '0.45rem 0.85rem',
-    fontSize: '0.76rem',
-    fontWeight: '700',
+    borderRadius: '6px',
+    padding: '6px 12px',
+    fontSize: '12px',
+    fontWeight: 600,
+    lineHeight: '18px',
     cursor: 'pointer',
     transition: 'all 0.15s ease',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   twoColumnLayout: {
     display: 'grid',
     gridTemplateColumns: '440px 1fr',
-    gap: '1.25rem',
+    gap: '20px',
     alignItems: 'start'
   },
   patientListCol: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.85rem',
+    gap: '12px',
     maxHeight: 'calc(100vh - 360px)',
     overflowY: 'auto'
   },
   patientCard: {
     border: '1px solid',
-    borderRadius: '14px',
-    padding: '1.1rem',
+    borderRadius: '10px',
+    padding: '16px',
     cursor: 'pointer',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.75rem',
+    gap: '12px',
     transition: 'all 0.15s ease'
   },
   cardHeaderRow: {
@@ -691,43 +702,47 @@ const styles = {
     alignItems: 'flex-start'
   },
   avatar: {
-    width: '38px',
-    height: '38px',
-    borderRadius: '10px',
+    width: '36px',
+    height: '36px',
+    borderRadius: '6px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontWeight: '800',
-    fontSize: '0.95rem'
+    fontWeight: 600,
+    fontSize: '13px'
   },
   patientName: {
     margin: 0,
-    fontSize: '1.08rem',
-    fontFamily: "'Newsreader', Georgia, serif",
-    fontWeight: '600'
+    fontSize: '14px',
+    lineHeight: '20px',
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: 600
   },
   patientMeta: {
-    fontSize: '0.74rem',
+    fontSize: '12px',
+    lineHeight: '18px',
+    fontWeight: 400,
     display: 'block',
     marginTop: '2px',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   riskBadge: {
-    fontSize: '0.68rem',
-    fontWeight: '800',
-    padding: '2px 8px',
-    borderRadius: '6px',
+    fontSize: '10px',
+    fontWeight: 600,
+    letterSpacing: '0.03em',
+    padding: '3px 8px',
+    borderRadius: '5px',
     border: '1px solid',
     textTransform: 'uppercase',
-    fontFamily: "'JetBrains Mono', monospace"
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   scoreRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '0.5rem',
+    gap: '8px',
     borderTop: '1px solid rgba(128,128,128,0.15)',
     borderBottom: '1px solid rgba(128,128,128,0.15)',
-    padding: '0.6rem 0'
+    padding: '10px 0'
   },
   scoreItem: {
     display: 'flex',
@@ -735,19 +750,21 @@ const styles = {
     gap: '2px'
   },
   scoreLabel: {
-    fontSize: '0.64rem',
-    fontWeight: '700',
+    fontSize: '11px',
+    fontWeight: 600,
+    letterSpacing: '0.03em',
     textTransform: 'uppercase',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   scoreNum: {
-    fontSize: '0.92rem',
-    fontFamily: "'JetBrains Mono', monospace"
+    fontSize: '13px',
+    fontWeight: 600,
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   driftFlag: {
-    fontSize: '0.74rem',
-    fontWeight: '800',
-    fontFamily: "'JetBrains Mono', monospace"
+    fontSize: '11px',
+    fontWeight: 600,
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   cardFooterRow: {
     display: 'flex',
@@ -756,93 +773,100 @@ const styles = {
   },
   detailInspectorCol: {
     border: '1px solid',
-    borderRadius: '16px',
-    padding: '1.5rem',
+    borderRadius: '12px',
+    padding: '24px',
     position: 'sticky',
     top: '80px'
   },
   inspectorContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1.15rem'
+    gap: '20px'
   },
   inspectorTop: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     borderBottom: '1px solid rgba(128,128,128,0.15)',
-    paddingBottom: '1rem'
+    paddingBottom: '16px'
   },
   inspectorEyebrow: {
-    fontSize: '0.72rem',
-    fontWeight: '800',
-    letterSpacing: '0.08em',
-    fontFamily: "'JetBrains Mono', monospace"
+    fontSize: '11px',
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   inspectorTitle: {
-    margin: '4px 0 3px 0',
-    fontSize: '1.85rem',
-    fontFamily: "'Newsreader', Georgia, serif",
-    fontWeight: '500'
+    margin: '4px 0 4px 0',
+    fontSize: '24px',
+    lineHeight: '30px',
+    letterSpacing: '-0.015em',
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: 600
   },
   navActionBtn: {
     border: 'none',
-    borderRadius: '8px',
-    padding: '0.45rem 0.85rem',
-    fontSize: '0.76rem',
-    fontWeight: '700',
+    borderRadius: '6px',
+    padding: '6px 12px',
+    fontSize: '12px',
+    fontWeight: 600,
+    lineHeight: '18px',
     cursor: 'pointer',
-    fontFamily: "'Mulish', 'Inter', sans-serif",
+    fontFamily: "Inter, system-ui, sans-serif",
     transition: 'opacity 0.15s ease'
   },
   cogniBanner: {
     border: '1px solid',
-    borderRadius: '12px',
-    padding: '1.15rem',
+    borderRadius: '10px',
+    padding: '16px 20px',
     display: 'flex',
     alignItems: 'center',
-    gap: '1.75rem'
+    gap: '24px'
   },
   bannerDivider: {
     width: '1px',
     height: '48px',
   },
   sectionHeading: {
-    margin: '0 0 0.5rem 0',
-    fontSize: '1.05rem',
-    fontFamily: "'Newsreader', Georgia, serif",
-    fontWeight: '600'
+    margin: '0 0 8px 0',
+    fontSize: '16px',
+    lineHeight: '24px',
+    letterSpacing: '-0.01em',
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: 600
   },
   subtestGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: '0.65rem'
+    gap: '8px'
   },
   subtestBox: {
     border: '1px solid',
-    borderRadius: '10px',
-    padding: '0.65rem 0.8rem',
+    borderRadius: '8px',
+    padding: '10px 12px',
     display: 'flex',
     flexDirection: 'column',
     gap: '2px'
   },
   shapCard: {
     border: '1px solid',
-    borderRadius: '12px',
-    padding: '1rem'
+    borderRadius: '10px',
+    padding: '16px'
   },
   loadingBox: {
-    padding: '3rem',
+    padding: '32px',
     textAlign: 'center',
-    fontSize: '0.88rem',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    fontSize: '13px',
+    fontFamily: "Inter, system-ui, sans-serif"
   },
   emptyBox: {
     border: '1px solid',
-    borderRadius: '12px',
-    padding: '2.5rem',
+    borderRadius: '10px',
+    padding: '32px',
     textAlign: 'center',
-    fontFamily: "'Mulish', 'Inter', sans-serif"
+    fontSize: '13px',
+    fontFamily: "Inter, system-ui, sans-serif"
   }
 };
 

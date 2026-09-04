@@ -236,7 +236,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
       {/* Brand Header */}
       <div style={{ ...styles.brandBox, borderBottom: isDark ? '1px solid #202e21' : '1px solid #d2ded0' }} onClick={() => navigate('/dashboard')}>
         <div style={{ ...styles.brandIconWrapper, backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#dce8da' }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a3b18a' : '#273822'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a3b18a' : '#273822'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"></path>
             <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"></path>
           </svg>
@@ -269,7 +269,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                     <span style={{ ...styles.iconSpan, color: active ? (isDark ? '#a3b18a' : '#273822') : (isDark ? '#768d71' : '#5c7557') }}>
                       {renderIcon(item.icon, item.isAi)}
                     </span>
-                    <span style={{ fontSize: '0.82rem', fontWeight: active ? '700' : '500', fontFamily: "'Mulish', 'Inter', sans-serif" }}>{item.label}</span>
+                    <span style={{ fontSize: '13px', lineHeight: '20px', fontWeight: active ? 600 : 500, fontFamily: "'Inter', system-ui, sans-serif" }}>{item.label}</span>
                   </button>
                 );
               })}
@@ -286,12 +286,12 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.65rem',
+              gap: '8px',
               flex: 1,
               cursor: 'pointer',
               overflow: 'hidden',
-              padding: '0.2rem',
-              borderRadius: '8px',
+              padding: '4px',
+              borderRadius: '6px',
               transition: 'background-color 0.15s ease',
             }}
             title="Click to edit name, email, or account details with verification"
@@ -302,8 +302,8 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                 position: 'absolute',
                 bottom: '-2px',
                 right: '-2px',
-                width: '13px',
-                height: '13px',
+                width: '12px',
+                height: '12px',
                 borderRadius: '50%',
                 backgroundColor: isDark ? '#3d5236' : '#273822',
                 display: 'flex',
@@ -312,7 +312,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                 border: '1.5px solid #ffffff',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
               }} title="Edit profile">
-                <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
+                <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                 </svg>
@@ -357,19 +357,19 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 50,
-    fontFamily: "'Mulish', 'Inter', -apple-system, sans-serif",
+    fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
   brandBox: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
-    padding: '1.25rem 1.25rem 1rem 1.25rem',
+    gap: '12px',
+    padding: '16px 20px',
     cursor: 'pointer',
   },
   brandIconWrapper: {
-    width: '38px',
-    height: '38px',
-    borderRadius: '10px',
+    width: '36px',
+    height: '36px',
+    borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -379,32 +379,34 @@ const styles = {
     flexDirection: 'column',
   },
   brandTitle: {
-    fontSize: '1.05rem',
-    fontFamily: "'Newsreader', Georgia, serif",
+    fontSize: '15px',
+    fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     fontWeight: '700',
-    letterSpacing: '0.04em',
+    letterSpacing: '0.02em',
+    lineHeight: '18px',
   },
   brandSub: {
-    fontSize: '0.68rem',
-    fontFamily: "'Mulish', 'Inter', sans-serif",
-    fontWeight: '700',
-    letterSpacing: '0.04em',
+    fontSize: '11px',
+    fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    fontWeight: '500',
+    letterSpacing: 'normal',
+    lineHeight: '15px',
   },
   navScrollArea: {
     flex: 1,
     overflowY: 'auto',
-    padding: '0.75rem 0',
+    padding: '12px 0',
   },
   groupContainer: {
-    marginBottom: '1rem',
+    marginBottom: '16px',
   },
   groupHeader: {
-    fontSize: '0.65rem',
-    fontWeight: '800',
-    fontFamily: "'Mulish', 'Inter', sans-serif",
-    letterSpacing: '0.08em',
-    padding: '0 1.25rem',
-    marginBottom: '0.35rem',
+    fontSize: '10px',
+    fontWeight: '600',
+    fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    letterSpacing: '0.06em',
+    padding: '0 20px',
+    marginBottom: '4px',
     textTransform: 'uppercase',
   },
   navLinks: {
@@ -415,8 +417,8 @@ const styles = {
   navItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.55rem 1.25rem',
+    gap: '12px',
+    padding: '8px 20px',
     border: 'none',
     width: '100%',
     textAlign: 'left',
@@ -429,19 +431,19 @@ const styles = {
     justifyContent: 'center',
   },
   userSection: {
-    padding: '0.85rem 1.25rem',
+    padding: '12px 20px',
   },
   userCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.6rem',
+    gap: '8px',
   },
   userAvatar: {
     width: '32px',
     height: '32px',
-    borderRadius: '50%',
-    fontWeight: '800',
-    fontSize: '0.82rem',
+    borderRadius: '6px',
+    fontWeight: '600',
+    fontSize: '12px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -453,16 +455,17 @@ const styles = {
     overflow: 'hidden',
   },
   userName: {
-    fontSize: '0.78rem',
-    fontWeight: '700',
+    fontSize: '13px',
+    fontWeight: '600',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    fontFamily: "'Mulish', 'Inter', sans-serif",
+    fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
   userRole: {
-    fontSize: '0.68rem',
-    fontFamily: "'Mulish', 'Inter', sans-serif",
+    fontSize: '11px',
+    fontWeight: '400',
+    fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
   logoutBtn: {
     background: 'none',

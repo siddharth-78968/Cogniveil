@@ -562,7 +562,7 @@ const Dashboard = () => {
               borderColor: isDark ? '#1E293B' : theme.border 
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.05rem', fontWeight: '600', fontFamily: "'Newsreader', Georgia, serif", color: theme.text }}>
+                <span style={{ fontSize: '14px', fontWeight: '600', fontFamily: "Inter, system-ui, sans-serif", color: theme.text }}>
                   CogniScore
                 </span>
                 {/* Reserved Diagnostic Risk Indicator */}
@@ -924,7 +924,7 @@ const Dashboard = () => {
 
           {/* 5 Primary Modules Grid */}
           <div style={{ marginTop: '1.75rem' }}>
-            <h3 style={{ fontFamily: "'Newsreader', Georgia, serif", fontSize: '1.55rem', fontWeight: '400', color: theme.text, marginBottom: '1.25rem' }}>Screening & Diagnostic Modules</h3>
+            <h3 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: '18px', fontWeight: '600', lineHeight: '24px', letterSpacing: '-0.01em', color: theme.text, marginBottom: '1.25rem' }}>Screening & Diagnostic Modules</h3>
             <div style={styles.patientModulesGrid}>
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/tests')}>
                 <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(163, 177, 138, 0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
@@ -1675,18 +1675,20 @@ const styles = {
     zIndex: 2,
   },
   welcomeTitle: {
-    fontFamily: "'Newsreader', Georgia, serif",
-    fontSize: '1.75rem',
-    fontWeight: '400',
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontSize: '24px',
+    lineHeight: '30px',
+    fontWeight: '600',
     margin: '0 0 0.4rem 0',
-    letterSpacing: '-0.02em',
+    letterSpacing: '-0.015em',
     color: '#ffffff',
   },
   welcomeSub: {
-    fontSize: '0.86rem',
+    fontSize: '13px',
+    lineHeight: '20px',
     color: 'rgba(255, 255, 255, 0.85)',
-    lineHeight: '1.5',
     margin: 0,
+    fontFamily: "Inter, system-ui, sans-serif",
   },
   welcomeDecor: {
     position: 'absolute',
@@ -1695,8 +1697,8 @@ const styles = {
     pointerEvents: 'none',
   },
   card: {
-    borderRadius: '20px',
-    padding: '1.5rem',
+    borderRadius: '12px',
+    padding: '1.25rem',
     border: '1px solid',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
     transition: 'background-color 0.25s ease, border-color 0.25s ease',
@@ -1708,9 +1710,11 @@ const styles = {
     marginBottom: '0.5rem',
   },
   cardTitle: {
-    fontFamily: "'Newsreader', Georgia, serif",
-    fontSize: '1.35rem',
-    fontWeight: '400',
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontSize: '16px',
+    lineHeight: '24px',
+    fontWeight: '600',
+    letterSpacing: '-0.01em',
     margin: 0,
   },
   dropdownSelector: {
@@ -1885,16 +1889,19 @@ const styles = {
     justifyContent: 'center',
   },
   doctorName: {
-    fontFamily: "'Newsreader', Georgia, serif",
-    fontSize: '1.4rem',
-    fontWeight: '400',
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontSize: '16px',
+    lineHeight: '24px',
+    fontWeight: '600',
     color: 'inherit',
     margin: '0 0 0.25rem 0',
   },
   doctorSpecialty: {
-    fontSize: '0.76rem',
+    fontSize: '12px',
+    lineHeight: '18px',
     margin: '0 0 1.25rem 0',
-    fontWeight: '600',
+    fontWeight: '500',
+    fontFamily: "Inter, system-ui, sans-serif",
   },
   limitBox: {
     border: '1px solid',
@@ -2032,25 +2039,29 @@ const styles = {
   },
   patientEyebrow: {
     color: '#3d5236',
-    fontSize: '0.8rem',
-    fontFamily: "'JetBrains Mono', monospace",
-    fontWeight: '800',
-    letterSpacing: '0.08em',
+    fontSize: '11px',
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
     display: 'block',
-    marginBottom: '0.4rem',
+    marginBottom: '6px',
   },
   patientTitle: {
-    fontFamily: "'Newsreader', Georgia, serif",
-    fontSize: '2.5rem',
-    fontWeight: '400',
-    margin: '0 0 0.6rem 0',
-    letterSpacing: '-0.025em',
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontSize: '28px',
+    lineHeight: '36px',
+    fontWeight: 600,
+    margin: '0 0 8px 0',
+    letterSpacing: '-0.02em',
   },
   patientSub: {
-    fontSize: '1.02rem',
-    lineHeight: '1.6',
+    fontSize: '14px',
+    lineHeight: '21px',
+    fontWeight: 400,
     maxWidth: '850px',
     margin: 0,
+    fontFamily: "Inter, system-ui, sans-serif",
   },
   startTestsBtn: {
     backgroundColor: '#0891b2',
