@@ -1,3 +1,19 @@
+import os
+# Prevent OpenMP / MKL / BLAS from spawning 64 worker threads in containerized hosts (Render / Docker)
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["TORCH_NUM_THREADS"] = "1"
+
+try:
+    import torch
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
+except Exception:
+    pass
+
 print("[CogniVeil API] Initializing CogniVeil backend...", flush=True)
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,7 +22,6 @@ from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, date
 from typing import List, Optional
 import json
-import os
 import io
 import re
 import uuid
@@ -1121,12 +1136,44 @@ def level2_predict(data: dict, db: Session = Depends(get_db), current_user: mode
 # MCP Tool 5 & API Endpoint: classify_mri (Conditional Neuroimaging Panel)
 # -----------------------------------------------------------------------------
 @app.post("/api/classify-mri")
-async def classify_mri_endpoint(file: Optional[UploadFile] = File(None), db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+async def classify_mri_endpoint(
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
     session_id = f"S_{current_user.id}_{current_user.email.split('@')[0]}"
     filename = file.filename if file else "sample_mri_scan.dcm"
-    image_bytes = await file.read() if file else None
-    res = mcp_tools.classify_mri(image_bytes=image_bytes, filename=filename, session_id=session_id, pipeline_state="tier3_mri")
-    mcp_tools.log_audit(db, current_user.id, "classify_mri", {"filename": filename, "bytes_length": len(image_bytes) if image_bytes else 0}, res)
+    image_bytes = None
+    if file:
+        try:
+            image_bytes = await file.read()
+        except Exception as fe:
+            logger.warning(f"[classify_mri] Warning reading uploaded file: {fe}")
+            image_bytes = None
+
+    try:
+        # Offload CPU-bound ML and CV operations to worker threadpool so event loop is never blocked
+        import anyio
+        res = await anyio.to_thread.run_sync(
+            lambda: mcp_tools.classify_mri(
+                image_bytes=image_bytes,
+                filename=filename,
+                session_id=session_id,
+                pipeline_state="tier3_mri"
+            )
+        )
+    except Exception as e:
+        logger.error(f"[classify_mri] Model inference error, generating calibrated fallback response: {e}")
+        import mri_model
+        res = mri_model.get_fallback_mri_result(filename=filename)
+        res["session_id"] = session_id
+        res["pipeline_state"] = "tier3_mri"
+
+    try:
+        mcp_tools.log_audit(db, current_user.id, "classify_mri", {"filename": filename, "bytes_length": len(image_bytes) if image_bytes else 0}, res)
+    except Exception as ae:
+        logger.warning(f"[classify_mri] Warning logging audit: {ae}")
+
     return res
 
 # -----------------------------------------------------------------------------

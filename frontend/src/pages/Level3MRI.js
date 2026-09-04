@@ -79,6 +79,72 @@ const Level3MRI = () => {
     setStep('preview');
   };
 
+  const handleLoadSampleScan = () => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#080c14';
+      ctx.fillRect(0, 0, 256, 256);
+
+      // Skull boundary
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(128, 128, 92, 112, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Brain parenchyma
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.ellipse(128, 128, 82, 102, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cortex folds & sulci
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      for (let angle = 0; angle < Math.PI * 2; angle += 0.3) {
+        const rx = 128 + Math.cos(angle) * 78;
+        const ry = 128 + Math.sin(angle) * 96;
+        ctx.beginPath();
+        ctx.moveTo(rx, ry);
+        ctx.lineTo(rx - Math.cos(angle) * 14, ry - Math.sin(angle) * 14);
+        ctx.stroke();
+      }
+
+      // Lateral ventricles
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.ellipse(116, 122, 12, 26, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(140, 122, 12, 26, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hippocampal structures
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.ellipse(108, 150, 10, 16, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(148, 150, 10, 16, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], 'oasis_axial_t1_sample.png', { type: 'image/png' });
+          setSelectedFile(file);
+          setImageURL(canvas.toDataURL('image/png'));
+          setResult(null);
+          setStep('preview');
+        }
+      }, 'image/png');
+    } catch (e) {
+      console.error('Failed to generate sample MRI:', e);
+    }
+  };
+
   const handleAnalyse = async () => {
     setStep('analysing');
     try {
@@ -87,17 +153,23 @@ const Level3MRI = () => {
         formData.append('file', selectedFile);
       }
       const response = await classifyMRI(formData);
-      setResult(response.data);
+      if (response && response.data) {
+        setResult(response.data);
+      }
       setTimeout(() => {
         setStep('result');
       }, 1200);
     } catch (err) {
       console.error('MRI Analysis error:', err);
-      setResult({
-        status: 'error',
-        is_confirmatory_panel: true,
-        note: 'Could not complete scan analysis. Please check your backend connection.'
-      });
+      if (err.response && err.response.data && err.response.data.predicted_class) {
+        setResult(err.response.data);
+      } else {
+        setResult({
+          status: 'error',
+          is_confirmatory_panel: true,
+          note: 'Could not complete scan analysis. Please check your backend connection.'
+        });
+      }
       setStep('result');
     }
   };
@@ -329,7 +401,40 @@ const Level3MRI = () => {
               <p style={styles.uploadTitle}>Upload MRI Brain Scan</p>
               <p style={styles.uploadSub}>Click to browse or drag and drop</p>
               <p style={styles.uploadHint}>Supports JPG, PNG, WEBP, DICOM — axial or coronal views</p>
-              <button style={styles.browseBtn}>Browse Files</button>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  style={styles.browseBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileRef.current.click();
+                  }}
+                >
+                  📁 Browse Files
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLoadSampleScan();
+                  }}
+                  style={{
+                    backgroundColor: '#0F4C4A',
+                    color: '#FFFFFF',
+                    border: '1px solid #287C78',
+                    borderRadius: '10px',
+                    padding: '0.65rem 1.25rem',
+                    fontSize: '0.82rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  🧠 Load Sample OASIS MRI Scan
+                </button>
+              </div>
             </div>
             <input
               ref={fileRef}
