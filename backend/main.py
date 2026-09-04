@@ -1,3 +1,4 @@
+print("[CogniVeil API] Initializing CogniVeil backend...", flush=True)
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -25,7 +26,6 @@ from agents.chat import ChatAgent
 
 
 
-models.Base.metadata.create_all(bind=engine)
 
 def auto_seed_if_needed():
     """Auto-seeds demo accounts and initial telemetry if database is empty."""
@@ -127,9 +127,17 @@ def auto_seed_if_needed():
     finally:
         db.close()
 
-auto_seed_if_needed()
-
 app = FastAPI(title="CogniVeil API")
+
+@app.on_event("startup")
+def on_startup():
+    print("[CogniVeil API] Running startup initialization...", flush=True)
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        auto_seed_if_needed()
+        print("[CogniVeil API] Database schema and initial seeds ready.", flush=True)
+    except Exception as e:
+        logger.warning(f"Startup database initialization error: {e}")
 
 cors_origins_env = os.getenv("CORS_ORIGINS")
 if cors_origins_env:

@@ -10,18 +10,70 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "catboost_alzheimers_model.cbm"
 METADATA_PATH = BASE_DIR / "catboost_metadata.pkl"
 
-# Load CatBoost model and calibration metadata
-csv_model = CatBoostClassifier()
-csv_model.load_model(str(MODEL_PATH))
+# Lazy-loaded CatBoost model and calibration metadata
+_csv_model = None
+_metadata = None
+_explainer = None
 
-metadata: Dict[str, Any] = {}
-if METADATA_PATH.exists():
-    try:
-        metadata = joblib.load(str(METADATA_PATH))
-    except Exception:
-        metadata = {}
 
-threshold: float = float(metadata.get("final_threshold", 0.60))
+def get_csv_model() -> CatBoostClassifier:
+    global _csv_model
+    if _csv_model is None:
+        m = CatBoostClassifier()
+        if MODEL_PATH.exists():
+            m.load_model(str(MODEL_PATH))
+        _csv_model = m
+    return _csv_model
+
+
+def get_metadata() -> Dict[str, Any]:
+    global _metadata
+    if _metadata is None:
+        if METADATA_PATH.exists():
+            try:
+                _metadata = joblib.load(str(METADATA_PATH))
+            except Exception:
+                _metadata = {}
+        else:
+            _metadata = {}
+    return _metadata
+
+
+def get_explainer():
+    global _explainer
+    if _explainer is None:
+        try:
+            m = get_csv_model()
+            _explainer = shap.TreeExplainer(m)
+        except Exception as e:
+            print(f"[Predictor] TreeExplainer deferred/failed: {e}")
+            _explainer = None
+    return _explainer
+
+
+class _LazyCsvModel:
+    def __getattr__(self, name):
+        return getattr(get_csv_model(), name)
+
+    def __bool__(self):
+        return True
+
+
+class _LazyExplainer:
+    def __getattr__(self, name):
+        exp = get_explainer()
+        if exp is None:
+            raise AttributeError("Explainer not available")
+        return getattr(exp, name)
+
+    def __bool__(self):
+        return True
+
+
+csv_model = _LazyCsvModel()
+explainer = _LazyExplainer()
+
+threshold: float = 0.60
 MODEL_VERSION: str = "2026.1-catboost-v2"
 
 MODEL_COLUMNS = [
@@ -189,8 +241,7 @@ FEATURE_METADATA = {
     },
 }
 
-# Initialize TreeExplainer for SHAP explanations
-explainer = shap.TreeExplainer(csv_model)
+# Note: explainer is lazy-initialized on demand via _LazyExplainer
 
 
 def _normalize_binary(val: Any, default: str = "No") -> str:

@@ -157,11 +157,21 @@ class ResNet18MRI(nn.Module):
         return out
 
 
-# Instantiate global ResNet-18 model on CPU
-_device = torch.device("cpu")
-_model = ResNet18MRI(num_classes=4)
-_model.to(_device)
-_model.eval()
+# Lazy-loaded global ResNet-18 model on CPU
+_device: Optional[torch.device] = None
+_model: Optional[ResNet18MRI] = None
+_grad_cam: Optional["GradCAM"] = None
+
+
+def _get_mri_model() -> Tuple[ResNet18MRI, "GradCAM"]:
+    global _device, _model, _grad_cam
+    if _model is None:
+        _device = torch.device("cpu")
+        _model = ResNet18MRI(num_classes=4)
+        _model.to(_device)
+        _model.eval()
+        _grad_cam = GradCAM(_model, _model.layer4[-1])
+    return _model, _grad_cam
 
 
 def _transform(img: Image.Image) -> torch.Tensor:
@@ -224,8 +234,6 @@ class GradCAM:
         return cam
 
 
-# Attach Grad-CAM to layer4 of ResNet
-_grad_cam = GradCAM(_model, _model.layer4[-1])
 
 
 def _preprocess_scan(image_bytes: Optional[bytes]) -> Tuple[torch.Tensor, np.ndarray, Dict[str, Any]]:
@@ -335,7 +343,8 @@ def _generate_pytorch_gradcam(
 ) -> Dict[str, Any]:
     """Generates authentic PyTorch Grad-CAM attention heatmap overlay."""
     h, w = img_np.shape[:2]
-    cam_raw = _grad_cam.generate(input_tensor, predicted_idx)
+    _, grad_cam = _get_mri_model()
+    cam_raw = grad_cam.generate(input_tensor, predicted_idx)
 
     # Apply morphological anatomical prior for clinical precision
     vbr = morph.get("ventricular_brain_ratio", 12.0)
@@ -414,8 +423,9 @@ def classify_mri_scan(image_bytes: Optional[bytes] = None, filename: str = "mri_
     morph = _extract_morphometric_features(img_np)
 
     # 1. PyTorch ResNet-18 Forward Pass
+    model, _ = _get_mri_model()
     with torch.no_grad():
-        logits = _model(tensor)
+        logits = model(tensor)
         probs_tensor = F.softmax(logits, dim=1)[0]
         probs = [round(float(p), 4) for p in probs_tensor]
 
@@ -498,3 +508,13 @@ def classify_mri_scan(image_bytes: Optional[bytes] = None, filename: str = "mri_
             "and should be confirmed via formal radiological consultation."
         )
     }
+
+
+def __getattr__(name: str) -> Any:
+    if name == "_model":
+        m, _ = _get_mri_model()
+        return m
+    if name == "_grad_cam":
+        _, g = _get_mri_model()
+        return g
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

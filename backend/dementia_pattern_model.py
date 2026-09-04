@@ -555,16 +555,22 @@ class DementiaPatternEngine:
     _instance: Optional["DementiaPatternEngine"] = None
     
     def __init__(self):
-        self.model = CatBoostClassifier()
+        self.model = None
         self.metadata: Dict[str, Any] = {}
         self.explainer: Optional[shap.TreeExplainer] = None
-        self._load_or_train_model()
+        self._is_loaded = False
         
     @classmethod
     def get_instance(cls) -> "DementiaPatternEngine":
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
+
+    def _ensure_loaded(self):
+        if not self._is_loaded:
+            self.model = CatBoostClassifier()
+            self._load_or_train_model()
+            self._is_loaded = True
 
     def _load_or_train_model(self):
         if not MODEL_PATH.exists() or not METADATA_PATH.exists():
@@ -588,6 +594,7 @@ class DementiaPatternEngine:
         Executes model inference on standardized feature vector.
         Computes probability array, identifies prominent pattern, and derives top SHAP signal attributions.
         """
+        self._ensure_loaded()
         # Ensure identical feature column ordering
         row_values = [features.get(col, 0.0) for col in FEATURE_COLUMNS]
         df_single = pd.DataFrame([row_values], columns=FEATURE_COLUMNS)
