@@ -28,7 +28,7 @@ const THINKING_STEPS = [
 
 export default function ChatWidget({ user }) {
   const { theme, isDark } = useTheme();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   
   // Thinking state
