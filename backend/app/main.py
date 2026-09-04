@@ -44,11 +44,12 @@ def root():
 
 @app.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(models.User).filter(models.User.email == user.email).first()
+    clean_email = user.email.strip().lower() if user.email else ""
+    existing = db.query(models.User).filter(models.User.email == clean_email).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail=f"The email {user.email} is already registered. Each account can only be enrolled once. Please proceed to the Login page to sign in.")
     hashed = auth.get_password_hash(user.password)
-    new_user = models.User(name=user.name, email=user.email, hashed_password=hashed, age=user.age, is_caregiver=user.is_caregiver)
+    new_user = models.User(name=user.name, email=clean_email, hashed_password=hashed, age=user.age, is_caregiver=user.is_caregiver)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

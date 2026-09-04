@@ -22,6 +22,8 @@ class GoogleLoginRequest(BaseModel):
     name: Optional[str] = None
     role: Optional[str] = "patient"
     credential: Optional[str] = None
+    mode: Optional[str] = "login"  # "register" or "login"
+    password: Optional[str] = None
 
 class ConsentRequest(BaseModel):
     consent_granted: bool = True

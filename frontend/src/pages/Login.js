@@ -12,11 +12,14 @@ const Login = () => {
   const [email, setEmail] = useState(() => {
     return localStorage.getItem('rememberedEmail') || '';
   });
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(() => {
+    return localStorage.getItem('rememberedPassword') || '';
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [googleRole, setGoogleRole] = useState('patient');
+  const [notRegisteredGoogleEmail, setNotRegisteredGoogleEmail] = useState('');
   const { login, googleLogin } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -29,19 +32,23 @@ const Login = () => {
     if (e) e.preventDefault();
     setLoading(true);
     setError('');
+    setNotRegisteredGoogleEmail('');
     try {
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');
-        localStorage.setItem('rememberedEmail', email);
+        localStorage.setItem('rememberedEmail', email.trim().toLowerCase());
+        localStorage.setItem('rememberedPassword', password);
         localStorage.setItem('remember_device_choice', 'remembered');
       } else {
         localStorage.removeItem('rememberMe');
         localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPassword');
         // Prompt user right after entering inside if they want to remember on this workstation
         sessionStorage.setItem('just_logged_in_prompt', 'true');
-        sessionStorage.setItem('candidate_remember_email', email);
+        sessionStorage.setItem('candidate_remember_email', email.trim().toLowerCase());
+        sessionStorage.setItem('candidate_remember_password', password);
       }
-      const res = await login(email, password);
+      const res = await login(email.trim().toLowerCase(), password);
       const userObj = res.data?.user;
       const isClinician = userObj?.role === 'clinician' || userObj?.is_caregiver;
       if (isClinician) {
@@ -68,6 +75,7 @@ const Login = () => {
   const handleGoogleSignIn = () => {
     setLoading(true);
     setError('');
+    setNotRegisteredGoogleEmail('');
     triggerGoogleSignIn({
       role: googleRole,
       onSuccess: async (googleData) => {
@@ -76,8 +84,14 @@ const Login = () => {
             localStorage.setItem('rememberMe', 'true');
             localStorage.setItem('rememberedEmail', googleData.email);
             localStorage.setItem('remember_device_choice', 'remembered');
+          } else {
+            sessionStorage.setItem('just_logged_in_prompt', 'true');
+            sessionStorage.setItem('candidate_remember_email', googleData.email);
           }
-          const res = await googleLogin(googleData);
+          const res = await googleLogin({
+            ...googleData,
+            mode: 'login'
+          });
           const userObj = res.data?.user;
           const isClinician = userObj?.role === 'clinician' || userObj?.is_caregiver;
           if (isClinician) {
@@ -89,7 +103,11 @@ const Login = () => {
           }
         } catch (err) {
           const detail = err.response?.data?.detail;
-          setError(typeof detail === 'string' ? detail : 'Google sign-in failed.');
+          const errMsg = typeof detail === 'string' ? detail : 'Google sign-in failed.';
+          setError(errMsg);
+          if (err.response?.status === 404 || errMsg.toLowerCase().includes('no cogniveil account') || errMsg.toLowerCase().includes('enroll on the register page')) {
+            setNotRegisteredGoogleEmail(googleData.email);
+          }
         } finally {
           setLoading(false);
         }
@@ -787,6 +805,52 @@ const Login = () => {
               <GoogleIcon size={20} />
               <span>Continue with Google</span>
             </button>
+
+            {notRegisteredGoogleEmail && (
+              <div style={{
+                margin: '0 0 16px 0',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
+                border: `1.5px solid ${isDark ? '#7f1d1d' : '#fecaca'}`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                animation: 'fadeIn 0.25s ease'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                  <div style={{ fontWeight: '800', fontSize: '0.88rem', color: isDark ? '#fca5a5' : '#991b1b' }}>
+                    No CogniVeil Profile Found
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: isDark ? '#fecaca' : '#7f1d1d', lineHeight: '1.45' }}>
+                  No account exists for <strong>{notRegisteredGoogleEmail}</strong> yet. You must complete enrollment once before logging in.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/register')}
+                  style={{
+                    marginTop: '4px',
+                    padding: '9px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: '#0284C7',
+                    border: 'none',
+                    color: '#ffffff',
+                    fontWeight: '800',
+                    fontSize: '0.84rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)'
+                  }}
+                >
+                  <span>Go to Register / Enroll Profile →</span>
+                </button>
+              </div>
+            )}
 
             {/* 5. Fast Presets (Subtle shortcuts at the very bottom) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

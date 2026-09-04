@@ -170,10 +170,15 @@ def demo_login_endpoint(email: str = "arjun@demo.com", db: Session = Depends(get
 
 @app.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-
-    existing = db.query(models.User).filter(models.User.email == user.email).first()
+    clean_email = user.email.strip().lower() if user.email else ""
+    existing = db.query(models.User).filter(models.User.email == clean_email).first()
+    if not existing and user.email:
+        existing = db.query(models.User).filter(models.User.email == user.email.strip()).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"The email {user.email} is already registered. Each account can only be enrolled once. Please proceed to the Login page to sign in."
+        )
     hashed = auth.get_password_hash(user.password)
     
     # Determine explicit role
@@ -182,7 +187,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     new_user = models.User(
         name=user.name, 
-        email=user.email, 
+        email=clean_email, 
         hashed_password=hashed, 
         age=user.age, 
         gender=user.gender or "Not specified",
@@ -214,7 +219,10 @@ def grant_consent(req: schemas.ConsentRequest, db: Session = Depends(get_db), cu
 
 @app.post("/login", response_model=schemas.Token)
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    clean_email = user.email.strip().lower() if user.email else ""
+    db_user = db.query(models.User).filter(models.User.email == clean_email).first()
+    if not db_user and user.email:
+        db_user = db.query(models.User).filter(models.User.email == user.email.strip()).first()
     if not db_user or not auth.verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
@@ -233,7 +241,7 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     )
     
     pipeline_state = "consent_required" if not db_user.consent_granted else ("baseline_period" if db_user.baseline_status == "collecting" else "full_pipeline_completed")
-    mcp_tools.log_audit(db, db_user.id, "login", {"email": user.email, "role": db_user.role}, {"status": "authenticated"}, pipeline_state=pipeline_state)
+    mcp_tools.log_audit(db, db_user.id, "login", {"email": clean_email, "role": db_user.role}, {"status": "authenticated"}, pipeline_state=pipeline_state)
     
     return {
         "access_token": token, 
@@ -282,13 +290,29 @@ def google_login(req: schemas.GoogleLoginRequest, db: Session = Depends(get_db))
     if not clean_email or "@" not in clean_email:
         raise HTTPException(status_code=400, detail="A valid Google email is required.")
 
+    req_mode = (req.mode or "login").strip().lower()
     db_user = db.query(models.User).filter(models.User.email == clean_email).first()
-    if not db_user:
+    if not db_user and req.email:
+        db_user = db.query(models.User).filter(models.User.email == req.email.strip()).first()
+
+    if req_mode == "register":
+        # ONE SIGNIN / REGISTRATION PER GMAIL RULE
+        if db_user:
+            raise HTTPException(
+                status_code=400,
+                detail=f"The Google account {clean_email} is already registered in CogniVeil. Each account can only be enrolled once. Please proceed to the Login page to sign in."
+            )
+        
         # Create user automatically with Google identity
         if not display_name:
             display_name = clean_email.split("@")[0].replace(".", " ").title()
         assigned_role = req.role if req.role in ["clinician", "patient"] else "patient"
-        hashed = auth.get_password_hash(f"google_auth_{clean_email}_{datetime.utcnow().timestamp()}")
+        
+        # If user entered a clinical password, store it hashed so they can also use standard email/password login
+        if req.password and req.password.strip():
+            hashed = auth.get_password_hash(req.password.strip())
+        else:
+            hashed = auth.get_password_hash(f"google_auth_{clean_email}")
         
         db_user = models.User(
             name=display_name,
@@ -309,16 +333,18 @@ def google_login(req: schemas.GoogleLoginRequest, db: Session = Depends(get_db))
         db.refresh(db_user)
         mcp_tools.log_audit(db, db_user.id, "google_register", {"email": clean_email, "role": assigned_role}, {"status": "enrolled_via_google", "terms_pending": True}, pipeline_state="baseline_period")
     else:
-        # If user explicitly specified role (e.g. toggled between Patient and Clinician)
-        if req.role in ["clinician", "patient"] and db_user.role != req.role:
-            db_user.role = req.role
-            db_user.is_caregiver = (req.role == "clinician")
-            db.commit()
-            db.refresh(db_user)
-        elif not hasattr(db_user, 'role') or not db_user.role:
+        # Mode: "login" - Account MUST already exist
+        if not db_user:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No CogniVeil account found for {clean_email}. Please enroll on the Register page first."
+            )
+
+        if not hasattr(db_user, 'role') or not db_user.role:
             db_user.role = "clinician" if db_user.is_caregiver else "patient"
             db.commit()
             db.refresh(db_user)
+            
         mcp_tools.log_audit(db, db_user.id, "google_login", {"email": clean_email, "role": db_user.role}, {"status": "authenticated_via_google"}, pipeline_state="baseline_period")
 
     token = auth.create_access_token(

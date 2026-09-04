@@ -35,6 +35,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [isCaregiver, setIsCaregiver] = useState(false);
   const [googleRole, setGoogleRole] = useState('patient');
+  const [alreadyRegisteredEmail, setAlreadyRegisteredEmail] = useState('');
   const { register, login, googleLogin } = useAuth();
   const { isDark, toggleTheme, theme } = useTheme();
   const navigate = useNavigate();
@@ -42,11 +43,27 @@ const Register = () => {
   const handleGoogleSignUp = () => {
     setLoading(true);
     setError('');
+    setAlreadyRegisteredEmail('');
     triggerGoogleSignIn({
       role: googleRole,
       onSuccess: async (googleData) => {
         try {
-          const res = await googleLogin(googleData);
+          const res = await googleLogin({
+            ...googleData,
+            mode: 'register',
+            password: password ? password.trim() : undefined
+          });
+
+          // Save credentials upon registration for seamless next login
+          localStorage.setItem('rememberMe', 'true');
+          localStorage.setItem('rememberedEmail', googleData.email);
+          if (password && password.trim()) {
+            localStorage.setItem('rememberedPassword', password.trim());
+            sessionStorage.setItem('candidate_remember_password', password.trim());
+          }
+          localStorage.setItem('remember_device_choice', 'remembered');
+          sessionStorage.setItem('candidate_remember_email', googleData.email);
+
           const userObj = res.data?.user;
           const isClinician = userObj?.role === 'clinician' || userObj?.is_caregiver;
           if (isClinician) {
@@ -58,7 +75,11 @@ const Register = () => {
           }
         } catch (err) {
           const detail = err.response?.data?.detail;
-          setError(typeof detail === 'string' ? detail : 'Google sign-up failed.');
+          const errMsg = typeof detail === 'string' ? detail : 'Google sign-up failed.';
+          setError(errMsg);
+          if (errMsg.toLowerCase().includes('already registered')) {
+            setAlreadyRegisteredEmail(googleData.email);
+          }
         } finally {
           setLoading(false);
         }
@@ -74,6 +95,7 @@ const Register = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setAlreadyRegisteredEmail('');
     
     const parsedAge = parseInt(age, 10);
     if (!parsedAge || isNaN(parsedAge)) {
@@ -86,6 +108,15 @@ const Register = () => {
 
     try {
       await register(name, email, password, parsedAge, gender, isCaregiver, assignedRole);
+      
+      // Save credentials upon registration for seamless next login
+      localStorage.setItem('rememberMe', 'true');
+      localStorage.setItem('rememberedEmail', email.trim().toLowerCase());
+      localStorage.setItem('rememberedPassword', password);
+      localStorage.setItem('remember_device_choice', 'remembered');
+      sessionStorage.setItem('candidate_remember_email', email.trim().toLowerCase());
+      sessionStorage.setItem('candidate_remember_password', password);
+
       try {
         const loginRes = await login(email, password);
         const loggedUser = loginRes.data?.user;
@@ -109,6 +140,9 @@ const Register = () => {
         }
       }
       setError(errMsg);
+      if (errMsg.toLowerCase().includes('already registered')) {
+        setAlreadyRegisteredEmail(email.trim().toLowerCase());
+      }
     } finally {
       setLoading(false);
     }
@@ -316,10 +350,59 @@ const Register = () => {
               </label>
             </div>
 
-            {error && (
-              <div style={styles.errorBox}>
-                <span>{error}</span>
+            {alreadyRegisteredEmail ? (
+              <div style={{
+                margin: '10px 0 14px 0',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
+                border: `1.5px solid ${isDark ? '#7f1d1d' : '#fecaca'}`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                animation: 'fadeIn 0.25s ease'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                  <div style={{ fontWeight: '800', fontSize: '0.88rem', color: isDark ? '#fca5a5' : '#991b1b' }}>
+                    Account Already Exists (One Registration Per Gmail)
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: isDark ? '#fecaca' : '#7f1d1d', lineHeight: '1.45' }}>
+                  The account <strong>{alreadyRegisteredEmail}</strong> is already registered. Each account can only be enrolled once. Please log in to access your dashboard.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.setItem('rememberedEmail', alreadyRegisteredEmail);
+                    navigate('/login');
+                  }}
+                  style={{
+                    marginTop: '4px',
+                    padding: '9px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: '#10b981',
+                    border: 'none',
+                    color: '#ffffff',
+                    fontWeight: '800',
+                    fontSize: '0.84rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                  }}
+                >
+                  <span>Proceed to Login with this Account →</span>
+                </button>
               </div>
+            ) : (
+              error && (
+                <div style={styles.errorBox}>
+                  <span>{error}</span>
+                </div>
+              )
             )}
 
             <button
@@ -476,6 +559,55 @@ const Register = () => {
             <GoogleIcon size={20} />
             <span>Continue with Google</span>
           </button>
+
+          {alreadyRegisteredEmail && (
+            <div style={{
+              margin: '0 0 16px 0',
+              padding: '14px 16px',
+              borderRadius: '12px',
+              backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
+              border: `1.5px solid ${isDark ? '#7f1d1d' : '#fecaca'}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              animation: 'fadeIn 0.25s ease'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                <div style={{ fontWeight: '800', fontSize: '0.88rem', color: isDark ? '#fca5a5' : '#991b1b' }}>
+                  Google Account Already Enrolled
+                </div>
+              </div>
+              <div style={{ fontSize: '0.82rem', color: isDark ? '#fecaca' : '#7f1d1d', lineHeight: '1.45' }}>
+                The Google account <strong>{alreadyRegisteredEmail}</strong> is already registered. Each account can only be enrolled once. You can now log in directly.
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem('rememberedEmail', alreadyRegisteredEmail);
+                  navigate('/login');
+                }}
+                style={{
+                  marginTop: '4px',
+                  padding: '9px 14px',
+                  borderRadius: '8px',
+                  backgroundColor: '#10b981',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontWeight: '800',
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                }}
+              >
+                <span>Proceed to Login with this Account →</span>
+              </button>
+            </div>
+          )}
 
           <div style={{ ...styles.footerNote, color: theme.subtext, textAlign: 'center' }}>
             <div>

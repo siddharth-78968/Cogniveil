@@ -28,6 +28,10 @@ const RememberSessionModal = () => {
     if (user?.email) {
       localStorage.setItem('rememberMe', 'true');
       localStorage.setItem('rememberedEmail', user.email);
+      const candPass = sessionStorage.getItem('candidate_remember_password');
+      if (candPass) {
+        localStorage.setItem('rememberedPassword', candPass);
+      }
       localStorage.setItem('remember_device_choice', 'remembered');
     }
     setConfirmed(true);
@@ -40,6 +44,7 @@ const RememberSessionModal = () => {
   const handleDismiss = () => {
     localStorage.removeItem('rememberMe');
     localStorage.removeItem('rememberedEmail');
+    localStorage.removeItem('rememberedPassword');
     localStorage.setItem('remember_device_choice', 'dismissed');
     sessionStorage.removeItem('just_logged_in_prompt');
     setVisible(false);

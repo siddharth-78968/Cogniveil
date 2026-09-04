@@ -10,6 +10,129 @@ import {
   getClinicians, 
   getClinicianPatients 
 } from '../utils/api';
+import './Appointments.css';
+
+const DEFAULT_SPECIALISTS = [
+  {
+    id: '1',
+    name: 'Dr. Jackson Santos',
+    credentials: 'MD, PhD',
+    specialty: 'Cognitive Neurologist & Supervisor',
+    clinic: 'Memory & Cognitive Disorders Center',
+    badge: 'Available Next 48h',
+    avatar: 'JS'
+  },
+  {
+    id: '2',
+    name: 'Dr. Elena Rostova',
+    credentials: 'PhD, ABPP',
+    specialty: 'Senior Neuropsychologist & Battery Lead',
+    clinic: 'Executive Battery & Biomarkers',
+    badge: 'Specialist Triage',
+    avatar: 'ER'
+  },
+  {
+    id: '3',
+    name: 'Dr. Marcus Vance',
+    credentials: 'MD',
+    specialty: 'Translational Neuroimaging Specialist',
+    clinic: 'Hippocampal & Volumetric MRI Unit',
+    badge: 'Board Certified',
+    avatar: 'MV'
+  }
+];
+
+const MODALITY_OPTIONS = [
+  {
+    type: 'Neurological Evaluation',
+    label: 'Neurological Evaluation (Comprehensive)',
+    icon: '🧠',
+    duration: '60 MIN',
+    badge: 'FULL TRIAGE',
+    desc: 'Standardized clinical intake, reflex & cranial nerve assessment, multi-tiered risk triage.'
+  },
+  {
+    type: 'Acoustic Fluency Review',
+    label: 'Acoustic Fluency & Speech Pause Review',
+    icon: '🎙️',
+    duration: '30 MIN',
+    badge: 'VOICE BIOMETRIC',
+    desc: 'Analysis of vocal jitter, speech pause latency, prosodic flattening, and acoustic biomarkers.'
+  },
+  {
+    type: 'Stroop & Executive Battery',
+    label: 'Stroop & Executive Function Battery',
+    icon: '⚡',
+    duration: '45 MIN',
+    badge: 'INHIBITION TEST',
+    desc: 'Interference testing, working memory span, and response inhibition telemetry review.'
+  },
+  {
+    type: 'Episodic Memory Assessment',
+    label: 'Episodic Memory & Pattern Recall Battery',
+    icon: '🧩',
+    duration: '45 MIN',
+    badge: 'RECALL BATTERY',
+    desc: 'Delayed verbal recall, visual paired associates, and hippocampal retrieval dynamics.'
+  },
+  {
+    type: 'Tier 2 Biomarker Review',
+    label: 'Tier 2 CatBoost & TreeSHAP Review',
+    icon: '🔬',
+    duration: '30 MIN',
+    badge: 'EXPLAINABLE AI',
+    desc: 'Detailed breakdown of patient risk trajectory with TreeSHAP force plots and lab correlation.'
+  },
+  {
+    type: 'Tier 3 Structural MRI Consultation',
+    label: 'Tier 3 Structural MRI & Hippocampal Review',
+    icon: '🧲',
+    duration: '60 MIN',
+    badge: 'NEUROIMAGING',
+    desc: 'In-depth volumetric review: medial temporal lobe atrophy (MTA) & coronal slice analysis.'
+  }
+];
+
+const QUICK_DATES = [
+  { label: 'Tomorrow', date: '2026-09-05' },
+  { label: 'Mon, Sep 8', date: '2026-09-08' },
+  { label: 'Wed, Sep 10', date: '2026-09-10' },
+  { label: 'Fri, Sep 12', date: '2026-09-12' },
+  { label: 'Mon, Sep 15', date: '2026-09-15' },
+];
+
+const TIME_SLOTS_MORNING = ['09:00 AM', '10:30 AM', '11:30 AM'];
+const TIME_SLOTS_AFTERNOON = ['02:00 PM', '03:30 PM', '05:00 PM'];
+
+const LOCATION_CHANNELS = [
+  {
+    id: 'Memory & Cognitive Health Clinic - Suite 402',
+    title: 'Memory & Cognitive Health Clinic',
+    subtitle: 'Suite 402 · In-Person Biometric Station',
+    icon: '🏢'
+  },
+  {
+    id: 'Virtual Tele-Neurology Video Consultation',
+    title: 'Virtual Tele-Neurology Video Room',
+    subtitle: 'Encrypted HIPAA HD Video Link',
+    icon: '💻'
+  },
+  {
+    id: 'Neuropsychology Testing Suite - Room 108',
+    title: 'Neuropsychology Testing Suite',
+    subtitle: 'Room 108 · Acoustic-Isolated Testing Lab',
+    icon: '🧪'
+  }
+];
+
+const PRESET_NOTE_CHIPS = [
+  '+ Recent memory lapses',
+  '+ Family noticed speech hesitation',
+  '+ Routine 6-month cognitive checkup',
+  '+ Follow-up after Tier 2 assessment',
+  '+ Caregiver collateral history review',
+  '+ Medication efficacy review'
+];
 
 const Appointments = () => {
   const { isClinician } = useAuth();
@@ -38,6 +161,28 @@ const Appointments = () => {
   const [scheduledTime, setScheduledTime] = useState('10:30 AM');
   const [locationType, setLocationType] = useState('Memory & Cognitive Health Clinic - Suite 402');
   const [notes, setNotes] = useState('');
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    navigate('/appointments', { replace: true });
+  };
+
+  const handleAddNoteChip = (chipText) => {
+    const cleanText = chipText.replace(/^\+\s*/, '');
+    setNotes((prev) => (prev ? `${prev.trim()}, ${cleanText}` : cleanText));
+  };
+
+  const specialistsToDisplay = availableClinicians.length > 0 
+    ? availableClinicians.map(c => ({
+        id: String(c.id),
+        name: c.name || `Dr. ${c.email?.split('@')[0] || 'Clinician'}`,
+        credentials: 'MD / Supervisor',
+        specialty: c.specialty || 'Cognitive Neurologist & Supervisor',
+        clinic: 'Memory Disorders Registry',
+        badge: 'On Duty',
+        avatar: c.name ? c.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'DR'
+      }))
+    : DEFAULT_SPECIALISTS;
 
   const fetchAppointmentsList = async () => {
     try {
@@ -131,7 +276,7 @@ const Appointments = () => {
       const res = await createAppointment(payload);
       if (res.data) {
         setAppointments((prev) => [res.data, ...prev]);
-        setShowModal(false);
+        handleCloseModal();
         setNotes('');
         setActionSuccess(isClinician ? 'New consultation scheduled successfully.' : 'Consultation request submitted successfully.');
         setTimeout(() => setActionSuccess(null), 4000);
@@ -565,145 +710,365 @@ const Appointments = () => {
 
         {/* Modal: New Consultation */}
         {showModal && (
-          <div style={styles.modalOverlay} onClick={() => setShowModal(false)}>
-            <div
-              style={{
-                ...styles.modalContent,
-                backgroundColor: theme.cardBg,
-                borderColor: theme.border
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: `1px solid ${theme.border}`, paddingBottom: '0.75rem' }}>
-                <h3 style={{ margin: 0, color: theme.text, fontSize: '1.15rem' }}>
-                  {isClinician ? 'Schedule Clinical Consultation' : 'Book / Request Clinical Consultation'}
-                </h3>
-                <button style={styles.modalCloseBtn} onClick={() => setShowModal(false)}>✕</button>
+          <div className="cv-booking-overlay" onClick={handleCloseModal}>
+            <div className="cv-booking-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="cv-modal-top-glow" />
+
+              {/* Modal Header */}
+              <div className="cv-modal-header">
+                <div>
+                  <div className="cv-modal-badge">
+                    <span className="cv-pulse-dot" />
+                    <span>{isClinician ? 'CLINICAL TRIAGE · SCHEDULE EVALUATION' : 'PATIENT INTAKE · REQUEST CONSULTATION'}</span>
+                  </div>
+                  <h2 className="cv-modal-title">
+                    {isClinician ? 'Schedule Clinical Evaluation' : 'Book Clinical Consultation'}
+                  </h2>
+                  <p className="cv-modal-subtitle">
+                    {isClinician 
+                      ? 'Deploy a targeted diagnostic battery or schedule a clinical review session for a registered patient.'
+                      : 'Select your attending cognitive specialist, assessment modality, preferred date and time slot.'}
+                  </p>
+                </div>
+                <button 
+                  type="button" 
+                  className="cv-modal-close-btn" 
+                  onClick={handleCloseModal}
+                  title="Close Modal (Esc)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
               </div>
 
-              <form onSubmit={handleCreateAppointment} style={styles.form}>
-                {isClinician ? (
-                  <div style={styles.formGroup}>
-                    <label style={{ ...styles.formLabel, color: theme.text }}>Select Monitored Patient</label>
-                    <select
-                      value={selectedPatientId}
-                      onChange={(e) => setSelectedPatientId(e.target.value)}
-                      required
-                      style={{ ...styles.formInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
-                    >
-                      {availablePatients.length > 0 ? (
-                        availablePatients.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} (ID: P{p.id}) — Age: {p.age || 'N/A'}, Gender: {p.gender || 'N/A'}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">No patients available in registry</option>
-                      )}
-                    </select>
+              {/* Modal Form Body */}
+              <form onSubmit={handleCreateAppointment} style={{ display: 'contents' }}>
+                <div className="cv-modal-body">
+                  
+                  {/* Section 1: Attending Specialist or Target Patient */}
+                  <div className="cv-section-box">
+                    <div className="cv-section-title-row">
+                      <span className="cv-section-label">
+                        <span className="cv-step-num">1</span>
+                        {isClinician ? 'Target Monitored Patient' : 'Attending Specialist / Neurologist'}
+                      </span>
+                      <span className="cv-section-hint">
+                        {isClinician ? 'Select patient from registry' : 'Choose your physician or general triage'}
+                      </span>
+                    </div>
+
+                    {isClinician ? (
+                      <div className="cv-specialists-grid">
+                        {availablePatients.length > 0 ? (
+                          availablePatients.map((p) => {
+                            const isSelected = selectedPatientId === String(p.id);
+                            return (
+                              <div
+                                key={p.id}
+                                className={`cv-specialist-card ${isSelected ? 'selected' : ''}`}
+                                onClick={() => setSelectedPatientId(String(p.id))}
+                              >
+                                <div className="cv-doc-avatar">
+                                  {p.name ? p.name.charAt(0).toUpperCase() : 'P'}
+                                </div>
+                                <div className="cv-doc-info">
+                                  <h4 className="cv-doc-name">{p.name}</h4>
+                                  <p className="cv-doc-specialty">
+                                    ID: P{p.id} · Age: {p.age || 'N/A'} · {p.gender || 'Patient'}
+                                  </p>
+                                </div>
+                                <div className="cv-card-check-pill">
+                                  {isSelected && '✓'}
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div style={{ padding: '1rem', color: theme.subtext, fontSize: '0.85rem' }}>
+                            No patients available in registry.
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="cv-specialists-grid">
+                        {/* Option 1: General Triage */}
+                        <div
+                          className={`cv-specialist-card ${selectedClinicianId === '' ? 'selected' : ''}`}
+                          onClick={() => setSelectedClinicianId('')}
+                        >
+                          <div className="cv-doc-avatar" style={{ fontSize: '1.2rem' }}>
+                            ⚕️
+                          </div>
+                          <div className="cv-doc-info">
+                            <h4 className="cv-doc-name">Clinic General Triage</h4>
+                            <p className="cv-doc-specialty">Next Available Attending Specialist</p>
+                          </div>
+                          <div className="cv-card-check-pill">
+                            {selectedClinicianId === '' && '✓'}
+                          </div>
+                        </div>
+
+                        {/* Registered or Default Specialists */}
+                        {specialistsToDisplay.map((doc) => {
+                          const isSelected = selectedClinicianId === String(doc.id);
+                          return (
+                            <div
+                              key={doc.id}
+                              className={`cv-specialist-card ${isSelected ? 'selected' : ''}`}
+                              onClick={() => setSelectedClinicianId(String(doc.id))}
+                            >
+                              <div className="cv-doc-avatar">
+                                {doc.avatar}
+                              </div>
+                              <div className="cv-doc-info">
+                                <h4 className="cv-doc-name">{doc.name}</h4>
+                                <p className="cv-doc-specialty">{doc.specialty}</p>
+                              </div>
+                              <div className="cv-card-check-pill">
+                                {isSelected && '✓'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div style={styles.formGroup}>
-                    <label style={{ ...styles.formLabel, color: theme.text }}>Select Attending Specialist / Neurologist</label>
-                    <select
-                      value={selectedClinicianId}
-                      onChange={(e) => setSelectedClinicianId(e.target.value)}
-                      style={{ ...styles.formInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
-                    >
-                      <option value="">— Unassigned (Clinic General Triage) —</option>
-                      {availableClinicians.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} — {c.specialty || 'Cognitive Neurologist & Supervisor'}
-                        </option>
+
+                  {/* Section 2: Assessment Modality */}
+                  <div className="cv-section-box">
+                    <div className="cv-section-title-row">
+                      <span className="cv-section-label">
+                        <span className="cv-step-num">2</span>
+                        Consultation & Battery Modality
+                      </span>
+                      <span className="cv-section-hint">Select diagnostic focus</span>
+                    </div>
+
+                    <div className="cv-modality-grid">
+                      {MODALITY_OPTIONS.map((m) => {
+                        const isSelected = appointmentType === m.type || appointmentType === m.label;
+                        return (
+                          <div
+                            key={m.type}
+                            className={`cv-modality-card ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setAppointmentType(m.type)}
+                          >
+                            <div className="cv-modality-top">
+                              <div className="cv-modality-icon-wrap">
+                                {m.icon}
+                              </div>
+                              <span className="cv-modality-duration-badge">
+                                {m.duration}
+                              </span>
+                            </div>
+                            <h4 className="cv-modality-title">{m.label}</h4>
+                            <p className="cv-modality-desc">{m.desc}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Section 3: Date, Time & Channel */}
+                  <div className="cv-section-box">
+                    <div className="cv-section-title-row">
+                      <span className="cv-section-label">
+                        <span className="cv-step-num">3</span>
+                        Date, Time Slot & Care Channel
+                      </span>
+                      <span className="cv-section-hint">Real-time scheduling</span>
+                    </div>
+
+                    <div className="cv-slot-section-grid">
+                      {/* Left: Date Selection */}
+                      <div>
+                        <div style={{ marginBottom: '0.45rem', fontSize: '0.74rem', fontWeight: '700', color: theme.subtext, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Select Preferred Date
+                        </div>
+                        <div className="cv-date-chips-row">
+                          {QUICK_DATES.map((qd) => (
+                            <button
+                              key={qd.date}
+                              type="button"
+                              className={`cv-date-chip ${scheduledDate === qd.date ? 'selected' : ''}`}
+                              onClick={() => setScheduledDate(qd.date)}
+                            >
+                              {qd.label}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          type="date"
+                          className="cv-custom-date-input"
+                          value={scheduledDate}
+                          onChange={(e) => setScheduledDate(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Right: Time Slot Selection */}
+                      <div className="cv-time-slots-container">
+                        <div className="cv-time-subgroup">
+                          <span className="cv-time-subgroup-label">☀️ Morning Slots</span>
+                          <div className="cv-time-slot-pills">
+                            {TIME_SLOTS_MORNING.map((slot) => (
+                              <button
+                                key={slot}
+                                type="button"
+                                className={`cv-time-pill ${scheduledTime === slot ? 'selected' : ''}`}
+                                onClick={() => setScheduledTime(slot)}
+                              >
+                                {slot}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="cv-time-subgroup">
+                          <span className="cv-time-subgroup-label">🌤️ Afternoon Slots</span>
+                          <div className="cv-time-slot-pills">
+                            {TIME_SLOTS_AFTERNOON.map((slot) => (
+                              <button
+                                key={slot}
+                                type="button"
+                                className={`cv-time-pill ${scheduledTime === slot ? 'selected' : ''}`}
+                                onClick={() => setScheduledTime(slot)}
+                              >
+                                {slot}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Care Channel / Location */}
+                  <div className="cv-section-box">
+                    <div style={{ marginBottom: '0.45rem', fontSize: '0.74rem', fontWeight: '700', color: theme.subtext, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Consultation Channel & Facility
+                    </div>
+                    <div className="cv-channels-grid">
+                      {LOCATION_CHANNELS.map((loc) => {
+                        const isSelected = locationType === loc.id;
+                        return (
+                          <div
+                            key={loc.id}
+                            className={`cv-channel-card ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setLocationType(loc.id)}
+                          >
+                            <span className="cv-channel-icon">{loc.icon}</span>
+                            <div className="cv-channel-info">
+                              <h4 className="cv-channel-title">{loc.title}</h4>
+                              <p className="cv-channel-sub">{loc.subtitle}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Section 4: Clinical Notes & Pre-set Chips */}
+                  <div className="cv-section-box">
+                    <div className="cv-section-title-row">
+                      <span className="cv-section-label">
+                        <span className="cv-step-num">4</span>
+                        Clinical Reason / Intake Notes
+                      </span>
+                      <span className="cv-section-hint">Optional caregiver or symptomatic notes</span>
+                    </div>
+
+                    <div className="cv-chips-row">
+                      {PRESET_NOTE_CHIPS.map((chip) => (
+                        <button
+                          key={chip}
+                          type="button"
+                          className="cv-quick-chip"
+                          onClick={() => handleAddNoteChip(chip)}
+                        >
+                          {chip}
+                        </button>
                       ))}
-                    </select>
-                  </div>
-                )}
+                    </div>
 
-                <div style={styles.formGroup}>
-                  <label style={{ ...styles.formLabel, color: theme.text }}>Consultation / Battery Modality</label>
-                  <select
-                    value={appointmentType}
-                    onChange={(e) => setAppointmentType(e.target.value)}
-                    style={{ ...styles.formInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
-                  >
-                    <option value="Neurological Evaluation">Neurological Evaluation (Comprehensive)</option>
-                    <option value="Acoustic Fluency Review">Acoustic Fluency & Speech Pause Review</option>
-                    <option value="Stroop & Executive Battery">Stroop & Executive Function Battery</option>
-                    <option value="Episodic Memory Assessment">Episodic Memory & Pattern Recall Battery</option>
-                    <option value="Tier 2 Biomarker Review">Tier 2 CatBoost & TreeSHAP Review</option>
-                    <option value="Tier 3 Structural MRI Consultation">Tier 3 Structural MRI & Hippocampal Review</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div style={styles.formGroup}>
-                    <label style={{ ...styles.formLabel, color: theme.text }}>Date</label>
-                    <input
-                      type="date"
-                      value={scheduledDate}
-                      onChange={(e) => setScheduledDate(e.target.value)}
-                      style={{ ...styles.formInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+                    <textarea
+                      className="cv-notes-textarea"
+                      rows={3}
+                      placeholder="e.g. Caregiver noted subtle episodic memory lapses, hesitation during fluent conversations, prior battery drift..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
                     />
                   </div>
-                  <div style={styles.formGroup}>
-                    <label style={{ ...styles.formLabel, color: theme.text }}>Time</label>
-                    <select
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      style={{ ...styles.formInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
+
+                </div>
+
+                {/* Modal Footer & Dynamic Real-Time Summary */}
+                <div className="cv-modal-footer">
+                  <div className="cv-summary-strip">
+                    <div className="cv-summary-item">
+                      <span>👨‍⚕️</span>
+                      <span>
+                        {isClinician
+                          ? availablePatients.find(p => String(p.id) === selectedPatientId)?.name || 'Selected Patient'
+                          : specialistsToDisplay.find(d => String(d.id) === selectedClinicianId)?.name || 'Clinic General Triage'}
+                      </span>
+                    </div>
+                    <span className="cv-summary-divider">•</span>
+                    <div className="cv-summary-item">
+                      <span>🧠</span>
+                      <span>{appointmentType}</span>
+                    </div>
+                    <span className="cv-summary-divider">•</span>
+                    <div className="cv-summary-item">
+                      <span>📅</span>
+                      <span>{scheduledDate} @ {scheduledTime}</span>
+                    </div>
+                    <span className="cv-summary-divider">•</span>
+                    <div className="cv-summary-item">
+                      <span>📍</span>
+                      <span>
+                        {locationType.includes('Virtual') 
+                          ? 'Telehealth Video' 
+                          : locationType.includes('Room 108') 
+                          ? 'Neuropsych Suite' 
+                          : 'Clinic Suite 402'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="cv-footer-actions">
+                    <button
+                      type="button"
+                      className="cv-cancel-button"
+                      onClick={handleCloseModal}
                     >
-                      <option value="09:00 AM">09:00 AM</option>
-                      <option value="10:30 AM">10:30 AM</option>
-                      <option value="11:30 AM">11:30 AM</option>
-                      <option value="02:00 PM">02:00 PM</option>
-                      <option value="03:30 PM">03:30 PM</option>
-                      <option value="05:00 PM">05:00 PM</option>
-                    </select>
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="cv-submit-button"
+                    >
+                      {submitting ? (
+                        <>
+                          <span className="cv-btn-spinner" />
+                          <span>Submitting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                          </svg>
+                          <span>{isClinician ? 'Confirm & Schedule Consultation' : 'Submit Consultation Request'}</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
-
-                <div style={styles.formGroup}>
-                  <label style={{ ...styles.formLabel, color: theme.text }}>Location / Channel</label>
-                  <select
-                    value={locationType}
-                    onChange={(e) => setLocationType(e.target.value)}
-                    style={{ ...styles.formInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
-                  >
-                    <option value="Memory & Cognitive Health Clinic - Suite 402">Memory & Cognitive Health Clinic - Suite 402</option>
-                    <option value="Virtual Tele-Neurology Video Consultation">Virtual Tele-Neurology Video Consultation</option>
-                    <option value="Neuropsychology Testing Suite - Room 108">Neuropsychology Testing Suite - Room 108</option>
-                  </select>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={{ ...styles.formLabel, color: theme.text }}>Clinical Notes / Instructions</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Caregiver collateral history, fasting instructions, prior battery drift notes..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    style={{ ...styles.formInput, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    style={{ ...styles.cancelBtn, borderColor: theme.border, color: theme.subtext }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    style={{ ...styles.submitBtn, backgroundColor: theme.primaryTeal, color: '#FFFFFF' }}
-                  >
-                    {submitting ? 'Processing...' : isClinician ? 'Schedule Appointment' : 'Submit Consultation Request'}
-                  </button>
-                </div>
               </form>
+
             </div>
           </div>
         )}
