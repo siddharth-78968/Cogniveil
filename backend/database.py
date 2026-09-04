@@ -7,7 +7,7 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cogniveil.db
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH.replace(os.sep, '/')}"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False, "timeout": 30}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -17,7 +17,8 @@ Base = declarative_base()
 def run_migrations():
     import sqlite3
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        conn.execute("PRAGMA journal_mode=WAL;")
         cursor = conn.cursor()
         # Check if role column exists in users table
         cursor.execute("PRAGMA table_info(users)")

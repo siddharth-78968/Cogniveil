@@ -1700,7 +1700,7 @@ def get_appointment_by_id(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    """Retrieves full details for a single clinical consultation with strict ownership authorization."""
+    """Retrieves full details for a single clinical consultation with role-based authorization."""
     appt = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
     if not appt:
         raise HTTPException(status_code=404, detail="Appointment not found")
@@ -1709,9 +1709,6 @@ def get_appointment_by_id(
     if not is_clinician:
         if appt.patient_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied to this appointment.")
-    else:
-        if appt.clinician_id is not None and appt.clinician_id != current_user.id and appt.user_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Access denied: Clinician is not assigned to this consultation.")
     return appt
 
 @app.put("/api/appointments/{appointment_id}/status")
@@ -1721,7 +1718,7 @@ def update_appointment_status(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    """Updates appointment status with strict authorization checks."""
+    """Updates appointment status with role authorization and clinician triage reassignment."""
     appt = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
     if not appt:
         raise HTTPException(status_code=404, detail="Appointment not found")
@@ -1733,11 +1730,27 @@ def update_appointment_status(
         if req.status not in ["Cancelled", "Rejected"]:
             raise HTTPException(status_code=403, detail="Patients may only cancel their own appointments.")
     else:
-        if appt.clinician_id is not None and appt.clinician_id != current_user.id and appt.user_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Permission denied: Not assigned to this consultation.")
+        # Clinician triage: when accepting an appointment, assign to the accepting clinician
+        if req.status == "Accepted":
+            appt.clinician_id = current_user.id
+            appt.clinician_name = current_user.name or f"Dr. {current_user.email.split('@')[0].capitalize()}"
     
     appt.status = req.status
     db.commit()
+
+    # Add notification for patient
+    status_label = "accepted and confirmed" if req.status == "Accepted" else req.status.lower()
+    notif = models.Notification(
+        user_id=appt.patient_id,
+        title=f"Appointment {req.status}",
+        message=f"Your {appt.appointment_type} consultation has been {status_label}.",
+        type="alert" if req.status == "Rejected" else "reminder",
+        severity="normal",
+        link="/appointments"
+    )
+    db.add(notif)
+    db.commit()
+
     return {"message": f"Appointment status updated to {req.status}", "id": appointment_id, "status": req.status}
 
 @app.delete("/api/appointments/{appointment_id}")
@@ -1746,7 +1759,7 @@ def delete_appointment(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    """Cancels or deletes a clinical consultation record with strict authorization."""
+    """Cancels or deletes a clinical consultation record."""
     appt = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
     if not appt:
         raise HTTPException(status_code=404, detail="Appointment not found")
@@ -1755,13 +1768,11 @@ def delete_appointment(
     if not is_clinician:
         if appt.patient_id != current_user.id:
             raise HTTPException(status_code=403, detail="Permission denied to delete this appointment.")
-    else:
-        if appt.clinician_id is not None and appt.clinician_id != current_user.id and appt.user_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Permission denied: Not assigned to this consultation.")
         
     db.delete(appt)
     db.commit()
     return {"message": f"Appointment #{appointment_id} deleted successfully", "id": appointment_id}
+
 
 # -----------------------------------------------------------------------------
 # Clinician Workspace & Patient Inspection Endpoints

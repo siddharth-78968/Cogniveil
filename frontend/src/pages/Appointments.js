@@ -246,8 +246,9 @@ const Appointments = () => {
       setActionSuccess(`Appointment #${id} updated to ${newStatus}`);
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err) {
-      console.error('Error updating status:', err.message);
-      setActionError(`Failed to update appointment status: ${err.message}`);
+      console.error('Error updating status:', err);
+      const errMsg = err.response?.data?.detail || err.message || 'Failed to update appointment status.';
+      setActionError(errMsg);
     }
   };
 

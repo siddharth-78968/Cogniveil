@@ -93,12 +93,13 @@ const Dashboard = () => {
       setDashboardAppointments((prev) =>
         prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
       );
-      setApptToast(`Appointment #${id} updated to ${newStatus}`);
-      setTimeout(() => setApptToast(null), 3500);
+      setApptToast({ type: 'success', text: `Appointment #${id} updated to ${newStatus}` });
+      setTimeout(() => setApptToast(null), 4000);
     } catch (err) {
       console.error('Error updating appointment on dashboard:', err);
-      setApptToast('Failed to update appointment status.');
-      setTimeout(() => setApptToast(null), 3500);
+      const errMsg = err.response?.data?.detail || 'Failed to update appointment status.';
+      setApptToast({ type: 'error', text: errMsg });
+      setTimeout(() => setApptToast(null), 5000);
     }
   };
 
@@ -1069,20 +1070,38 @@ const Dashboard = () => {
             </div>
 
             {/* 2. Middle 2-Column Row: Appointment Request & Appointment */}
-            {apptToast && (
-              <div style={{
-                padding: '0.6rem 1rem',
-                backgroundColor: 'rgba(47, 125, 91, 0.15)',
-                color: '#2F7D5B',
-                borderRadius: '8px',
-                border: '1px solid #2F7D5B',
-                fontSize: '0.8rem',
-                fontWeight: '700',
-                marginBottom: '1rem'
-              }}>
-                ✓ {apptToast}
-              </div>
-            )}
+            {apptToast && (() => {
+              const isError = typeof apptToast === 'object' ? apptToast.type === 'error' : (typeof apptToast === 'string' && apptToast.toLowerCase().includes('failed'));
+              const toastMessage = typeof apptToast === 'object' ? apptToast.text : apptToast;
+              return (
+                <div style={{
+                  padding: '0.65rem 1rem',
+                  backgroundColor: isError ? 'rgba(220, 38, 38, 0.12)' : 'rgba(47, 125, 91, 0.15)',
+                  color: isError ? '#dc2626' : '#2F7D5B',
+                  borderRadius: '8px',
+                  border: `1px solid ${isError ? '#dc2626' : '#2F7D5B'}`,
+                  fontSize: '0.84rem',
+                  fontWeight: '600',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem'
+                }}>
+                  {isError ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  )}
+                  <span>{toastMessage}</span>
+                </div>
+              );
+            })()}
             <div style={styles.middleTwoCol}>
               
               {/* Left: Appointment Request */}
@@ -1133,6 +1152,8 @@ const Dashboard = () => {
                           ) : (
                             <div style={styles.actionCircles} onClick={(e) => e.stopPropagation()}>
                               <button 
+                                id={`accept-consultation-${req.id || idx}`}
+                                data-testid={`accept-consultation-${req.id || idx}`}
                                 style={styles.checkCircle} 
                                 title="Accept Consultation"
                                 onClick={(e) => {
@@ -1146,6 +1167,8 @@ const Dashboard = () => {
                                 </svg>
                               </button>
                               <button 
+                                id={`reject-consultation-${req.id || idx}`}
+                                data-testid={`reject-consultation-${req.id || idx}`}
                                 style={styles.crossCircle} 
                                 title="Reject Consultation" 
                                 onClick={(e) => {
