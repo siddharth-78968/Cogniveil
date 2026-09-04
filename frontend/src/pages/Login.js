@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { pingBackend } from '../utils/api';
-import GoogleSignInModal, { GoogleIcon } from '../components/GoogleSignInModal';
+import { triggerGoogleSignIn, GoogleIcon } from '../utils/googleAuth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,8 +11,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -39,6 +38,34 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSignIn = () => {
+    setLoading(true);
+    setError('');
+    triggerGoogleSignIn({
+      role: 'clinician',
+      onSuccess: async (googleData) => {
+        try {
+          const res = await googleLogin(googleData);
+          const userObj = res.data?.user;
+          if (userObj && userObj.consent_granted === false) {
+            navigate('/consent');
+          } else {
+            navigate('/dashboard');
+          }
+        } catch (err) {
+          const detail = err.response?.data?.detail;
+          setError(typeof detail === 'string' ? detail : 'Google sign-in failed.');
+        } finally {
+          setLoading(false);
+        }
+      },
+      onError: (errMsg) => {
+        setError(errMsg);
+        setLoading(false);
+      }
+    });
   };
 
   const handleDemoLogin = async (demoEmail, demoPass = 'demo1234') => {
@@ -444,7 +471,8 @@ const Login = () => {
               {/* Primary Google Sign-In Button */}
               <button
                 type="button"
-                onClick={() => setShowGoogleModal(true)}
+                onClick={handleGoogleSignIn}
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: '0.92rem 1.25rem',
@@ -709,13 +737,6 @@ const Login = () => {
         </div>
 
       </div>
-
-      {/* Google Sign-In Account Selector Modal */}
-      <GoogleSignInModal
-        isOpen={showGoogleModal}
-        onClose={() => setShowGoogleModal(false)}
-        defaultRole="clinician"
-      />
 
     </div>
   );
