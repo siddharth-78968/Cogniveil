@@ -60,7 +60,11 @@ const Login = () => {
       }
     } catch (err) {
       if (err.code === 'ERR_NETWORK' || !err.response) {
-        setError('Cannot connect to backend server. Please ensure the Python backend is running on port 8000.');
+        const isHosted = typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        setError(isHosted
+          ? 'Cannot connect to backend server. The live backend at https://cogniveil-backend.onrender.com may be waking up from sleep (Render free tier can take ~30s on first spin-up). Please wait a moment and try again.'
+          : 'Cannot connect to backend server. Please ensure the Python backend is running on port 8000.'
+        );
       } else if (err.response?.data?.detail) {
         const detail = err.response.data.detail;
         setError(typeof detail === 'string' ? detail : 'Invalid email or password.');
@@ -150,7 +154,11 @@ const Login = () => {
         }
       } catch (err2) {
         if (err2.code === 'ERR_NETWORK' || !err2.response) {
-          setError('Cannot connect to backend server. Please ensure the Python backend is running on port 8000.');
+          const isHosted = typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+          setError(isHosted
+            ? 'Cannot connect to backend server. The live backend at https://cogniveil-backend.onrender.com may be waking up from sleep (Render free tier can take ~30s on first spin-up). Please wait a moment and try again.'
+            : 'Cannot connect to backend server. Please ensure the Python backend is running on port 8000.'
+          );
         } else if (err2.response?.data?.detail) {
           const detail = err2.response.data.detail;
           setError(typeof detail === 'string' ? detail : 'Failed to login with demo account.');
