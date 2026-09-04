@@ -29,8 +29,9 @@ const GoogleSignInModal = ({ isOpen, onClose, defaultRole = 'patient', onSuccess
   const { isDark } = useTheme();
   const navigate = useNavigate();
 
+  const DEFAULT_CLIENT_ID = '782733799950-7qngur2h2ttnr3urc22eqrbgl3fcdl1d.apps.googleusercontent.com';
   const [clientId, setClientId] = useState(() => {
-    return process.env.REACT_APP_GOOGLE_CLIENT_ID || localStorage.getItem('COGNIVEIL_GOOGLE_CLIENT_ID') || '';
+    return process.env.REACT_APP_GOOGLE_CLIENT_ID || localStorage.getItem('COGNIVEIL_GOOGLE_CLIENT_ID') || DEFAULT_CLIENT_ID;
   });
   const [inputClientId, setInputClientId] = useState(clientId);
   const [selectedRole, setSelectedRole] = useState(defaultRole);
