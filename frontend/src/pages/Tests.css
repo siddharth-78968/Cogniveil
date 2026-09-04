@@ -1098,4 +1098,213 @@
   justify-content: center;
 }
 
+/* ── Digital Trail Making Test (Executive Function) ───────────────────────── */
+.cv-trail-hud-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 580px;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.light-mode .cv-trail-hud-strip {
+  background: #f4f8f3;
+  border-color: #c8d8c6;
+  color: #1b2a1a;
+}
+
+.cv-trail-target-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.25rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(163, 177, 138, 0.2);
+  color: #a3b18a;
+  border: 1px solid rgba(163, 177, 138, 0.35);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.light-mode .cv-trail-target-badge {
+  background: rgba(39, 56, 34, 0.1);
+  color: #273822;
+  border-color: rgba(39, 56, 34, 0.25);
+}
+
+.cv-trail-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: 380px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.light-mode .cv-trail-canvas-wrapper {
+  background: #ffffff;
+  border-color: #c8d8c6;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), inset 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.cv-trail-svg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cv-trail-line {
+  stroke: #4ade80;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.5));
+  animation: cvLineDraw 0.2s ease-out;
+}
+
+.light-mode .cv-trail-line {
+  stroke: #2e7d32;
+  filter: drop-shadow(0 0 2px rgba(46, 125, 50, 0.3));
+}
+
+@keyframes cvLineDraw {
+  from { stroke-dasharray: 100; stroke-dashoffset: 100; }
+  to { stroke-dasharray: 100; stroke-dashoffset: 0; }
+}
+
+.cv-trail-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  z-index: 2;
+}
+
+.light-mode .cv-trail-node {
+  background: #f8faf7;
+  color: #1b2a1a;
+  border-color: #b7c7b4;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
+}
+
+.cv-trail-node:hover:not(.connected) {
+  transform: translate(-50%, -50%) scale(1.08);
+  border-color: #a3b18a;
+  background: rgba(163, 177, 138, 0.15);
+}
+
+.cv-trail-node.active-target {
+  border-color: #a3b18a;
+  background: rgba(163, 177, 138, 0.25);
+  box-shadow: 0 0 20px rgba(163, 177, 138, 0.45);
+  animation: cvNodePulse 1.2s infinite ease-in-out;
+}
+
+.light-mode .cv-trail-node.active-target {
+  border-color: #273822;
+  background: #eaf1e8;
+  box-shadow: 0 0 16px rgba(39, 56, 34, 0.25);
+}
+
+@keyframes cvNodePulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.12); }
+}
+
+.cv-trail-node.connected {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.3);
+  cursor: default;
+}
+
+.light-mode .cv-trail-node.connected {
+  border-color: #2e7d32;
+  background: #e8f5e9;
+  color: #2e7d32;
+  box-shadow: 0 0 8px rgba(46, 125, 50, 0.2);
+}
+
+.cv-trail-node.error-shake {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.25) !important;
+  color: #ef4444 !important;
+  animation: cvErrorShake 0.4s ease-in-out;
+}
+
+@keyframes cvErrorShake {
+  0%, 100% { transform: translate(-50%, -50%); }
+  20%, 60% { transform: translate(-56%, -50%); }
+  40%, 80% { transform: translate(-44%, -50%); }
+}
+
+.cv-trail-instructions-card {
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 540px;
+  text-align: center;
+  align-items: center;
+}
+
+.light-mode .cv-trail-instructions-card {
+  background: #f8faf7;
+  border-color: #c8d8c6;
+}
+
+.cv-trail-demo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  background: rgba(163, 177, 138, 0.15);
+  border: 1px solid rgba(163, 177, 138, 0.3);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #a3b18a;
+}
+
+.light-mode .cv-trail-demo-pill {
+  background: rgba(39, 56, 34, 0.08);
+  border-color: rgba(39, 56, 34, 0.2);
+  color: #273822;
+}
+
 

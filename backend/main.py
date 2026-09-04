@@ -568,7 +568,14 @@ def get_today_signals(db: Session = Depends(get_db), current_user: models.User =
 def save_test(result: schemas.TestResultCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     if not current_user.consent_granted:
         raise HTTPException(status_code=403, detail="Informed consent is required before recording cognitive test results.")
-    new_result = models.TestResult(user_id=current_user.id, test_type=result.test_type, score=result.score, duration_seconds=result.duration_seconds)
+    meta_json = result.metadata_json if result.metadata_json else (json.dumps(result.metadata) if result.metadata else None)
+    new_result = models.TestResult(
+        user_id=current_user.id,
+        test_type=result.test_type,
+        score=result.score,
+        duration_seconds=result.duration_seconds,
+        metadata_json=meta_json
+    )
     db.add(new_result)
     db.commit()
     return {"message": "Test result saved"}
@@ -863,6 +870,8 @@ async def analyse_voice_endpoint(
             "speech_status": result["speech_status"],
             "trend": result.get("trend"),
             "trajectory": result.get("trajectory"),
+            "evidence_quality": result.get("evidence_quality"),
+            "speech_ml_model": result.get("speech_ml_model"),
             "words_per_minute": result["words_per_minute"],
             "pause_rate_per_minute": result["pause_rate_per_minute"],
             "speech_activity_ratio": result["speech_activity_ratio"],
@@ -1978,11 +1987,12 @@ def get_clinician_patient_tests(
 
     # Psychometric domains mapping
     domains = {
-        "pattern_recall": {"name": "Pattern Recall", "domain": "Episodic Spatial Memory", "normative_mean": 82.0, "weight": "25%"},
+        "trail_making": {"name": "Trail Making Test (Parts A & B)", "domain": "Executive Function / Cognitive Flexibility", "normative_mean": 78.0, "weight": "20%"},
+        "pattern_recall": {"name": "Pattern Recall", "domain": "Episodic Spatial Memory", "normative_mean": 82.0, "weight": "20%"},
         "digit_span": {"name": "Digit Span Forward/Backward", "domain": "Working Memory Capacity", "normative_mean": 78.0, "weight": "20%"},
-        "word_recall": {"name": "Word List Delayed Recall", "domain": "Verbal Episodic Memory", "normative_mean": 80.0, "weight": "25%"},
-        "stroop": {"name": "Stroop Color-Word Interference", "domain": "Inhibitory Executive Control", "normative_mean": 75.0, "weight": "15%"},
-        "reaction_time": {"name": "Reaction Time Latency", "domain": "Neural Processing Speed", "normative_mean": 85.0, "weight": "15%"}
+        "word_recall": {"name": "Word List Delayed Recall", "domain": "Verbal Episodic Memory", "normative_mean": 80.0, "weight": "20%"},
+        "stroop": {"name": "Stroop Color-Word Interference", "domain": "Inhibitory Executive Control", "normative_mean": 75.0, "weight": "10%"},
+        "reaction_time": {"name": "Reaction Time Latency", "domain": "Neural Processing Speed", "normative_mean": 85.0, "weight": "10%"}
     }
 
     # Group scores by test type
@@ -1990,10 +2000,17 @@ def get_clinician_patient_tests(
     for t in tests:
         if t.test_type not in history_by_type:
             history_by_type[t.test_type] = []
+        meta = {}
+        if t.metadata_json:
+            try:
+                meta = json.loads(t.metadata_json)
+            except Exception:
+                pass
         history_by_type[t.test_type].append({
             "id": t.id,
             "score": t.score,
             "duration_seconds": t.duration_seconds,
+            "metadata": meta,
             "created_at": t.created_at
         })
 

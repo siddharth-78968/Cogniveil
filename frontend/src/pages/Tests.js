@@ -56,6 +56,18 @@ const tests = [
     iconType: 'stroop'
   },
   { 
+    id: 'trail_making', 
+    name: 'Trail Making Test', 
+    domain: 'Executive Function',
+    description: 'Connect numbers and letters in sequence: Part A (1→2→3→...) and Part B (1→A→2→B→3→C→...) as quickly and accurately as possible.',
+    target: 'Evaluates prefrontal cognitive flexibility, set-shifting, mental sequencing, and motor coordination.',
+    duration: '~2 min', 
+    color: '#4c3568',
+    accentColor: '#6d4c94',
+    badge: 'Set-Shifting & Sequencing',
+    iconType: 'trail'
+  },
+  { 
     id: 'reaction_time', 
     name: 'Reaction Time', 
     domain: 'Psychomotor Speed',
@@ -71,6 +83,16 @@ const tests = [
 
 const renderTestIcon = (iconType) => {
   switch (iconType) {
+    case 'trail':
+      return (
+        <svg className="cv-test-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="5" cy="6" r="3" fill="currentColor" fillOpacity="0.25" />
+          <circle cx="19" cy="8" r="3" />
+          <circle cx="12" cy="18" r="3" fill="currentColor" fillOpacity="0.25" />
+          <path d="M7.8 7.2L16.2 6.8" strokeDasharray="2 2" />
+          <path d="M17.5 10.5L13.5 15.5" />
+        </svg>
+      );
     case 'pattern':
       return (
         <svg className="cv-test-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1129,6 +1151,372 @@ const ReactionTimeTest = ({ onComplete }) => {
     </div>
   );
 };
+// ── 6. Trail Making Test (Executive Function / Cognitive Flexibility) ─────────
+const PART_A_NODES = [
+  { id: '1', label: '1', x: 22, y: 32 },
+  { id: '2', label: '2', x: 52, y: 20 },
+  { id: '3', label: '3', x: 80, y: 34 },
+  { id: '4', label: '4', x: 68, y: 70 },
+  { id: '5', label: '5', x: 38, y: 82 },
+  { id: '6', label: '6', x: 18, y: 62 },
+  { id: '7', label: '7', x: 44, y: 48 },
+  { id: '8', label: '8', x: 82, y: 78 }
+];
+
+const PART_B_NODES = [
+  { id: '1', label: '1', x: 18, y: 26 },
+  { id: 'A', label: 'A', x: 48, y: 18 },
+  { id: '2', label: '2', x: 80, y: 28 },
+  { id: 'B', label: 'B', x: 68, y: 62 },
+  { id: '3', label: '3', x: 84, y: 82 },
+  { id: 'C', label: 'C', x: 38, y: 84 },
+  { id: '4', label: '4', x: 16, y: 64 },
+  { id: 'D', label: 'D', x: 45, y: 50 }
+];
+
+const SEQ_A = ['1', '2', '3', '4', '5', '6', '7', '8'];
+const SEQ_B = ['1', 'A', '2', 'B', '3', 'C', '4', 'D'];
+
+const TrailMakingTest = ({ onComplete }) => {
+  const [phase, setPhase] = useState('intro_a'); // 'intro_a' | 'part_a' | 'intro_b' | 'part_b' | 'evaluating' | 'done'
+  const [pathA, setPathA] = useState([]);
+  const [pathB, setPathB] = useState([]);
+  const [targetIndex, setTargetIndex] = useState(0);
+  const [partATime, setPartATime] = useState(0);
+  const [partAErrors, setPartAErrors] = useState(0);
+  const [partBErrors, setPartBErrors] = useState(0);
+  const [partACorrections, setPartACorrections] = useState(0);
+  const [partBCorrections, setPartBCorrections] = useState(0);
+  const [errorFlash, setErrorFlash] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [resultData, setResultData] = useState(null);
+  const [stepLatencies, setStepLatencies] = useState([]);
+
+  const startTimeRef = React.useRef(Date.now());
+  const timerIntervalRef = React.useRef(null);
+  const lastStepTimeRef = React.useRef(Date.now());
+
+  const startPartA = () => {
+    setPathA([]);
+    setTargetIndex(0);
+    setPartAErrors(0);
+    setPartACorrections(0);
+    setElapsed(0);
+    startTimeRef.current = Date.now();
+    lastStepTimeRef.current = Date.now();
+    setPhase('part_a');
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    timerIntervalRef.current = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+    }, 250);
+  };
+
+  const startPartB = () => {
+    setPathB([]);
+    setTargetIndex(0);
+    setPartBErrors(0);
+    setPartBCorrections(0);
+    setElapsed(0);
+    startTimeRef.current = Date.now();
+    lastStepTimeRef.current = Date.now();
+    setPhase('part_b');
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    timerIntervalRef.current = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+    }, 250);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    };
+  }, []);
+
+  const handleNodeClick = (nodeId) => {
+    const isPartA = phase === 'part_a';
+    const activeSeq = isPartA ? SEQ_A : SEQ_B;
+    const expectedTarget = activeSeq[targetIndex];
+
+    const now = Date.now();
+    const stepLatency = now - lastStepTimeRef.current;
+
+    if (nodeId === expectedTarget) {
+      // Correct selection
+      setStepLatencies(prev => [...prev, stepLatency]);
+      lastStepTimeRef.current = now;
+
+      if (isPartA) {
+        const newPath = [...pathA, nodeId];
+        setPathA(newPath);
+        if (targetIndex + 1 >= activeSeq.length) {
+          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+          const durationA = (now - startTimeRef.current) / 1000;
+          setPartATime(durationA);
+          setPhase('intro_b');
+        } else {
+          setTargetIndex(prev => prev + 1);
+        }
+      } else {
+        const newPath = [...pathB, nodeId];
+        setPathB(newPath);
+        if (targetIndex + 1 >= activeSeq.length) {
+          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+          const durationB = (now - startTimeRef.current) / 1000;
+          finishTest(partATime, durationB, partAErrors, partBErrors, partACorrections, partBCorrections);
+        } else {
+          setTargetIndex(prev => prev + 1);
+        }
+      }
+    } else {
+      // Incorrect selection
+      setErrorFlash(nodeId);
+      setTimeout(() => setErrorFlash(null), 400);
+
+      if (isPartA) {
+        setPartAErrors(prev => prev + 1);
+        setPartACorrections(prev => prev + 1);
+      } else {
+        setPartBErrors(prev => prev + 1);
+        setPartBCorrections(prev => prev + 1);
+      }
+    }
+  };
+
+  const finishTest = (durA, durB, errA, errB, corrA, corrB, isCompleted = true) => {
+    const totalDuration = durA + durB;
+    const totalErrors = errA + errB;
+    const totalCorrections = corrA + corrB;
+
+    // Standardized Executive Function score calculation (0-100 scale)
+    // Part B (set-shifting) is primary, Part A (baseline motor sequencing) is baseline reference
+    const timeScore = Math.max(0, Math.min(100, 100 - Math.max(0, durB - 35.0) * 0.9 - Math.max(0, durA - 15.0) * 0.6));
+    const errorPenalty = Math.min(45, errB * 8.0 + errA * 4.0);
+    const score = isCompleted 
+      ? Math.round(Math.max(15.0, Math.min(100.0, timeScore - errorPenalty)))
+      : Math.round(Math.max(10.0, Math.min(45.0, 45.0 - totalErrors * 5.0)));
+
+    const setShiftingCost = Math.max(0, parseFloat((durB - durA).toFixed(1)));
+    const avgLatency = stepLatencies.length > 0 
+      ? Math.round(stepLatencies.reduce((a, b) => a + b, 0) / stepLatencies.length) 
+      : 850;
+
+    const metadata = {
+      test_name: "Trail Making Test",
+      domain: "Executive Function / Cognitive Flexibility",
+      part_a_duration_seconds: parseFloat(durA.toFixed(1)),
+      part_b_duration_seconds: parseFloat(durB.toFixed(1)),
+      total_duration_seconds: parseFloat(totalDuration.toFixed(1)),
+      part_a_errors: errA,
+      part_b_errors: errB,
+      total_errors: totalErrors,
+      incorrect_selections: totalErrors,
+      correction_count: totalCorrections,
+      mean_step_latency_ms: avgLatency,
+      set_shifting_cost_seconds: setShiftingCost,
+      completed: isCompleted,
+      executive_function_score: score
+    };
+
+    setPhase('evaluating');
+    setTimeout(() => {
+      setResultData({
+        score,
+        duration: totalDuration,
+        durA,
+        durB,
+        errA,
+        errB,
+        totalErrors,
+        totalCorrections,
+        setShiftingCost,
+        avgLatency,
+        metadata
+      });
+      setPhase('done');
+    }, 2400);
+  };
+
+  const handleAbandon = () => {
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    const durA = partATime || (phase === 'part_a' ? elapsed : 20.0);
+    const durB = phase === 'part_b' ? elapsed : 40.0;
+    finishTest(durA, durB, partAErrors + 1, partBErrors + 2, partACorrections, partBCorrections, false);
+  };
+
+  if (phase === 'evaluating') {
+    return <TestEvaluatingScreen testName="Trail Making Test" domain="Executive Function" />;
+  }
+
+  if (phase === 'done' && resultData) {
+    return (
+      <TestResultCard
+        testName="Trail Making Test"
+        domain="Executive Function"
+        score={resultData.score}
+        metrics={[
+          { label: 'Part A Sequencing', value: `${resultData.durA.toFixed(1)}s` },
+          { label: 'Part B Set-Shifting', value: `${resultData.durB.toFixed(1)}s` },
+          { label: 'Total Errors', value: `${resultData.totalErrors} (${resultData.totalCorrections} self-corrected)` },
+          { label: 'Set-Shifting Cost', value: `+${resultData.setShiftingCost}s` },
+          { label: 'Step Latency', value: `${resultData.avgLatency} ms` },
+        ]}
+        onContinue={() => onComplete(resultData.score, resultData.duration, resultData.metadata)}
+      />
+    );
+  }
+
+  return (
+    <div className="cv-test-runner-box">
+      <div className="cv-runner-meta">
+        <span className="cv-runner-step-pill">
+          {phase.startsWith('intro') ? 'Task Instructions' : phase === 'part_a' ? 'Part A: Numeric Sequencing' : 'Part B: Alternating Set-Shifting'}
+        </span>
+        <h3 className="cv-runner-instruction">
+          {phase === 'intro_a' && 'Part A: Connect the numbers in order'}
+          {phase === 'part_a' && `Connect: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8`}
+          {phase === 'intro_b' && 'Part B: Alternate numbers and letters'}
+          {phase === 'part_b' && `Alternate: 1 → A → 2 → B → 3 → C → 4 → D`}
+        </h3>
+        <p className="cv-runner-subtext">
+          {phase === 'intro_a' && 'Tap the circles in numerical order (1 to 8) as quickly and accurately as possible.'}
+          {phase === 'part_a' && `Next target: [ ${SEQ_A[targetIndex]} ] • Errors: ${partAErrors}`}
+          {phase === 'intro_b' && 'Switch back and forth between numbers and letters (1 to A, 2 to B, 3 to C, 4 to D) as quickly and accurately as possible.'}
+          {phase === 'part_b' && `Next target: [ ${SEQ_B[targetIndex]} ] • Errors: ${partBErrors}`}
+        </p>
+      </div>
+
+      {/* Part A Intro Screen */}
+      {phase === 'intro_a' && (
+        <div className="cv-trail-instructions-card">
+          <div className="cv-trail-demo-pill">
+            <span>Part A Goal:</span>
+            <span>1 → 2 → 3 → 4 → 5 → 6 → 7 → 8</span>
+          </div>
+          <p style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.5', margin: '0.5rem 0' }}>
+            When you press start, tap circle <strong>1</strong>, then <strong>2</strong>, then <strong>3</strong>, all the way to <strong>8</strong>.
+            Connect the items in the correct order as quickly and accurately as possible.
+          </p>
+          <button
+            className="cv-action-btn cv-tactile-btn"
+            style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
+            onClick={startPartA}
+          >
+            <span>Begin Part A (Numbers)</span>
+            <span>→</span>
+          </button>
+        </div>
+      )}
+
+      {/* Part B Intro Screen */}
+      {phase === 'intro_b' && (
+        <div className="cv-trail-instructions-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4ade80', fontSize: '0.85rem', fontWeight: '800' }}>
+            <span>✓ Part A Completed in {partATime.toFixed(1)}s!</span>
+          </div>
+          <div className="cv-trail-demo-pill" style={{ color: '#a78bfa', borderColor: 'rgba(167, 139, 250, 0.4)' }}>
+            <span>Part B Goal:</span>
+            <span>1 → A → 2 → B → 3 → C → 4 → D</span>
+          </div>
+          <p style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.5', margin: '0.5rem 0' }}>
+            Now comes the cognitive flexibility challenge. Alternate between numbers and letters in order:
+            from <strong>1</strong> to <strong>A</strong>, then <strong>2</strong> to <strong>B</strong>, then <strong>3</strong> to <strong>C</strong>, then <strong>4</strong> to <strong>D</strong>.
+          </p>
+          <button
+            className="cv-action-btn cv-tactile-btn"
+            style={{ backgroundColor: '#382245', color: '#ffffff', border: '1px solid rgba(167, 139, 250, 0.4)' }}
+            onClick={startPartB}
+          >
+            <span>Begin Part B (Set-Shifting)</span>
+            <span>→</span>
+          </button>
+        </div>
+      )}
+
+      {/* Interactive Canvas for Part A & Part B */}
+      {(phase === 'part_a' || phase === 'part_b') && (
+        <>
+          <div className="cv-trail-hud-strip">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>⏱ Elapsed:</span>
+              <strong style={{ color: '#4ade80' }}>{elapsed}s</strong>
+            </span>
+
+            <div className="cv-trail-target-badge">
+              <span>TARGET:</span>
+              <span>{phase === 'part_a' ? SEQ_A[targetIndex] : SEQ_B[targetIndex]}</span>
+            </div>
+
+            <span style={{ color: (phase === 'part_a' ? partAErrors : partBErrors) > 0 ? '#f87171' : '#a3b18a' }}>
+              Errors: {phase === 'part_a' ? partAErrors : partBErrors}
+            </span>
+          </div>
+
+          <div className="cv-trail-canvas-wrapper">
+            {/* SVG Connecting Lines */}
+            <svg className="cv-trail-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {(phase === 'part_a' ? pathA : pathB).map((nodeId, idx, arr) => {
+                if (idx === 0) return null;
+                const activeNodes = phase === 'part_a' ? PART_A_NODES : PART_B_NODES;
+                const prevNode = activeNodes.find(n => n.id === arr[idx - 1]);
+                const currNode = activeNodes.find(n => n.id === nodeId);
+                if (!prevNode || !currNode) return null;
+                return (
+                  <line
+                    key={`${prevNode.id}-${currNode.id}`}
+                    x1={`${prevNode.x}%`}
+                    y1={`${prevNode.y}%`}
+                    x2={`${currNode.x}%`}
+                    y2={`${currNode.y}%`}
+                    className="cv-trail-line"
+                  />
+                );
+              })}
+            </svg>
+
+            {/* Interactive Node Circles */}
+            {(phase === 'part_a' ? PART_A_NODES : PART_B_NODES).map(node => {
+              const activePath = phase === 'part_a' ? pathA : pathB;
+              const activeSeq = phase === 'part_a' ? SEQ_A : SEQ_B;
+              const isConnected = activePath.includes(node.id);
+              const isNextTarget = activeSeq[targetIndex] === node.id;
+              const isShaking = errorFlash === node.id;
+
+              return (
+                <button
+                  key={node.id}
+                  type="button"
+                  onClick={() => handleNodeClick(node.id)}
+                  className={`cv-trail-node ${isConnected ? 'connected' : ''} ${isNextTarget ? 'active-target' : ''} ${isShaking ? 'error-shake' : ''}`}
+                  style={{ left: `${node.x}%`, top: `${node.y}%` }}
+                >
+                  {node.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <button
+              type="button"
+              onClick={handleAbandon}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                padding: '0.25rem 0.5rem'
+              }}
+            >
+              Finish / End Assessment Early
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 // ────────────────────────────────────────────────────────────────────────────
 
 const Tests = () => {
@@ -1215,8 +1603,8 @@ const Tests = () => {
     }
   };
 
-  const handleComplete = async (testId, score, duration) => {
-    try { await saveTestResult({ test_type: testId, score, duration_seconds: duration }); }
+  const handleComplete = async (testId, score, duration, metadata = null) => {
+    try { await saveTestResult({ test_type: testId, score, duration_seconds: duration, metadata }); }
     catch (err) { console.log('Could not save'); }
     const newCompleted = [...completed, testId];
     setCompleted(newCompleted);
@@ -1456,7 +1844,7 @@ const Tests = () => {
           🎉
         </div>
         <h2 style={{ fontFamily: 'Newsreader', fontSize: '1.65rem', color: theme.text, margin: '0 0 0.5rem 0' }}>
-          All 5 Tests Complete!
+          Daily Battery Complete!
         </h2>
         <p style={{ color: theme.subtext, fontSize: '0.88rem', lineHeight: '1.5', margin: '0 0 1.25rem 0' }}>
           Your longitudinal CogniScore and domain-specific psychometric indices have been updated in your profile.
@@ -1723,6 +2111,7 @@ const Tests = () => {
           {activeTest === 'digit_span' && <DigitSpan onComplete={(s, d) => handleComplete('digit_span', s, d)} />}
           {activeTest === 'word_recall' && <WordRecall onComplete={(s, d) => handleComplete('word_recall', s, d)} />}
           {activeTest === 'stroop' && <StroopTest onComplete={(s, d) => handleComplete('stroop', s, d)} />}
+          {activeTest === 'trail_making' && <TrailMakingTest onComplete={(s, d, m) => handleComplete('trail_making', s, d, m)} />}
           {activeTest === 'reaction_time' && <ReactionTimeTest onComplete={(s, d) => handleComplete('reaction_time', s, d)} />}
         </div>
       )}

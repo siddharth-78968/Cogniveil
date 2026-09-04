@@ -10,11 +10,13 @@ from typing import Dict, Any, Optional, List
 import re
 from services.voice_analysis import (
     validate_audio_quality,
+    evaluate_evidence_quality,
     analyze_detailed_pauses,
     extract_linguistic_metrics,
     compute_personal_baseline,
     evaluate_data_confidence,
 )
+import speech_model
 
 
 class VoiceAnalysisAgent:
@@ -147,6 +149,19 @@ class VoiceAnalysisAgent:
         confidence = data_conf["confidence_score"]
         risk_level = "Low" if voice_score >= 65 else "Moderate" if voice_score >= 40 else "High"
 
+        # 6. Validated Speech Risk ML Model Inference (Scikit-Learn Artifact)
+        speech_ml_input = {
+            "speech_activity_ratio": activity_ratio,
+            "pause_rate_per_minute": pause_rate,
+            "mean_rms": mean_rms,
+            "words_per_minute": wpm,
+            "vocabulary_richness": vocabulary_richness,
+            "duration_seconds": duration,
+            "transcription_confidence": float(feats.get("transcription_confidence", 0.90)),
+        }
+        speech_ml_prediction = speech_model.predict(speech_ml_input, transcript=transcript)
+        evidence_quality = speech_ml_prediction.get("evidence_quality") or quality_eval.get("evidence_quality", "GOOD")
+
         # Subdomain Metrics Table
         metrics_table = {
             "speech_rate": {
@@ -200,6 +215,9 @@ class VoiceAnalysisAgent:
             "trajectory": trajectory,
             "confidence": confidence,
             "risk_level": risk_level,
+            "evidence_quality": evidence_quality,
+            "speech_ml_model": speech_ml_prediction,
+            "ml_prediction": speech_ml_prediction,
             "detected_language": detected_language,
             "duration_seconds": duration,
             "words_per_minute": wpm,

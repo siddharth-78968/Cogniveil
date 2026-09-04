@@ -44,6 +44,13 @@ function audioBufferToWav(audioBuffer, targetSampleRate = 16000) {
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
+function getRiskColor(cat) {
+  const c = String(cat || '').toLowerCase();
+  if (c.includes('high') || c.includes('elevated') || c.includes('positive')) return '#ef4444';
+  if (c.includes('mod') || c.includes('medium')) return '#f59e0b';
+  return '#10b981';
+}
+
 const VoiceJournal = () => {
   const navigate = useNavigate();
   const [recording, setRecording] = useState(false);
@@ -294,10 +301,12 @@ const VoiceJournal = () => {
       const lingMetrics = analysis.linguistic_metrics || {};
       const baseline = analysis.personal_baseline || {};
       const dataConf = analysis.data_confidence || {};
+      const speechML = analysis.speech_ml_model || analysis.ml_prediction || {};
+      const evidenceQuality = analysis.evidence_quality || analysis.quality_assessment?.evidence_quality || 'GOOD';
 
-      const xueRiskPct = analysis.xue_model?.risk_percentage !== undefined
-        ? analysis.xue_model.risk_percentage
-        : Math.max(5, Math.min(95, 100 - analysis.voice_score));
+      const mlRiskPct = speechML.available && speechML.risk_percentage !== undefined
+        ? speechML.risk_percentage
+        : Math.round(Math.max(5, Math.min(95, 100 - (analysis.voice_score || 80))));
 
       const realPauseCount = pauseAnalysis.pause_count ?? analysis.acoustic_biomarkers?.pause_count ?? (pauseDurationsMs.length !== undefined ? pauseDurationsMs.length : 'N/A');
 
@@ -305,6 +314,7 @@ const VoiceJournal = () => {
         duration: analysis.duration_seconds,
         voiceScore: analysis.voice_score,
         risk: analysis.risk_level,
+        evidenceQuality: evidenceQuality,
         wordsPerMinute: analysis.words_per_minute ?? 'Unavailable',
         pauseFrequency: analysis.pause_rate_per_minute !== undefined ? `${analysis.pause_rate_per_minute} / min` : 'N/A',
         meanPauseMs: pauseAnalysis.mean_pause_duration_ms ? `${Math.round(pauseAnalysis.mean_pause_duration_ms)} ms` : '500 ms',
@@ -318,17 +328,23 @@ const VoiceJournal = () => {
         baselineData: baseline,
         transcriptAvailable: analysis.transcript_available,
         transcriptionEngine: analysis.transcription?.engine || 'browser-speech-recognition',
+        linguisticMetrics: lingMetrics,
 
-        // Xue ML Model Output (Output A)
-        xueModel: {
-          riskPercentage: xueRiskPct,
-          riskCategory: analysis.xue_model?.risk_category || `${analysis.risk_level} Risk`,
-          modelName: analysis.xue_model?.model_name || "Xue et al. Deep TCN Architecture (16 kHz MFCC)",
-          disclaimer: analysis.xue_model?.disclaimer || "Non-diagnostic exploratory voice screening probability.",
-          salientRegions: analysis.model_salient_regions || analysis.xue_model?.model_salient_regions || [],
+        // Validated Speech Risk ML Model (Scikit-Learn Artifact)
+        speechMlModel: {
+          available: speechML.available !== false,
+          probability: speechML.probability,
+          riskPercentage: mlRiskPct,
+          screenPositive: speechML.screen_positive || false,
+          operatingThreshold: speechML.operating_threshold || 0.92,
+          modelVersion: speechML.model_version || '2026.1',
+          algorithm: speechML.algorithm || 'Scaled Logistic Regression (Median Imputed)',
+          featuresUsed: speechML.features_used || {},
+          imputedFeatures: speechML.imputed_features || [],
+          disclaimer: 'Non-diagnostic speech screening risk derived from validated ML artifact.',
         },
 
-        // Explicit Measurable Speech Features (Output B)
+        // Explicit Measurable Speech Features (Physical Telemetry)
         speechCharacteristics: analysis.speech_characteristics || {
           num_pauses: realPauseCount,
           avg_pause_sec: pauseAnalysis.mean_pause_duration_ms ? parseFloat((pauseAnalysis.mean_pause_duration_ms / 1000).toFixed(2)) : (analysis.acoustic_biomarkers?.mean_pause_duration_sec ?? 1.1),
@@ -369,17 +385,13 @@ const VoiceJournal = () => {
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
-  const getRiskColor = (risk) => {
-    const r = String(risk || '').toLowerCase();
-    if (r.includes('low')) return '#00d4aa';
-    if (r.includes('mod')) return '#f59e0b';
-    return '#ef4444';
+  const getEvidenceQualityBadge = (eq) => {
+    const q = String(eq || 'GOOD').toUpperCase();
+    if (q === 'GOOD') return { bg: '#ecfdf5', border: '#a7f3d0', text: '#047857', label: 'EVIDENCE QUALITY: GOOD' };
+    if (q === 'MODERATE') return { bg: '#f0fdfa', border: '#99f6e4', text: '#0f766e', label: 'EVIDENCE QUALITY: MODERATE' };
+    if (q === 'LIMITED') return { bg: '#fffbeb', border: '#fde68a', text: '#b45309', label: 'EVIDENCE QUALITY: LIMITED' };
+    return { bg: '#fff1f2', border: '#fecdd3', text: '#be123c', label: 'EVIDENCE QUALITY: INSUFFICIENT' };
   };
-
-  const riskScore = result ? (result.xueModel?.riskPercentage ?? Math.round(100 - result.voiceScore)) : 0;
-  const riskCategory = result ? (riskScore < 40 ? 'Low' : riskScore < 65 ? 'Moderate' : 'Elevated') : 'Low';
-  const circumference = 2 * Math.PI * 40;
-  const offset = result ? circumference - (riskScore / 100) * circumference : circumference;
 
   // ── CLINICIAN VIEWPORT: Acoustic Voice Review ───────────────────────────
   if (isClinician && !simulateMic) {
@@ -716,96 +728,161 @@ const VoiceJournal = () => {
         {result && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
             
-            {/* Top Row: AI Model Score & Audio Recording */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 340px) 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
-              {/* Output A: Xue et al. Dementia Risk Assessment Card */}
-              <div style={{
-                ...styles.scoreCard,
-                boxShadow: `0 0 40px ${getRiskColor(riskCategory)}22`,
-                border: `1px solid ${getRiskColor(riskCategory)}33`,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                padding: '2rem 1.5rem'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start', marginBottom: '0.75rem' }}>
-                  <span style={{ fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0.1em', color: '#6366f1' }}>
-                    DEMENTIA RISK ASSESSMENT · XUE ET AL. MODEL
-                  </span>
-                </div>
-
-                <div style={styles.ringWrapper}>
-                  <svg width="130" height="130" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" strokeWidth="8" />
-                    <circle
-                      cx="50" cy="50" r="40"
-                      fill="none"
-                      stroke={getRiskColor(riskCategory)}
-                      strokeWidth="8"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={offset}
-                      strokeLinecap="round"
-                      transform="rotate(-90 50 50)"
-                      style={{ transition: 'stroke-dashoffset 1s ease' }}
-                    />
-                  </svg>
-                  <div style={styles.ringCenter}>
-                    <span style={{ ...styles.scoreNum, color: getRiskColor(riskCategory) }}>{riskScore}</span>
-                    <span style={styles.scoreOf}>% RISK</span>
-                  </div>
-                </div>
-
+            {/* Evidence Quality Header Strip */}
+            {(() => {
+              const eq = getEvidenceQualityBadge(result.evidenceQuality);
+              return (
                 <div style={{
-                  ...styles.riskPill,
-                  backgroundColor: getRiskColor(riskCategory) + '20',
-                  border: `1px solid ${getRiskColor(riskCategory)}44`,
-                  color: getRiskColor(riskCategory),
-                  marginTop: '0.5rem'
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: eq.bg,
+                  border: `1.5px solid ${eq.border}`,
+                  padding: '0.75rem 1.25rem',
+                  borderRadius: '14px',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem'
                 }}>
-                  {riskCategory === 'Low' ? '✓' : riskCategory === 'Moderate' ? '⚡' : '⚠️'} {riskCategory} Risk ({riskScore}%)
-                </div>
-
-                <div style={{ textAlign: 'center', padding: '0 0.5rem', marginTop: '0.25rem' }}>
-                  <span style={{ fontSize: '0.72rem', color: '#4338ca', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
-                    {result.xueModel?.modelName || 'Xue et al. Deep TCN Architecture (16 kHz MFCC)'}
-                  </span>
-                  <p style={{ color: '#64748b', fontSize: '0.72rem', lineHeight: 1.4, margin: 0 }}>
-                    AI dementia risk probability derived from convolutional temporal feature maps. Non-diagnostic screening indicator.
-                  </p>
-                </div>
-                <p style={styles.durationText}>Recording Duration: {result.duration}s</p>
-              </div>
-
-              {/* Audio Playback & Transcript */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {audioURL && (
-                  <div style={styles.audioCard}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <p style={styles.cardLabel}>AUDIO TELEMETRY & PLAYBACK</p>
-                      <span style={{ fontSize: '0.72rem', color: '#22c55e', fontWeight: '700' }}>● High Fidelity 16 kHz</span>
-                    </div>
-                    <audio controls src={audioURL} style={styles.audio} />
-                    <p style={{ color: '#64748b', fontSize: '0.8rem', lineHeight: 1.5, marginTop: '0.75rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '10px' }}>
-                      {result.transcriptAvailable
-                        ? `Transcript captured (${transcript.split(/\s+/).filter(Boolean).length} words): "${transcript.slice(0, 160)}${transcript.length > 160 ? '...' : ''}"`
-                        : 'No browser transcript available; acoustic metrics and pause analysis were extracted directly from the raw audio waveform.'}
-                    </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1rem' }}>
+                      {result.evidenceQuality === 'GOOD' ? '🛡️' : result.evidenceQuality === 'MODERATE' ? '🔍' : result.evidenceQuality === 'LIMITED' ? '⚡' : '⚠️'}
+                    </span>
+                    <span style={{ color: eq.text, fontWeight: '800', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
+                      {eq.label}
+                    </span>
                   </div>
-                )}
-
-                {/* Quick action row */}
-                <div style={styles.actionRow}>
-                  <button style={styles.retryBtn} onClick={() => {
-                    setResult(null); setAudioURL(null); setTimer(0); timerRef.current = 0;
-                    const r = prompts[Math.floor(Math.random() * prompts.length)];
-                    setPrompt(r);
-                  }}>
-                    🔄 Record Again
-                  </button>
-                  <button style={styles.doneBtn} onClick={() => navigate('/dashboard')}>
-                    View Dashboard →
-                  </button>
+                  <span style={{ color: eq.text, fontSize: '0.76rem', fontWeight: '600' }}>
+                    {result.evidenceQuality === 'GOOD' ? 'Acoustic parameters & transcript fully validated for screening' :
+                     result.evidenceQuality === 'MODERATE' ? 'Acceptable signal telemetry with partial duration or confidence' :
+                     result.evidenceQuality === 'LIMITED' ? 'Limited speech energy or short duration; interpret alongside clinical baseline' :
+                     'Insufficient audio length/speech for calibrated inference'}
+                  </span>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
+
+            {/* Top Row: AI Model Score & Audio Recording */}
+            {(() => {
+              const riskScore = Math.round(Number(result.speechMlModel?.riskProbability ?? result.speechProbability ?? 0.25) * 100);
+              const riskCategory = result.speechMlModel?.riskCategory || (riskScore >= 60 ? 'High' : riskScore >= 35 ? 'Moderate' : 'Low');
+              const circumference = 2 * Math.PI * 40;
+              const offset = circumference - (riskScore / 100) * circumference;
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 340px) 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
+                  {/* Output A: Validated ML Speech Risk Model Card */}
+                  <div style={{
+                    ...styles.scoreCard,
+                    boxShadow: `0 0 40px ${getRiskColor(riskCategory)}22`,
+                    border: `1px solid ${getRiskColor(riskCategory)}33`,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    padding: '1.75rem 1.25rem',
+                    backgroundColor: '#ffffff'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.66rem', fontWeight: '800', letterSpacing: '0.08em', color: '#4f46e5' }}>
+                        SPEECH ML MODEL · v{result.speechMlModel?.modelVersion || '2026.1'}
+                      </span>
+                      <span style={{ fontSize: '0.66rem', fontWeight: '700', color: result.speechMlModel?.available ? '#16a34a' : '#dc2626' }}>
+                        {result.speechMlModel?.available ? '● ARTIFACT ACTIVE' : '○ UNAVAILABLE'}
+                      </span>
+                    </div>
+
+                    <div style={styles.ringWrapper}>
+                      <svg width="130" height="130" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" strokeWidth="8" />
+                        <circle
+                          cx="50" cy="50" r="40"
+                          fill="none"
+                          stroke={getRiskColor(riskCategory)}
+                          strokeWidth="8"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={offset}
+                          strokeLinecap="round"
+                          transform="rotate(-90 50 50)"
+                          style={{ transition: 'stroke-dashoffset 1s ease' }}
+                        />
+                      </svg>
+                      <div style={styles.ringCenter}>
+                        <span style={{ ...styles.scoreNum, color: getRiskColor(riskCategory) }}>{riskScore}</span>
+                        <span style={styles.scoreOf}>% RISK PROB</span>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      ...styles.riskPill,
+                      backgroundColor: getRiskColor(riskCategory) + '20',
+                      border: `1px solid ${getRiskColor(riskCategory)}44`,
+                      color: getRiskColor(riskCategory),
+                      marginTop: '0.4rem',
+                      fontSize: '0.78rem'
+                    }}>
+                      {result.speechMlModel?.screenPositive ? '⚠️ Screen Positive' : '✓ Screen Negative'} ({riskCategory} Risk · {riskScore}%)
+                    </div>
+
+                    {/* Supporting Deterministic Voice Score Pill */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '20px',
+                      padding: '0.3rem 0.75rem',
+                      marginTop: '0.5rem'
+                    }}>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600' }}>Supporting Acoustic Score:</span>
+                      <span style={{ fontSize: '0.78rem', color: '#0F4C4A', fontWeight: '800' }}>{result.voiceScore}/100</span>
+                    </div>
+
+                    <div style={{ textAlign: 'center', padding: '0 0.5rem', marginTop: '0.5rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#4338ca', fontWeight: '700', display: 'block', marginBottom: '2px' }}>
+                        {result.speechMlModel?.algorithm || 'Scaled Logistic Regression (Median Imputed)'}
+                      </span>
+                      <p style={{ color: '#64748b', fontSize: '0.7rem', lineHeight: 1.35, margin: 0 }}>
+                        {result.speechMlModel?.disclaimer || 'Non-diagnostic speech screening risk derived from validated ML artifact.'}
+                      </p>
+                      <span style={{ fontSize: '0.66rem', color: '#94a3b8', display: 'block', marginTop: '3px' }}>
+                        Threshold: {(result.speechMlModel?.operatingThreshold * 100).toFixed(0)}% · 5 Core Biomarkers
+                      </span>
+                    </div>
+                    <p style={{ ...styles.durationText, margin: '0.4rem 0 0 0' }}>Duration: {result.duration}s · Confidence: {result.confidence}</p>
+                  </div>
+
+                  {/* Audio Playback & Transcript */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {audioURL && (
+                      <div style={styles.audioCard}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <p style={styles.cardLabel}>AUDIO TELEMETRY & PLAYBACK</p>
+                          <span style={{ fontSize: '0.72rem', color: '#22c55e', fontWeight: '700' }}>● High Fidelity 16 kHz</span>
+                        </div>
+                        <audio controls src={audioURL} style={styles.audio} />
+                        <p style={{ color: '#64748b', fontSize: '0.8rem', lineHeight: 1.5, marginTop: '0.75rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '10px' }}>
+                          {result.transcriptAvailable
+                            ? `Transcript captured (${transcript.split(/\s+/).filter(Boolean).length} words): "${transcript.slice(0, 160)}${transcript.length > 160 ? '...' : ''}"`
+                            : 'No browser transcript available; acoustic metrics and pause analysis were extracted directly from the raw audio waveform.'}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Quick action row */}
+                    <div style={styles.actionRow}>
+                      <button style={styles.retryBtn} onClick={() => {
+                        setResult(null); setAudioURL(null); setTimer(0); timerRef.current = 0;
+                        const r = prompts[Math.floor(Math.random() * prompts.length)];
+                        setPrompt(r);
+                      }}>
+                        🔄 Record Again
+                      </button>
+                      <button style={styles.doneBtn} onClick={() => navigate('/dashboard')}>
+                        View Dashboard →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Output B: Explicit Measurable Speech Characteristics */}
             <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>

@@ -63,6 +63,8 @@ class TestResultCreate(BaseModel):
     test_type: str
     score: float
     duration_seconds: float
+    metadata_json: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 class CogniScoreOut(BaseModel):
     id: int

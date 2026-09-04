@@ -12,6 +12,47 @@ import re
 from typing import Any, Dict, List, Optional
 
 
+def evaluate_evidence_quality(
+    features: Optional[Dict[str, Any]] = None,
+    transcript: str = "",
+    duration_seconds: Optional[float] = None,
+    mean_rms: Optional[float] = None,
+    activity_ratio: Optional[float] = None,
+    transcription_conf: Optional[float] = None,
+) -> str:
+    """Evaluates biometric evidence quality into 4 standardized clinical tiers:
+    - GOOD: Recording >= 15.0s, active speech >= 6.0s, normal RMS energy (0.012 - 0.75),
+            confident transcription, stable acoustic signal.
+    - MODERATE: Recording >= 10.0s, active speech >= 3.5s, acceptable energy & audio telemetry.
+    - LIMITED: Recording >= 5.0s, active speech >= 2.0s, but low volume, clipping,
+               or missing/empty transcript.
+    - INSUFFICIENT: Recording < 5.0s, active speech < 2.0s, silent / near-zero RMS,
+                    or corrupted signal.
+    """
+    feats = features or {}
+    dur = float(duration_seconds if duration_seconds is not None else feats.get("duration_seconds", 0.0))
+    rms = float(mean_rms if mean_rms is not None else feats.get("mean_rms", 0.045))
+    act = float(activity_ratio if activity_ratio is not None else feats.get("speech_activity_ratio", 0.65))
+    tconf = float(transcription_conf if transcription_conf is not None else feats.get("transcription_confidence", 0.90))
+    has_text = bool(transcript.strip())
+    active_speech = dur * act
+
+    # 1. Insufficient tier
+    if dur < 5.0 or active_speech < 2.0 or (rms < 0.003 and not has_text):
+        return "INSUFFICIENT"
+
+    # 2. Limited tier
+    if dur < 10.0 or active_speech < 3.5 or rms < 0.008 or rms > 0.85 or not has_text or tconf < 0.50:
+        return "LIMITED"
+
+    # 3. Moderate tier
+    if dur < 15.0 or active_speech < 6.0 or tconf < 0.80 or rms < 0.012:
+        return "MODERATE"
+
+    # 4. Good tier
+    return "GOOD"
+
+
 def validate_audio_quality(
     features: Dict[str, Any],
     transcript: str = "",
@@ -62,6 +103,15 @@ def validate_audio_quality(
 
     is_sufficient = len(issues) == 0
 
+    evidence_quality = evaluate_evidence_quality(
+        features=features,
+        transcript=transcript,
+        duration_seconds=duration,
+        mean_rms=mean_rms,
+        activity_ratio=activity_ratio,
+        transcription_conf=transcription_conf,
+    )
+
     # Categorize audio quality
     if not is_sufficient:
         quality_level = "Poor"
@@ -90,6 +140,7 @@ def validate_audio_quality(
         "reason": reason,
         "quality_level": quality_level,
         "quality_score": round(quality_score, 2),
+        "evidence_quality": evidence_quality,
         "active_speech_duration_sec": round(active_speech_sec, 2),
         "issues": issues,
         "warnings": warnings,

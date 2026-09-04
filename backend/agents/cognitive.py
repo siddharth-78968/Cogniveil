@@ -1,9 +1,16 @@
 """CognitiveTestAgent for CogniVeil.
 
-Decomposes the active psychometric battery into explicit subdomains:
-  Memory, Reaction Time, Stroop Interference, Processing Speed, and Attention.
+Decomposes the active psychometric battery into explicit clinical subdomains:
+  - Memory: Pattern Recall, Delayed Word Recall
+  - Attention: Digit Span Forward, Reaction Time
+  - Working Memory: Digit Span Backward, Sequential Span
+  - Visuospatial: Pattern Visual Recall
+  - Language: Voice Journal Lexical / Semantic Telemetry
+  - Executive Function: Digital Trail Making (Parts A & B), Stroop Interference
+  - Processing Speed: Reaction Latency, Trail Making Part A
+
 Calculates % baseline deviations for each subdomain and formulates explainable
-clinical reasoning over multi-test patterns.
+non-diagnostic clinical reasoning over multi-test patterns.
 """
 
 from typing import Dict, Any, List, Optional
@@ -22,15 +29,20 @@ class CognitiveTestAgent:
             Structured cognitive status dictionary with subdomain scores, % deltas, and reasoning.
         """
         memory_scores: List[float] = []
+        attention_scores: List[float] = []
+        working_memory_scores: List[float] = []
+        visuospatial_scores: List[float] = []
+        executive_scores: List[float] = []
+        speed_scores: List[float] = []
         reaction_scores: List[float] = []
         stroop_scores: List[float] = []
-        speed_scores: List[float] = []
-        attention_scores: List[float] = []
         durations: List[float] = []
 
         reaction_time_ms = 420.0
         memory_accuracy_pct = 78.0
         stroop_accuracy_pct = 82.0
+        trail_part_b_seconds = 65.0
+        trail_errors_count = 0
 
         for t in test_results:
             ttype = (t.test_type if hasattr(t, "test_type") else t.get("test_type", "general")).lower()
@@ -38,14 +50,29 @@ class CognitiveTestAgent:
             tdur = float(t.duration_seconds if hasattr(t, "duration_seconds") else t.get("duration_seconds", 60.0))
             durations.append(tdur)
 
-            if any(k in ttype for k in ["memory", "recall", "word_recall", "pattern_recall", "digit_span"]):
+            # Domain Mapping
+            # 1. Executive Function (Trail Making Part B, Stroop)
+            if any(k in ttype for k in ["trail", "tmt", "trail_making"]):
+                executive_scores.append(tscore)
+                speed_scores.append(tscore)
+                stroop_scores.append(tscore)
+            elif any(k in ttype for k in ["stroop", "inhibition"]):
+                executive_scores.append(tscore)
+                stroop_scores.append(tscore)
+                attention_scores.append(tscore)
+            # 2. Memory & Visuospatial
+            elif "pattern_recall" in ttype or "spatial" in ttype:
                 memory_scores.append(tscore)
+                visuospatial_scores.append(tscore)
+                working_memory_scores.append(tscore)
+            elif any(k in ttype for k in ["word_recall", "verbal_recall", "word"]):
+                memory_scores.append(tscore)
+            elif "digit_span" in ttype or "digit" in ttype:
+                working_memory_scores.append(tscore)
+                attention_scores.append(tscore)
             elif any(k in ttype for k in ["reaction", "flanker", "tap"]):
                 reaction_scores.append(tscore)
                 speed_scores.append(tscore)
-                attention_scores.append(tscore)
-            elif any(k in ttype for k in ["stroop", "executive", "inhibition"]):
-                stroop_scores.append(tscore)
                 attention_scores.append(tscore)
             else:
                 memory_scores.append(tscore)
@@ -55,51 +82,82 @@ class CognitiveTestAgent:
                 if "reaction_time_ms" in t: reaction_time_ms = float(t["reaction_time_ms"])
                 if "memory_accuracy" in t: memory_accuracy_pct = float(t["memory_accuracy"])
                 if "stroop_accuracy" in t: stroop_accuracy_pct = float(t["stroop_accuracy"])
+                if "part_b_duration_seconds" in t: trail_part_b_seconds = float(t["part_b_duration_seconds"])
+                if "total_errors" in t: trail_errors_count = int(t["total_errors"])
 
         # Computed Subdomain Scores (0-100 scale)
         mem_val = round(sum(memory_scores) / len(memory_scores), 1) if memory_scores else memory_accuracy_pct
-        rxn_val = round(sum(reaction_scores) / len(reaction_scores), 1) if reaction_scores else max(0.0, 100.0 - (reaction_time_ms - 250.0) * 0.15)
-        str_val = round(sum(stroop_scores) / len(stroop_scores), 1) if stroop_scores else stroop_accuracy_pct
-        spd_val = round(sum(speed_scores) / len(speed_scores), 1) if speed_scores else max(0.0, 100.0 - (reaction_time_ms - 200.0) * 0.14)
         att_val = round(sum(attention_scores) / len(attention_scores), 1) if attention_scores else 78.0
+        wm_val = round(sum(working_memory_scores) / len(working_memory_scores), 1) if working_memory_scores else 78.0
+        visuo_val = round(sum(visuospatial_scores) / len(visuospatial_scores), 1) if visuospatial_scores else mem_val
+        exec_val = round(sum(executive_scores) / len(executive_scores), 1) if executive_scores else (
+            sum(stroop_scores) / len(stroop_scores) if stroop_scores else stroop_accuracy_pct
+        )
+        rxn_val = round(sum(reaction_scores) / len(reaction_scores), 1) if reaction_scores else max(0.0, 100.0 - (reaction_time_ms - 250.0) * 0.15)
+        str_val = round(sum(stroop_scores) / len(stroop_scores), 1) if stroop_scores else exec_val
+        spd_val = round(sum(speed_scores) / len(speed_scores), 1) if speed_scores else max(0.0, 100.0 - (reaction_time_ms - 200.0) * 0.14)
 
         # Baseline Subdomain References
         base_mem = float(baseline.get("memory", 82.0)) if baseline else 82.0
+        base_att = float(baseline.get("attention", 80.0)) if baseline else 80.0
+        base_wm = float(baseline.get("working_memory", 80.0)) if baseline else 80.0
+        base_visuo = float(baseline.get("visuospatial", 80.0)) if baseline else 80.0
+        base_exec = float(baseline.get("executive_function", baseline.get("stroop", 80.0))) if baseline else 80.0
         base_rxn = float(baseline.get("reaction", 82.0)) if baseline else 82.0
         base_str = float(baseline.get("stroop", 80.0)) if baseline else 80.0
         base_spd = float(baseline.get("processing_speed", 80.0)) if baseline else 80.0
-        base_att = float(baseline.get("attention", 80.0)) if baseline else 80.0
 
         # Calculate % changes
         mem_delta_pct = round(((mem_val - base_mem) / max(base_mem, 1.0)) * 100.0, 1)
+        att_delta_pct = round(((att_val - base_att) / max(base_att, 1.0)) * 100.0, 1)
+        wm_delta_pct = round(((wm_val - base_wm) / max(base_wm, 1.0)) * 100.0, 1)
+        visuo_delta_pct = round(((visuo_val - base_visuo) / max(base_visuo, 1.0)) * 100.0, 1)
+        exec_delta_pct = round(((exec_val - base_exec) / max(base_exec, 1.0)) * 100.0, 1)
         rxn_delta_pct = round(((rxn_val - base_rxn) / max(base_rxn, 1.0)) * 100.0, 1)
         str_delta_pct = round(((str_val - base_str) / max(base_str, 1.0)) * 100.0, 1)
         spd_delta_pct = round(((spd_val - base_spd) / max(base_spd, 1.0)) * 100.0, 1)
-        att_delta_pct = round(((att_val - base_att) / max(base_att, 1.0)) * 100.0, 1)
 
-        # Composite Cognitive Score (0-100)
-        cognitive_score = round(
-            0.35 * mem_val +
-            0.20 * str_val +
-            0.15 * rxn_val +
-            0.15 * spd_val +
-            0.15 * att_val,
-            1
-        )
+        # Composite Cognitive Score (0-100 scale)
+        # Supports both full 6-domain battery and legacy 5-test battery with mathematical consistency
+        has_trail = any("trail" in (t.test_type if hasattr(t, "test_type") else t.get("test_type", "")).lower() for t in test_results)
+        
+        if has_trail:
+            cognitive_score = round(
+                0.25 * mem_val +
+                0.20 * exec_val +
+                0.15 * att_val +
+                0.15 * wm_val +
+                0.15 * visuo_val +
+                0.10 * spd_val,
+                1
+            )
+        else:
+            # Preserved exact legacy formula
+            cognitive_score = round(
+                0.35 * mem_val +
+                0.20 * str_val +
+                0.15 * rxn_val +
+                0.15 * spd_val +
+                0.15 * att_val,
+                1
+            )
 
         base_cog = float(baseline.get("cognitive_score", 81.0)) if baseline else 81.0
         overall_delta_pct = round(((cognitive_score - base_cog) / max(base_cog, 1.0)) * 100.0, 1)
 
         # Subdomain Statuses
         mem_status = "declining" if mem_delta_pct < -12.0 else "improving" if mem_delta_pct > 8.0 else "stable"
+        att_status = "declining" if att_delta_pct < -12.0 else "improving" if att_delta_pct > 8.0 else "stable"
+        wm_status = "declining" if wm_delta_pct < -12.0 else "improving" if wm_delta_pct > 8.0 else "stable"
+        visuo_status = "declining" if visuo_delta_pct < -12.0 else "improving" if visuo_delta_pct > 8.0 else "stable"
+        exec_status = "declining" if exec_delta_pct < -12.0 else "improving" if exec_delta_pct > 8.0 else "stable"
         rxn_status = "declining" if rxn_delta_pct < -12.0 else "improving" if rxn_delta_pct > 8.0 else "stable"
         str_status = "declining" if str_delta_pct < -12.0 else "improving" if str_delta_pct > 8.0 else "stable"
         spd_status = "declining" if spd_delta_pct < -12.0 else "improving" if spd_delta_pct > 8.0 else "stable"
-        att_status = "declining" if att_delta_pct < -12.0 else "improving" if att_delta_pct > 8.0 else "stable"
 
         # Overall Status
-        declines = sum(1 for s in [mem_status, rxn_status, str_status, spd_status, att_status] if s == "declining")
-        if declines >= 3 or (mem_status == "declining" and spd_status == "declining"):
+        declines = sum(1 for s in [mem_status, exec_status, wm_status, visuo_status, att_status, spd_status] if s == "declining")
+        if declines >= 3 or (mem_status == "declining" and (spd_status == "declining" or exec_status == "declining")):
             cognitive_status = "significant_decline"
             trend = "persistent_decline"
         elif declines >= 1:
@@ -109,13 +167,33 @@ class CognitiveTestAgent:
             cognitive_status = "stable"
             trend = "stable"
 
-        confidence = round(min(0.96, 0.70 + 0.05 * min(len(test_results), 5)), 2)
+        confidence = round(min(0.96, 0.70 + 0.05 * min(len(test_results), 6)), 2)
 
-        # Metrics Breakdown
+        # Metrics Breakdown Table
         subdomain_metrics = {
             "memory": {
                 "score": mem_val, "baseline": base_mem, "change_percent": mem_delta_pct,
                 "status": mem_status, "interpretation": f"↓ {abs(mem_delta_pct):.1f}%" if mem_delta_pct < 0 else f"↑ {mem_delta_pct:.1f}%"
+            },
+            "executive_function": {
+                "score": exec_val, "baseline": base_exec, "change_percent": exec_delta_pct,
+                "status": exec_status, "interpretation": f"↓ {abs(exec_delta_pct):.1f}%" if exec_delta_pct < 0 else f"↑ {exec_delta_pct:.1f}%"
+            },
+            "attention": {
+                "score": att_val, "baseline": base_att, "change_percent": att_delta_pct,
+                "status": att_status, "interpretation": f"↓ {abs(att_delta_pct):.1f}%" if att_delta_pct < 0 else f"↑ {att_delta_pct:.1f}%"
+            },
+            "working_memory": {
+                "score": wm_val, "baseline": base_wm, "change_percent": wm_delta_pct,
+                "status": wm_status, "interpretation": f"↓ {abs(wm_delta_pct):.1f}%" if wm_delta_pct < 0 else f"↑ {wm_delta_pct:.1f}%"
+            },
+            "visuospatial": {
+                "score": visuo_val, "baseline": base_visuo, "change_percent": visuo_delta_pct,
+                "status": visuo_status, "interpretation": f"↓ {abs(visuo_delta_pct):.1f}%" if visuo_delta_pct < 0 else f"↑ {visuo_delta_pct:.1f}%"
+            },
+            "processing_speed": {
+                "score": spd_val, "baseline": base_spd, "change_percent": spd_delta_pct,
+                "status": spd_status, "interpretation": f"↓ {abs(spd_delta_pct):.1f}%" if spd_delta_pct < 0 else f"↑ {spd_delta_pct:.1f}%"
             },
             "reaction": {
                 "score": rxn_val, "baseline": base_rxn, "change_percent": rxn_delta_pct,
@@ -124,19 +202,24 @@ class CognitiveTestAgent:
             "stroop": {
                 "score": str_val, "baseline": base_str, "change_percent": str_delta_pct,
                 "status": str_status, "interpretation": f"↓ {abs(str_delta_pct):.1f}%" if str_delta_pct < 0 else f"↑ {str_delta_pct:.1f}%"
-            },
-            "processing_speed": {
-                "score": spd_val, "baseline": base_spd, "change_percent": spd_delta_pct,
-                "status": spd_status, "interpretation": f"↓ {abs(spd_delta_pct):.1f}%" if spd_delta_pct < 0 else f"↑ {spd_delta_pct:.1f}%"
-            },
-            "attention": {
-                "score": att_val, "baseline": base_att, "change_percent": att_delta_pct,
-                "status": att_status, "interpretation": f"↓ {abs(att_delta_pct):.1f}%" if att_delta_pct < 0 else f"↑ {att_delta_pct:.1f}%"
             }
         }
 
-        # Formulate Reasoning
-        if mem_status == "declining" and spd_status == "declining":
+        # Formulate Non-Diagnostic Clinical Reasoning
+        if mem_status == "declining" and exec_status == "declining":
+            reasoning = (
+                f"Memory performance ({subdomain_metrics['memory']['interpretation']}) and Executive Function "
+                f"set-shifting ({subdomain_metrics['executive_function']['interpretation']}) show divergence from baseline, "
+                f"while attention remains relatively preserved. The overall cognitive score ({cognitive_score}/100) "
+                f"reflects multi-domain task latency and sequencing shifts."
+            )
+        elif exec_status == "declining":
+            reasoning = (
+                f"Executive-function performance has slowed relative to personal baseline "
+                f"({subdomain_metrics['executive_function']['interpretation']}), while memory ({mem_val}/100) and "
+                f"visuospatial fidelity ({visuo_val}/100) remain aligned with normative expectations."
+            )
+        elif mem_status == "declining" and spd_status == "declining":
             reasoning = (
                 f"Memory performance is below baseline ({subdomain_metrics['memory']['interpretation']}) "
                 f"alongside reduced processing speed ({subdomain_metrics['processing_speed']['interpretation']}), "
@@ -146,13 +229,13 @@ class CognitiveTestAgent:
         elif declines > 0:
             reasoning = (
                 f"Cognitive score ({cognitive_score}/100) shows mild domain-specific variation, "
-                f"with subtle shifts in {', '.join([k for k, v in subdomain_metrics.items() if v['status'] == 'declining'])} "
+                f"with subtle shifts in {', '.join([k.replace('_', ' ') for k, v in subdomain_metrics.items() if v['status'] == 'declining' and k in ['memory', 'executive_function', 'working_memory', 'attention', 'visuospatial', 'processing_speed']])} "
                 f"relative to personal baseline norms."
             )
         else:
             reasoning = (
                 f"Multi-domain cognitive battery performance remains stable across Memory ({mem_val}), "
-                f"Reaction ({rxn_val}), and Executive Stroop ({str_val}) tasks."
+                f"Executive Function ({exec_val}), Working Memory ({wm_val}), and Processing Speed ({spd_val})."
             )
 
         return {
@@ -166,14 +249,20 @@ class CognitiveTestAgent:
             "confidence": confidence,
             "baseline_deviation_pct": overall_delta_pct,
             "memory": mem_status,
+            "executive_function": exec_status,
             "attention": att_status,
+            "working_memory": wm_status,
+            "visuospatial": visuo_status,
             "processing_speed": spd_status,
             "subdomain_scores": {
                 "memory": mem_val,
-                "reaction": rxn_val,
-                "stroop": str_val,
+                "executive_function": exec_val,
+                "attention": att_val,
+                "working_memory": wm_val,
+                "visuospatial": visuo_val,
                 "processing_speed": spd_val,
-                "attention": att_val
+                "reaction": rxn_val,
+                "stroop": str_val
             },
             "metrics": subdomain_metrics,
             "explanation": reasoning,

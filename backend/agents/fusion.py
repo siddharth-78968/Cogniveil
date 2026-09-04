@@ -116,7 +116,7 @@ class SignalFusionEngine:
         # Extract Primary Contributors (Negative Shifts Relative to Baseline)
         primary_contributors: List[Dict[str, Any]] = []
 
-        # 1. Check Cognitive Memory
+        # 1. Check Cognitive Subdomains (Memory, Executive Function)
         cog_metrics = cognitive_out.get("metrics", {})
         if "memory" in cog_metrics:
             mem_chg = cog_metrics["memory"].get("change_percent", 0.0)
@@ -126,6 +126,15 @@ class SignalFusionEngine:
                     "change": f"↓ {abs(mem_chg):.1f}% from baseline",
                     "modality": "Cognitive",
                     "delta": mem_chg
+                })
+        if "executive_function" in cog_metrics:
+            exec_chg = cog_metrics["executive_function"].get("change_percent", 0.0)
+            if exec_chg < -5.0:
+                primary_contributors.append({
+                    "factor": "Executive function (Trail Making)",
+                    "change": f"↓ {abs(exec_chg):.1f}% from baseline",
+                    "modality": "Cognitive",
+                    "delta": exec_chg
                 })
 
         # 2. Check Typing Cadence

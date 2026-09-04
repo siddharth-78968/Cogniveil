@@ -147,7 +147,8 @@ def score_tier1(tests: list, signals: list, historical_scores: list, voice_featu
         current_score=current_score,
         voice_trend=voice_out.get("trend", "stable") if voice_out else "stable",
         typing_trend=beh_out.get("typing_status", "stable"),
-        memory_trend=cog_out.get("memory", "stable")
+        memory_trend=cog_out.get("memory", "stable"),
+        executive_trend=cog_out.get("executive_function", "stable")
     )
 
     return {

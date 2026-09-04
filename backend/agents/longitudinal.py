@@ -22,6 +22,7 @@ class LongitudinalTrendAgent:
         voice_trend: str = "stable",
         typing_trend: str = "stable",
         memory_trend: str = "stable",
+        executive_trend: str = "stable",
         subdomain_trends: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """Evaluates longitudinal trajectory and trend persistence.
@@ -104,7 +105,12 @@ class LongitudinalTrendAgent:
         volatility_index = round(float(np.std(recent_window)), 2)
 
         # Evaluate Signal Concordance
-        concordant_declines = sum(1 for t in [voice_trend, typing_trend, memory_trend] if t == "declining")
+        declining_modalities = []
+        if voice_trend == "declining": declining_modalities.append(f"voice: {voice_trend}")
+        if typing_trend == "declining": declining_modalities.append(f"typing: {typing_trend}")
+        if memory_trend == "declining": declining_modalities.append(f"memory: {memory_trend}")
+        if executive_trend == "declining": declining_modalities.append(f"executive (Trail Making): {executive_trend}")
+        concordant_declines = len(declining_modalities)
 
         # Determine Persistent Decline vs Transient Fluctuation
         is_deviating = bool(
@@ -117,9 +123,10 @@ class LongitudinalTrendAgent:
             trend_classification = "persistent_decline"
             clinical_alert_level = "High" if (baseline_mean - current_score > 15.0 or concordant_declines >= 2) else "Moderate"
             persistent_pattern = True
+            mod_str = ", ".join(declining_modalities) if declining_modalities else "multiple cognitive/behavioral modalities"
             explanation = (
                 f"Persistent downward drift confirmed over {days_with_decline} consecutive sessions (Trajectory slope: {trajectory_slope:.2f}, CUSUM: {cusum_value:.1f}). "
-                f"{concordant_declines} modalities (voice: {voice_trend}, typing: {typing_trend}, memory: {memory_trend}) exhibit aligned decline."
+                f"Aligned decline observed in: {mod_str}."
             )
         elif is_deviating and days_with_decline <= 2:
             trend_classification = "transient_fluctuation"

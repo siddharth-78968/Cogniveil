@@ -3,7 +3,10 @@ __pycache__/
 *.pyc
 *.pdf
 backend/cogniveil.db
+backend/cogniveil.db*
 backend/cogniveil_backup.db
+*.db-wal
+*.db-shm
 node_modules/
 catboost_info/
 
