@@ -312,38 +312,38 @@ const Dashboard = () => {
 
             {/* Baseline Calibration Progress */}
             <div style={{ ...styles.baselineProgressBox, backgroundColor: theme.statBoxBg, borderColor: theme.border }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.92rem', fontWeight: '700', color: theme.text }}>
                   {history.length < 7 ? `Day ${Math.max(history.length, 1)} of 7: Baseline Calibration Mode` : `Personal Baseline Established`}
                 </span>
-                <span style={{ fontSize: '0.78rem', color: theme.subtext, fontWeight: '600' }}>
+                <span style={{ fontSize: '0.85rem', color: theme.subtext, fontWeight: '600' }}>
                   {history.length < 7 ? `${Math.round((history.length / 7) * 100)}% Calibrated` : `${history.length} Sessions Logged`}
                 </span>
               </div>
-              <div style={styles.progressBarTrack}>
+              <div style={{ ...styles.progressBarTrack, height: '8px' }}>
                 <div style={{ ...styles.progressBarFill, width: `${Math.min((history.length / 7) * 100, 100)}%` }} />
               </div>
             </div>
 
             {/* Continuous Daily Cognitive Testing Streak & Attendance Tracker */}
             <div style={{
-              marginTop: '0.85rem',
-              padding: '1.15rem 1.35rem',
-              borderRadius: '14px',
+              marginTop: '1rem',
+              padding: '1.35rem 1.75rem',
+              borderRadius: '16px',
               backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f6faf4',
               border: `1.5px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
               display: 'flex',
               flexWrap: 'wrap',
               justifyContent: 'space-between',
               alignItems: 'center',
-              gap: '1.25rem'
+              gap: '1.5rem'
             }}>
               {/* Left: Prominent Streak Metrics */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '280px', flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.15rem', minWidth: '300px', flex: 1 }}>
                 <div style={{
-                  width: '52px',
-                  height: '52px',
-                  borderRadius: '12px',
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '14px',
                   backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : 'rgba(39, 56, 34, 0.09)',
                   border: `1.5px solid ${isDark ? '#526e49' : '#b8cab5'}`,
                   display: 'flex',
@@ -353,15 +353,15 @@ const Dashboard = () => {
                   flexShrink: 0
                 }}>
                   {/* Clean continuous energy/flame vector SVG (no emojis) */}
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
                   </svg>
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
                     <span style={{
-                      fontSize: '2rem',
+                      fontSize: '2.5rem',
                       fontFamily: "'JetBrains Mono', monospace",
                       fontWeight: '800',
                       color: theme.text,
@@ -370,7 +370,7 @@ const Dashboard = () => {
                       {streak?.current_streak || history.length || 1}
                     </span>
                     <span style={{
-                      fontSize: '1.1rem',
+                      fontSize: '1.25rem',
                       fontWeight: '800',
                       color: theme.text,
                       letterSpacing: '-0.02em'
@@ -378,7 +378,7 @@ const Dashboard = () => {
                       Days Continuous Streak
                     </span>
                     <span style={{
-                      fontSize: '0.74rem',
+                      fontSize: '0.82rem',
                       fontFamily: "'JetBrains Mono', monospace",
                       fontWeight: '600',
                       color: isDark ? '#22D3EE' : '#0891B2',
@@ -390,17 +390,17 @@ const Dashboard = () => {
                       {streak?.attended_today ? 'Completed today' : 'Active routine'}
                     </span>
                   </div>
-                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: theme.subtext }}>
+                  <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.88rem', color: theme.subtext }}>
                     {streak?.current_streak || history.length || 1} consecutive days of daily cognitive micro-battery screening. Personal record: <strong>{streak?.longest_streak || history.length || 1} days</strong>.
                   </p>
                 </div>
               </div>
 
               {/* Right: Last 7 Days Activity Strip */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flexShrink: 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', flexShrink: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{
-                    fontSize: '0.68rem',
+                    fontSize: '0.74rem',
                     fontWeight: '800',
                     fontFamily: "'JetBrains Mono', monospace",
                     color: theme.subtext,
@@ -410,7 +410,7 @@ const Dashboard = () => {
                     Recent 7-Day Attendance
                   </span>
                   <span style={{
-                    fontSize: '0.68rem',
+                    fontSize: '0.76rem',
                     color: isDark ? '#a3b18a' : '#273822',
                     fontWeight: '700',
                     fontFamily: "'JetBrains Mono', monospace"
@@ -419,7 +419,7 @@ const Dashboard = () => {
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   {(streak?.last_7_days || []).length > 0 ? (
                     streak.last_7_days.map((d, idx) => (
                       <div 
@@ -428,21 +428,21 @@ const Dashboard = () => {
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          gap: '3px',
-                          padding: '5px 7px',
-                          borderRadius: '8px',
+                          gap: '4px',
+                          padding: '6px 9px',
+                          borderRadius: '10px',
                           backgroundColor: d.is_today 
                             ? (isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ece0') 
                             : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
                           border: d.is_today 
                             ? `1.5px solid ${isDark ? '#a3b18a' : '#273822'}` 
                             : `1px solid ${theme.border}`,
-                          minWidth: '32px'
+                          minWidth: '38px'
                         }}
                         title={`${d.day_name} (${d.date}): ${d.attended ? 'Screening Completed' : 'Pending'}`}
                       >
                         <span style={{
-                          fontSize: '0.62rem',
+                          fontSize: '0.7rem',
                           fontFamily: "'JetBrains Mono', monospace",
                           fontWeight: '700',
                           color: d.is_today ? (isDark ? '#a3b18a' : '#273822') : theme.subtext
@@ -450,8 +450,8 @@ const Dashboard = () => {
                           {d.day_name}
                         </span>
                         <div style={{
-                          width: '18px',
-                          height: '18px',
+                          width: '22px',
+                          height: '22px',
                           borderRadius: '50%',
                           backgroundColor: d.attended 
                             ? (isDark ? '#3d5236' : '#273822') 
@@ -462,11 +462,11 @@ const Dashboard = () => {
                           justifyContent: 'center'
                         }}>
                           {d.attended ? (
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5">
                               <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
                           ) : (
-                            <span style={{ fontSize: '9px', color: theme.subtext }}>·</span>
+                            <span style={{ fontSize: '10px', color: theme.subtext }}>·</span>
                           )}
                         </div>
                       </div>
@@ -477,16 +477,16 @@ const Dashboard = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '3px',
-                        padding: '5px 7px',
-                        borderRadius: '8px',
+                        gap: '4px',
+                        padding: '6px 9px',
+                        borderRadius: '10px',
                         backgroundColor: idx === 6 ? (isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ece0') : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
                         border: `1px solid ${theme.border}`,
-                        minWidth: '32px'
+                        minWidth: '38px'
                       }}>
-                        <span style={{ fontSize: '0.62rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', color: theme.subtext }}>{dayName}</span>
-                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: isDark ? '#3d5236' : '#273822', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5">
+                        <span style={{ fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', color: theme.subtext }}>{dayName}</span>
+                        <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: isDark ? '#3d5236' : '#273822', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5">
                             <polyline points="20 6 9 17 4 12"></polyline>
                           </svg>
                         </div>
@@ -499,21 +499,21 @@ const Dashboard = () => {
 
             {/* DementAI "Buy Patients Time" Lead Time Benefit Callout */}
             <div style={{
-              marginTop: '0.85rem',
-              padding: '0.75rem 1.1rem',
-              borderRadius: '12px',
+              marginTop: '1rem',
+              padding: '0.95rem 1.4rem',
+              borderRadius: '14px',
               backgroundColor: score?.is_deviating ? (isDark ? 'rgba(197, 176, 131, 0.15)' : '#f5f0e4') : (isDark ? 'rgba(61, 82, 54, 0.15)' : '#e8efe6'),
               border: `1px solid ${score?.is_deviating ? (isDark ? '#c5b083' : '#d2ded0') : (isDark ? '#3d5236' : '#d2ded0')}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: '0.75rem'
+              gap: '1rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                 <div style={{
-                  width: '32px',
-                  height: '32px',
+                  width: '36px',
+                  height: '36px',
                   borderRadius: '50%',
                   backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
                   display: 'flex',
@@ -521,16 +521,16 @@ const Dashboard = () => {
                   justifyContent: 'center',
                   color: isDark ? '#a3b18a' : '#273822'
                 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.84rem', fontWeight: '700', fontFamily: "'Inter', system-ui, sans-serif", color: score?.is_deviating ? (isDark ? '#f59e0b' : '#b45309') : (isDark ? '#22D3EE' : '#0891B2') }}>
+                  <div style={{ fontSize: '0.96rem', fontWeight: '700', fontFamily: "'Inter', system-ui, sans-serif", color: score?.is_deviating ? (isDark ? '#f59e0b' : '#b45309') : (isDark ? '#22D3EE' : '#0891B2') }}>
                     Clinical lead-time window: {score?.is_deviating ? '6–8 months early drift detected' : 'Active baseline surveillance'}
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: theme.subtext, marginTop: '2px' }}>
+                  <div style={{ fontSize: '0.86rem', color: theme.subtext, marginTop: '2px' }}>
                     CogniVeil does not diagnose — it buys care teams and families precious time by detecting subtle drift months before symptoms prompt a clinic visit.
                   </div>
                 </div>
@@ -538,10 +538,10 @@ const Dashboard = () => {
               <button
                 onClick={handleOpenReferral}
                 style={{
-                  padding: '6px 14px',
+                  padding: '8px 18px',
                   borderRadius: '8px',
                   border: 'none',
-                  fontSize: '0.76rem',
+                  fontSize: '0.84rem',
                   fontWeight: '700',
                   cursor: 'pointer',
                   backgroundColor: isDark ? '#3d5236' : '#273822',
@@ -562,14 +562,14 @@ const Dashboard = () => {
               borderColor: isDark ? '#1E293B' : theme.border 
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: '600', fontFamily: "'Newsreader', Georgia, serif", color: theme.text }}>
+                <span style={{ fontSize: '1.05rem', fontWeight: '600', fontFamily: "'Newsreader', Georgia, serif", color: theme.text }}>
                   CogniScore
                 </span>
                 {/* Reserved Diagnostic Risk Indicator */}
                 <span style={{
-                  padding: '0.2rem 0.65rem',
-                  borderRadius: '4px',
-                  fontSize: '0.74rem',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '6px',
+                  fontSize: '0.82rem',
                   fontWeight: '700',
                   fontFamily: "'Inter', sans-serif",
                   letterSpacing: '0.02em',
@@ -582,8 +582,8 @@ const Dashboard = () => {
               </div>
 
               {/* Signature Motif: Waveform-resolves-to-number */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.75rem 0 0.35rem 0' }}>
-                <svg width="68" height="26" viewBox="0 0 68 26" fill="none" style={{ opacity: isDark ? 0.8 : 0.65, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', margin: '0.85rem 0 0.4rem 0' }}>
+                <svg width="76" height="28" viewBox="0 0 68 26" fill="none" style={{ opacity: isDark ? 0.8 : 0.65, flexShrink: 0 }}>
                   <path 
                     d="M2 13 H12 L16 5 L22 21 L28 8 L34 18 L38 10 L44 14 H66" 
                     stroke={isDark ? '#22D3EE' : '#0891B2'} 
@@ -593,28 +593,28 @@ const Dashboard = () => {
                   />
                   <circle cx="66" cy="14" r="2" fill={isDark ? '#22D3EE' : '#0891B2'} />
                 </svg>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
                   <span style={styles.patientBigScore}>
                     {score?.score != null ? Math.round(score.score * 10) / 10 : '—'}
                   </span>
                   {score?.score != null && (
-                    <span style={{ color: theme.subtext, fontSize: '0.88rem', fontWeight: '500', fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span style={{ color: theme.subtext, fontSize: '1rem', fontWeight: '500', fontFamily: "'JetBrains Mono', monospace" }}>
                       / 100
                     </span>
                   )}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.2rem' }}>
-                <span style={{ fontSize: '0.75rem', color: theme.subtext }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.25rem' }}>
+                <span style={{ fontSize: '0.84rem', color: theme.subtext }}>
                   Daily composite neuromotor & speech index
                 </span>
                 {score?.is_deviating && (
                   <span style={{ 
-                    fontSize: '0.7rem', 
+                    fontSize: '0.76rem', 
                     color: '#EF4444', 
                     fontWeight: '700', 
-                    padding: '0.1rem 0.45rem', 
+                    padding: '0.15rem 0.55rem', 
                     borderRadius: '4px', 
                     backgroundColor: 'rgba(239, 68, 68, 0.12)', 
                     border: '1px solid rgba(239, 68, 68, 0.3)' 
@@ -627,15 +627,15 @@ const Dashboard = () => {
 
             {/* Secondary Card: Daily Battery (decorative calendar icon removed, badge flattened) */}
             <div style={{ ...styles.patientSecondaryStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: '600', color: theme.subtext, fontFamily: "'Inter', sans-serif" }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: '600', color: theme.subtext, fontFamily: "'Inter', sans-serif" }}>
                 Daily battery
               </span>
-              <div style={{ margin: '0.4rem 0 0.2rem 0' }}>
+              <div style={{ margin: '0.45rem 0 0.25rem 0' }}>
                 <p style={{ ...styles.patientCardValue, color: theme.text, margin: 0 }}>
                   {score?.active_score != null ? `${Math.round(score.active_score)} pts` : 'No tests yet'}
                 </p>
               </div>
-              <p style={{ fontSize: '0.74rem', color: theme.subtext, margin: 0 }}>
+              <p style={{ fontSize: '0.82rem', color: theme.subtext, margin: 0 }}>
                 5 micro-tasks completed
               </p>
             </div>
@@ -643,48 +643,48 @@ const Dashboard = () => {
             {/* Secondary Card: Voice Journal (functional mic icon kept) */}
             <div style={{ ...styles.patientSecondaryStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: '600', color: theme.subtext, fontFamily: "'Inter', sans-serif" }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: '600', color: theme.subtext, fontFamily: "'Inter', sans-serif" }}>
                   Voice journal
                 </span>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#22D3EE' : '#0891B2'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#22D3EE' : '#0891B2'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                   <line x1="12" y1="19" x2="12" y2="23"></line>
                   <line x1="8" y1="23" x2="16" y2="23"></line>
                 </svg>
               </div>
-              <div style={{ margin: '0.4rem 0 0.2rem 0' }}>
+              <div style={{ margin: '0.45rem 0 0.25rem 0' }}>
                 <p style={{ ...styles.patientCardValue, color: theme.text, margin: 0 }}>
                   {score?.voice_score != null ? `${Math.round(score.voice_score)} pts` : 'Pending'}
                 </p>
               </div>
-              <p style={{ fontSize: '0.74rem', color: theme.subtext, margin: 0 }}>
+              <p style={{ fontSize: '0.82rem', color: theme.subtext, margin: 0 }}>
                 Acoustic pause & fluency telemetry
               </p>
             </div>
 
             {/* Secondary Card: Behavioral Telemetry (decorative users icon removed) */}
             <div style={{ ...styles.patientSecondaryStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: '600', color: theme.subtext, fontFamily: "'Inter', sans-serif" }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: '600', color: theme.subtext, fontFamily: "'Inter', sans-serif" }}>
                 Behavioral telemetry
               </span>
-              <div style={{ margin: '0.4rem 0 0.2rem 0' }}>
+              <div style={{ margin: '0.45rem 0 0.25rem 0' }}>
                 <p style={{ ...styles.patientCardValue, color: theme.text, margin: 0 }}>
                   {score?.passive_score != null ? `${Math.round(score.passive_score)} pts` : 'Active'}
                 </p>
               </div>
-              <p style={{ fontSize: '0.74rem', color: theme.subtext, margin: 0 }}>
+              <p style={{ fontSize: '0.82rem', color: theme.subtext, margin: 0 }}>
                 Passive typing & scroll stability
               </p>
             </div>
           </div>
 
           {/* Transparent Modality Breakdown & Primary Contributors Card */}
-          <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: '1.75rem', padding: '1.75rem 2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.4rem' }}>
               <div>
-                <h3 style={{ ...styles.cardTitle, color: theme.text, margin: 0 }}>CogniScore Modality Contribution & Primary Drivers</h3>
-                <p style={{ color: theme.subtext, fontSize: '0.8rem', margin: '3px 0 0 0' }}>
+                <h3 style={{ ...styles.cardTitle, color: theme.text, margin: 0, fontSize: '1.35rem' }}>CogniScore Modality Contribution & Primary Drivers</h3>
+                <p style={{ color: theme.subtext, fontSize: '0.88rem', margin: '4px 0 0 0' }}>
                   Deterministic multimodal fusion with transparent weight contributions and individual baseline delta tracking.
                 </p>
               </div>
@@ -693,21 +693,19 @@ const Dashboard = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    backgroundColor: isDark ? '#312e81' : '#e0e7ff',
-                    color: '#4338CA',
-                    border: `1px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px',
-                    fontWeight: '800',
-                    fontSize: '0.82rem',
+                    gap: '0.55rem',
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '10px',
+                    fontWeight: '700',
+                    fontSize: '0.86rem',
                     cursor: 'pointer',
                     backgroundColor: isDark ? '#273822' : '#eaf1e8',
                     color: isDark ? '#f1f5ee' : '#0d170e',
+                    border: `1.5px solid ${isDark ? '#3d5236' : '#d2ded0'}`,
                   }}
                   onClick={() => setShowExplainModal(true)}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -719,51 +717,51 @@ const Dashboard = () => {
 
             {/* Main 2-Column Grid: Modality Contribution Bars & Primary Contributors Box */}
             {!score ? (
-              <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '12px', border: `1px dashed ${theme.border}` }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={theme.subtext} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 8px auto', display: 'block' }}>
+              <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '14px', border: `1px dashed ${theme.border}` }}>
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={theme.subtext} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 8px auto', display: 'block' }}>
                   <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z" />
                   <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z" />
                 </svg>
-                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '0.95rem', fontWeight: '800' }}>No assessment data yet</h4>
-                <p style={{ margin: 0, color: theme.subtext, fontSize: '0.82rem' }}>Complete daily cognitive tests, voice recordings, and telemetry to generate your multimodal breakdown.</p>
+                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '1rem', fontWeight: '800' }}>No assessment data yet</h4>
+                <p style={{ margin: 0, color: theme.subtext, fontSize: '0.86rem' }}>Complete daily cognitive tests, voice recordings, and telemetry to generate your multimodal breakdown.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
                 
                 {/* Left Column: Contribution Breakdown */}
-                <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: '600', color: theme.text }}>Modality weight contributions</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: isDark ? '#22D3EE' : '#0891B2', fontFamily: "'JetBrains Mono', monospace" }}>
+                <div style={{ padding: '1.25rem 1.4rem', borderRadius: '14px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.15rem' }}>
+                    <span style={{ fontSize: '0.92rem', fontWeight: '700', color: theme.text }}>Modality weight contributions</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: isDark ? '#22D3EE' : '#0891B2', fontFamily: "'JetBrains Mono', monospace" }}>
                       {score?.voice_score ? 'Tri-Modal (60/20/20)' : 'Bi-Modal (80/20)'}
                     </span>
                   </div>
 
                   {/* Cognitive Modality */}
-                  <div style={{ marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                  <div style={{ marginBottom: '1.15rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: '700', marginBottom: '0.4rem' }}>
                       <span style={{ color: theme.text }}>Active Cognitive Battery (60%)</span>
-                      <span style={{ color: isDark ? '#a3b18a' : '#273822' }}>{score?.active_score != null ? `${Math.round(score.active_score)} / 100` : 'No tests'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.active_score || 0) * 0.6).toFixed(1)} pts)</strong></span>
+                      <span style={{ color: isDark ? '#a3b18a' : '#273822' }}>{score?.active_score != null ? `${Math.round(score.active_score)} / 100` : 'No tests'} <strong style={{ color: theme.subtext, fontSize: '0.76rem' }}>({((score?.active_score || 0) * 0.6).toFixed(1)} pts)</strong></span>
                     </div>
-                    <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.min(score?.active_score || 0, 100)}%`, height: '100%', backgroundColor: isDark ? '#a3b18a' : '#273822', borderRadius: '4px' }} />
+                    <div style={{ width: '100%', height: '10px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(score?.active_score || 0, 100)}%`, height: '100%', backgroundColor: isDark ? '#a3b18a' : '#273822', borderRadius: '5px' }} />
                     </div>
                   </div>
 
                   {/* Behavioral Modality with Typing & Scrolling Sub-chips */}
-                  <div style={{ marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                  <div style={{ marginBottom: '1.15rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: '700', marginBottom: '0.4rem' }}>
                       <span style={{ color: theme.text }}>Behavioral Telemetry (20%)</span>
-                      <span style={{ color: isDark ? '#738466' : '#3d5236' }}>{score?.passive_score != null ? `${Math.round(score.passive_score)} / 100` : 'No telemetry'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.passive_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
+                      <span style={{ color: isDark ? '#738466' : '#3d5236' }}>{score?.passive_score != null ? `${Math.round(score.passive_score)} / 100` : 'No telemetry'} <strong style={{ color: theme.subtext, fontSize: '0.76rem' }}>({((score?.passive_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
                     </div>
-                    <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.min(score?.passive_score || 0, 100)}%`, height: '100%', backgroundColor: isDark ? '#738466' : '#3d5236', borderRadius: '4px' }} />
+                    <div style={{ width: '100%', height: '10px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(score?.passive_score || 0, 100)}%`, height: '100%', backgroundColor: isDark ? '#738466' : '#3d5236', borderRadius: '5px' }} />
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.45rem' }}>
-                      <span style={{ fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(163,177,138,0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
+                    <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.55rem' }}>
+                      <span style={{ fontSize: '0.76rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', padding: '0.25rem 0.65rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(163,177,138,0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
                         Typing: {score?.typing_score != null ? `${Math.round(score.typing_score)}/100` : 'Active'}
                       </span>
-                      <span style={{ fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(163,177,138,0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
+                      <span style={{ fontSize: '0.76rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', padding: '0.25rem 0.65rem', borderRadius: '6px', backgroundColor: isDark ? 'rgba(163,177,138,0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
                         Scrolling: {score?.scrolling_score != null ? `${Math.round(score.scrolling_score)}/100` : 'Active'}
                       </span>
                     </div>
@@ -771,78 +769,78 @@ const Dashboard = () => {
 
                   {/* Voice Modality */}
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: '700', marginBottom: '0.4rem' }}>
                       <span style={{ color: theme.text }}>Acoustic Voice Biomarkers (20%)</span>
-                      <span style={{ color: isDark ? '#526e49' : '#3d5236' }}>{score?.voice_score != null ? `${Math.round(score.voice_score)} / 100` : 'No voice entry'} <strong style={{ color: theme.subtext, fontSize: '0.72rem' }}>({((score?.voice_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
+                      <span style={{ color: isDark ? '#526e49' : '#3d5236' }}>{score?.voice_score != null ? `${Math.round(score.voice_score)} / 100` : 'No voice entry'} <strong style={{ color: theme.subtext, fontSize: '0.76rem' }}>({((score?.voice_score || 0) * 0.2).toFixed(1)} pts)</strong></span>
                     </div>
-                    <div style={{ width: '100%', height: '8px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.min(score?.voice_score || 0, 100)}%`, height: '100%', backgroundColor: isDark ? '#526e49' : '#3d5236', borderRadius: '4px' }} />
+                    <div style={{ width: '100%', height: '10px', backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(score?.voice_score || 0, 100)}%`, height: '100%', backgroundColor: isDark ? '#526e49' : '#3d5236', borderRadius: '5px' }} />
                     </div>
                   </div>
                 </div>
 
                 {/* Right Column: Why? PRIMARY CONTRIBUTORS */}
-                <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: '600', color: theme.text }}>Primary delta contributors</span>
-                    <span style={{ fontSize: '0.72rem', fontWeight: '500', color: theme.subtext }}>vs personal baseline</span>
+                <div style={{ padding: '1.25rem 1.4rem', borderRadius: '14px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '0.92rem', fontWeight: '700', color: theme.text }}>Primary delta contributors</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '600', color: theme.subtext }}>vs personal baseline</span>
                   </div>
 
                   {score?.is_deviating ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       <div 
                         onClick={() => handleInspectEvidence('E1')}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(217, 119, 127, 0.12)' : '#faebec', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(217, 119, 127, 0.25)' : '#f0ccd0'}`, transition: 'all 0.15s' }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderRadius: '10px', backgroundColor: isDark ? 'rgba(217, 119, 127, 0.12)' : '#faebec', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(217, 119, 127, 0.25)' : '#f0ccd0'}`, transition: 'all 0.15s' }}
                         title="Click to inspect Evidence E1 (Active Psychometrics)"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>E1</span>
-                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>Memory retention accuracy</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                          <span style={{ fontSize: '0.84rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>E1</span>
+                          <span style={{ fontSize: '0.88rem', fontWeight: '700', color: theme.text }}>Memory retention accuracy</span>
                         </div>
-                        <span style={{ fontSize: '0.76rem', fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>↓ Deviating · View E1 →</span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>↓ Deviating · View E1 →</span>
                       </div>
 
                       <div 
                         onClick={() => handleInspectEvidence('E2')}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(217, 119, 127, 0.12)' : '#faebec', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(217, 119, 127, 0.25)' : '#f0ccd0'}`, transition: 'all 0.15s' }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderRadius: '10px', backgroundColor: isDark ? 'rgba(217, 119, 127, 0.12)' : '#faebec', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(217, 119, 127, 0.25)' : '#f0ccd0'}`, transition: 'all 0.15s' }}
                         title="Click to inspect Evidence E2 (Keystroke Telemetry)"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>E2</span>
-                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>Typing speed & cadence</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                          <span style={{ fontSize: '0.84rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>E2</span>
+                          <span style={{ fontSize: '0.88rem', fontWeight: '700', color: theme.text }}>Typing speed & cadence</span>
                         </div>
-                        <span style={{ fontSize: '0.76rem', fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>↓ Latency drift · View E2 →</span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: '800', color: isDark ? '#d9777f' : '#943840' }}>↓ Latency drift · View E2 →</span>
                       </div>
 
                       <div 
                         onClick={() => handleInspectEvidence('E3')}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(197, 176, 131, 0.12)' : '#f5f0e4', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(197, 176, 131, 0.25)' : '#e2d8c4'}`, transition: 'all 0.15s' }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderRadius: '10px', backgroundColor: isDark ? 'rgba(197, 176, 131, 0.12)' : '#f5f0e4', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(197, 176, 131, 0.25)' : '#e2d8c4'}`, transition: 'all 0.15s' }}
                         title="Click to inspect Evidence E3 (Navigation Telemetry)"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>E3</span>
-                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>Navigation pause hesitation</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                          <span style={{ fontSize: '0.84rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>E3</span>
+                          <span style={{ fontSize: '0.88rem', fontWeight: '700', color: theme.text }}>Navigation pause hesitation</span>
                         </div>
-                        <span style={{ fontSize: '0.76rem', fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>↑ Elevated pause · View E3 →</span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>↑ Elevated pause · View E3 →</span>
                       </div>
 
                       <div 
                         onClick={() => handleInspectEvidence('E4')}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', borderRadius: '8px', backgroundColor: isDark ? 'rgba(197, 176, 131, 0.12)' : '#f5f0e4', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(197, 176, 131, 0.25)' : '#e2d8c4'}`, transition: 'all 0.15s' }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderRadius: '10px', backgroundColor: isDark ? 'rgba(197, 176, 131, 0.12)' : '#f5f0e4', cursor: 'pointer', border: `1px solid ${isDark ? 'rgba(197, 176, 131, 0.25)' : '#e2d8c4'}`, transition: 'all 0.15s' }}
                         title="Click to inspect Evidence E4 (Speech Biomarkers)"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>E4</span>
-                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: theme.text }}>Speech inter-phrase pause rate</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                          <span style={{ fontSize: '0.84rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>E4</span>
+                          <span style={{ fontSize: '0.88rem', fontWeight: '700', color: theme.text }}>Speech inter-phrase pause rate</span>
                         </div>
-                        <span style={{ fontSize: '0.76rem', fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>↑ Pause duration · View E4 →</span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: '800', color: isDark ? '#c5b083' : '#705c30' }}>↑ Pause duration · View E4 →</span>
                       </div>
                     </div>
                   ) : (
-                    <div style={{ padding: '1.5rem', textAlign: 'center', color: theme.subtext }}>
-                      <span style={{ fontSize: '1.25rem', color: isDark ? '#a3b18a' : '#273822' }}>✓</span>
-                      <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', fontWeight: '700', color: theme.text }}>All indicators within normal baseline limits</p>
-                      <span style={{ fontSize: '0.75rem' }}>No statistical change-point drift detected across active or passive telemetry channels.</span>
+                    <div style={{ padding: '1.75rem', textAlign: 'center', color: theme.subtext }}>
+                      <span style={{ fontSize: '1.4rem', color: isDark ? '#a3b18a' : '#273822' }}>✓</span>
+                      <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.92rem', fontWeight: '700', color: theme.text }}>All indicators within normal baseline limits</p>
+                      <span style={{ fontSize: '0.82rem' }}>No statistical change-point drift detected across active or passive telemetry channels.</span>
                     </div>
                   )}
                 </div>
@@ -851,18 +849,21 @@ const Dashboard = () => {
           </div>
 
           {/* Longitudinal Trend Chart Card */}
-          <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+          <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: '1.75rem', padding: '1.75rem 2rem' }}>
             <div style={styles.cardHeader}>
               <div>
-                <h3 style={{ ...styles.cardTitle, color: theme.text }}>Cognitive Score Trend</h3>
-                <p style={{ color: theme.subtext, fontSize: '0.8rem', margin: '2px 0 0 0' }}>Daily screening history vs calibrated personal baseline</p>
+                <h3 style={{ ...styles.cardTitle, color: theme.text, fontSize: '1.35rem' }}>Cognitive Score Trend</h3>
+                <p style={{ color: theme.subtext, fontSize: '0.88rem', margin: '4px 0 0 0' }}>Daily screening history vs calibrated personal baseline</p>
               </div>
               <button 
                 style={{ 
                   ...styles.recalculateBtn, 
                   backgroundColor: theme.recalculateBtnBg, 
                   borderColor: theme.recalculateBtnBorder,
-                  color: theme.recalculateBtnText
+                  color: theme.recalculateBtnText,
+                  padding: '0.65rem 1.35rem',
+                  fontSize: '0.84rem',
+                  width: 'auto'
                 }} 
                 onClick={handleCalculate}
                 disabled={calculating}
@@ -872,16 +873,16 @@ const Dashboard = () => {
             </div>
 
             {history.length === 0 ? (
-              <div style={{ padding: '3.5rem 1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '12px', border: `1px dashed ${theme.border}`, marginTop: '1rem' }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={theme.subtext} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 8px auto', display: 'block' }}>
+              <div style={{ padding: '3.5rem 1.5rem', textAlign: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: '14px', border: `1px dashed ${theme.border}`, marginTop: '1rem' }}>
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={theme.subtext} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 8px auto', display: 'block' }}>
                   <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
                   <polyline points="16 7 22 7 22 13"></polyline>
                 </svg>
-                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '1rem', fontWeight: '800' }}>No historical data yet</h4>
-                <p style={{ margin: 0, color: theme.subtext, fontSize: '0.85rem' }}>Complete at least one assessment to begin tracking your cognitive trajectory.</p>
+                <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: theme.text, fontSize: '1.05rem', fontWeight: '800' }}>No historical data yet</h4>
+                <p style={{ margin: 0, color: theme.subtext, fontSize: '0.88rem' }}>Complete at least one assessment to begin tracking your cognitive trajectory.</p>
               </div>
             ) : (
-              <div style={{ width: '100%', height: 260, marginTop: '1rem' }}>
+              <div style={{ width: '100%', height: 320, marginTop: '1.25rem' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={activityData} margin={{ top: 15, right: 15, left: -25, bottom: 0 }}>
                     <defs>
@@ -891,8 +892,8 @@ const Dashboard = () => {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} vertical={false} />
-                    <XAxis dataKey="date" stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis domain={[0, 100]} stroke={theme.chartText} fontSize={11} tickLine={false} axisLine={false} />
+                    <XAxis dataKey="date" stroke={theme.chartText} fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis domain={[0, 100]} stroke={theme.chartText} fontSize={12} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
                     <Area 
                       type="natural" 
@@ -922,12 +923,12 @@ const Dashboard = () => {
           <ChatWidget user={user} />
 
           {/* 5 Primary Modules Grid */}
-          <div style={{ marginTop: '1.5rem' }}>
-            <h3 style={{ fontFamily: "'Newsreader', Georgia, serif", fontSize: '1.45rem', fontWeight: '400', color: theme.text, marginBottom: '1rem' }}>Screening & Diagnostic Modules</h3>
+          <div style={{ marginTop: '1.75rem' }}>
+            <h3 style={{ fontFamily: "'Newsreader', Georgia, serif", fontSize: '1.55rem', fontWeight: '400', color: theme.text, marginBottom: '1.25rem' }}>Screening & Diagnostic Modules</h3>
             <div style={styles.patientModulesGrid}>
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/tests')}>
                 <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(163, 177, 138, 0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
                     <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
                     <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
@@ -943,7 +944,7 @@ const Dashboard = () => {
 
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/voice')}>
                 <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(82, 110, 73, 0.14)' : '#edf3ec', color: isDark ? '#a3b18a' : '#3d5236' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                     <line x1="12" y1="19" x2="12" y2="23"></line>
@@ -959,7 +960,7 @@ const Dashboard = () => {
 
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/level2')}>
                 <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(197, 176, 131, 0.14)' : '#f5f0e4', color: isDark ? '#c5b083' : '#705c30' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"></path>
                     <path d="m8.5 8.5 7 7"></path>
                   </svg>
@@ -973,7 +974,7 @@ const Dashboard = () => {
 
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={() => navigate('/level3')}>
                 <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(212, 139, 112, 0.14)' : '#f7ede8', color: isDark ? '#d48b70' : '#8c4b32' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                   </svg>
@@ -987,7 +988,7 @@ const Dashboard = () => {
 
               <div style={{ ...styles.moduleCard, backgroundColor: theme.cardBg, borderColor: theme.border }} onClick={handleOpenReferral}>
                 <div style={{ ...styles.moduleIconBox, backgroundColor: isDark ? 'rgba(61, 82, 54, 0.14)' : '#e8efe6', color: isDark ? '#a3b18a' : '#273822' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                     <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -1007,44 +1008,44 @@ const Dashboard = () => {
           <AuditTimelineWidget />
 
           {/* Session History Table */}
-          <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: '1.5rem' }}>
+          <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: '1.75rem', padding: '1.75rem 2rem' }}>
             <div style={styles.cardHeader}>
-              <h3 style={{ ...styles.cardTitle, color: theme.text }}>Recent Screening Sessions</h3>
+              <h3 style={{ ...styles.cardTitle, color: theme.text, fontSize: '1.35rem' }}>Recent Screening Sessions</h3>
             </div>
             <div style={styles.tableWrapper}>
-              <table style={styles.patientTable}>
+              <table style={{ ...styles.patientTable, fontSize: '0.88rem' }}>
                 <thead>
                   <tr>
-                    <th style={{ ...styles.th, color: theme.tableTh }}>Session Date</th>
-                    <th style={{ ...styles.th, color: theme.tableTh }}>CogniScore</th>
-                    <th style={{ ...styles.th, color: theme.tableTh }}>Active Score</th>
-                    <th style={{ ...styles.th, color: theme.tableTh }}>Passive Keystrokes</th>
-                    <th style={{ ...styles.th, color: theme.tableTh }}>EWMA Filter</th>
-                    <th style={{ ...styles.th, color: theme.tableTh }}>Drift Flag</th>
-                    <th style={{ ...styles.th, color: theme.tableTh }}>Status</th>
+                    <th style={{ ...styles.th, color: theme.tableTh, padding: '0.9rem 0.85rem', fontSize: '0.82rem' }}>Session Date</th>
+                    <th style={{ ...styles.th, color: theme.tableTh, padding: '0.9rem 0.85rem', fontSize: '0.82rem' }}>CogniScore</th>
+                    <th style={{ ...styles.th, color: theme.tableTh, padding: '0.9rem 0.85rem', fontSize: '0.82rem' }}>Active Score</th>
+                    <th style={{ ...styles.th, color: theme.tableTh, padding: '0.9rem 0.85rem', fontSize: '0.82rem' }}>Passive Keystrokes</th>
+                    <th style={{ ...styles.th, color: theme.tableTh, padding: '0.9rem 0.85rem', fontSize: '0.82rem' }}>EWMA Filter</th>
+                    <th style={{ ...styles.th, color: theme.tableTh, padding: '0.9rem 0.85rem', fontSize: '0.82rem' }}>Drift Flag</th>
+                    <th style={{ ...styles.th, color: theme.tableTh, padding: '0.9rem 0.85rem', fontSize: '0.82rem' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {history.length > 0 ? (
                     history.slice(-7).reverse().map((s, idx) => (
                       <tr key={idx} style={{ borderBottom: `1px solid ${theme.tableTrBorder}` }}>
-                        <td style={{ ...styles.td, color: theme.text, fontWeight: '700' }}>{s.fullDate || s.date}</td>
-                        <td style={{ ...styles.td, fontWeight: '800', color: '#4338CA' }}>{s.score}</td>
-                        <td style={{ ...styles.td, color: theme.tableTd }}>{s.active} pts</td>
-                        <td style={{ ...styles.td, color: theme.tableTd }}>{s.passive} pts</td>
-                        <td style={{ ...styles.td, color: theme.tableTd }}>{s.ewma}</td>
-                        <td style={styles.td}>
+                        <td style={{ ...styles.td, color: theme.text, fontWeight: '700', padding: '1rem 0.85rem' }}>{s.fullDate || s.date}</td>
+                        <td style={{ ...styles.td, fontWeight: '800', color: '#4338CA', padding: '1rem 0.85rem' }}>{s.score}</td>
+                        <td style={{ ...styles.td, color: theme.tableTd, padding: '1rem 0.85rem' }}>{s.active} pts</td>
+                        <td style={{ ...styles.td, color: theme.tableTd, padding: '1rem 0.85rem' }}>{s.passive} pts</td>
+                        <td style={{ ...styles.td, color: theme.tableTd, padding: '1rem 0.85rem' }}>{s.ewma}</td>
+                        <td style={{ ...styles.td, padding: '1rem 0.85rem' }}>
                           {s.is_deviating ? (
                             <span style={{ color: '#dc2626', fontWeight: '700' }}>Drift Alert</span>
                           ) : (
                             <span style={{ color: '#16a34a', fontWeight: '600' }}>Stable</span>
                           )}
                         </td>
-                        <td style={styles.td}>
+                        <td style={{ ...styles.td, padding: '1rem 0.85rem' }}>
                           <span style={{
-                            padding: '0.25rem 0.75rem',
+                            padding: '0.3rem 0.85rem',
                             borderRadius: '20px',
-                            fontSize: '0.72rem',
+                            fontSize: '0.78rem',
                             fontWeight: '700',
                             color: s.risk_level === 'High' ? '#dc2626' : s.risk_level === 'Moderate' ? '#d97706' : '#16a34a',
                             backgroundColor: s.risk_level === 'High' ? (isDark ? 'rgba(220, 38, 38, 0.2)' : '#fee2e2') : s.risk_level === 'Moderate' ? (isDark ? 'rgba(217, 119, 6, 0.2)' : '#fef3c7') : (isDark ? 'rgba(22, 163, 74, 0.2)' : '#dcfce7'),
@@ -1057,7 +1058,7 @@ const Dashboard = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" style={{ ...styles.td, textAlign: 'center', color: theme.subtext, padding: '2rem' }}>
+                      <td colSpan="7" style={{ ...styles.td, textAlign: 'center', color: theme.subtext, padding: '2.5rem' }}>
                         No screening sessions recorded yet. Take your first daily test battery to begin.
                       </td>
                     </tr>
@@ -2017,90 +2018,92 @@ const styles = {
 
   // ── PATIENT DASHBOARD STYLES ──
   patientContainer: {
-    maxWidth: '1240px',
+    width: '100%',
+    maxWidth: '100%',
     margin: '0 auto',
+    boxSizing: 'border-box',
   },
   patientWelcomeCard: {
     border: '1px solid',
-    borderRadius: '20px',
-    padding: '2rem',
+    borderRadius: '22px',
+    padding: '2.25rem 2.5rem',
     boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-    marginBottom: '1.5rem',
+    marginBottom: '1.75rem',
   },
   patientEyebrow: {
     color: '#3d5236',
-    fontSize: '0.74rem',
+    fontSize: '0.8rem',
     fontFamily: "'JetBrains Mono', monospace",
     fontWeight: '800',
     letterSpacing: '0.08em',
     display: 'block',
-    marginBottom: '0.35rem',
+    marginBottom: '0.4rem',
   },
   patientTitle: {
     fontFamily: "'Newsreader', Georgia, serif",
-    fontSize: '2.1rem',
+    fontSize: '2.5rem',
     fontWeight: '400',
-    margin: '0 0 0.5rem 0',
+    margin: '0 0 0.6rem 0',
     letterSpacing: '-0.025em',
   },
   patientSub: {
-    fontSize: '0.92rem',
-    lineHeight: '1.5',
-    maxWidth: '680px',
+    fontSize: '1.02rem',
+    lineHeight: '1.6',
+    maxWidth: '850px',
     margin: 0,
   },
   startTestsBtn: {
     backgroundColor: '#0891b2',
     color: '#ffffff',
     border: 'none',
-    borderRadius: '8px',
-    padding: '0.75rem 1.4rem',
-    fontSize: '0.9rem',
+    borderRadius: '10px',
+    padding: '0.85rem 1.65rem',
+    fontSize: '0.96rem',
     fontWeight: '700',
     cursor: 'pointer',
     boxShadow: 'none',
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem',
+    gap: '0.6rem',
   },
   baselineProgressBox: {
     border: '1px solid',
-    borderRadius: '12px',
-    padding: '1rem 1.25rem',
-    marginTop: '1.25rem',
+    borderRadius: '14px',
+    padding: '1.15rem 1.5rem',
+    marginTop: '1.5rem',
   },
   patientStatsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
-    gap: '1rem',
-    marginBottom: '1.5rem',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: '1.25rem',
+    marginBottom: '1.75rem',
     alignItems: 'stretch',
   },
   patientHeroStatCard: {
     border: '1px solid',
-    borderRadius: '16px',
-    padding: '1.35rem 1.5rem',
+    borderRadius: '18px',
+    padding: '1.5rem 1.65rem',
     boxShadow: 'none',
   },
   patientSecondaryStatCard: {
     border: '1px solid',
-    borderRadius: '10px',
-    padding: '1.15rem 1.25rem',
+    borderRadius: '14px',
+    padding: '1.35rem 1.5rem',
     boxShadow: 'none',
   },
   patientStatCard: {
     border: '1px solid',
-    borderRadius: '12px',
-    padding: '1.25rem',
+    borderRadius: '14px',
+    padding: '1.35rem 1.5rem',
     boxShadow: 'none',
   },
   statCardLabel: {
-    fontSize: '0.74rem',
+    fontSize: '0.82rem',
     fontFamily: "'Inter', sans-serif",
     fontWeight: '600',
   },
   patientBigScore: {
-    fontSize: '2.5rem',
+    fontSize: '2.9rem',
     fontWeight: '900',
     lineHeight: 1,
     fontFamily: "'JetBrains Mono', monospace",
@@ -2108,52 +2111,52 @@ const styles = {
     letterSpacing: '-0.02em',
   },
   patientCardValue: {
-    fontSize: '1.2rem',
+    fontSize: '1.45rem',
     fontWeight: '800',
-    margin: '0.5rem 0 0.2rem 0',
+    margin: '0.5rem 0 0.25rem 0',
   },
   patientCardSub: {
-    fontSize: '0.78rem',
+    fontSize: '0.84rem',
     margin: 0,
-    lineHeight: 1.4,
+    lineHeight: 1.45,
   },
   patientModulesGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-    gap: '1rem',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+    gap: '1.25rem',
   },
   moduleCard: {
     border: '1px solid',
-    borderRadius: '16px',
-    padding: '1.25rem 1.5rem',
+    borderRadius: '18px',
+    padding: '1.4rem 1.65rem',
     display: 'flex',
     alignItems: 'center',
-    gap: '1rem',
+    gap: '1.15rem',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
   },
   moduleIconBox: {
-    width: '48px',
-    height: '48px',
-    borderRadius: '12px',
+    width: '52px',
+    height: '52px',
+    borderRadius: '14px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   moduleTitle: {
-    fontSize: '0.98rem',
+    fontSize: '1.08rem',
     fontWeight: '700',
-    margin: '0 0 0.25rem 0',
+    margin: '0 0 0.3rem 0',
   },
   moduleDesc: {
-    fontSize: '0.78rem',
+    fontSize: '0.86rem',
     margin: 0,
-    lineHeight: 1.4,
+    lineHeight: 1.45,
   },
   moduleArrow: {
-    fontSize: '1.2rem',
+    fontSize: '1.35rem',
     fontWeight: '700',
     color: '#273822',
     marginLeft: 'auto',

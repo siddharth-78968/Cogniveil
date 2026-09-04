@@ -5,11 +5,11 @@ const ThemeContext = createContext();
 const FONT_SCALES = ['xs', 'sm', 'md', 'lg', 'xl'];
 
 const FONT_SIZES_PX = {
-  xs: 12,
-  sm: 13.5,
-  md: 15,
-  lg: 17.5,
-  xl: 20.5
+  xs: 13,
+  sm: 14.5,
+  md: 16,
+  lg: 18,
+  xl: 21
 };
 
 const FONT_PERCENTAGES = {

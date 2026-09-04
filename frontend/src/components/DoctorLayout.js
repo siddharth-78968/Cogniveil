@@ -667,9 +667,9 @@ const styles = {
   },
   mainContent: {
     flex: 1,
-    padding: '2rem',
-    maxWidth: '1320px',
-    width: '100%'
+    padding: '1.75rem 2.25rem 3.5rem 2.25rem',
+    width: '100%',
+    boxSizing: 'border-box'
   }
 };
 
