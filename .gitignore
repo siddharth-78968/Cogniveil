@@ -5,8 +5,12 @@ __pycache__/
 backend/cogniveil.db
 backend/cogniveil.db*
 backend/cogniveil_backup.db
+backend/data/*.db
+*.db
 *.db-wal
 *.db-shm
+*.db-journal
+*.apk
 node_modules/
 catboost_info/
 

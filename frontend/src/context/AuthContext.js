@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { loginUser, registerUser, getCurrentUser, getProfile, loginWithGoogle } from '../utils/api';
+import { loginUser, registerUser, getCurrentUser, getProfile, loginWithGoogle, demoLogin } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -48,6 +48,30 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('userEmail', userData.email || email);
     setUser(userData);
     return res;
+  };
+
+  const demoAuthLogin = async (email) => {
+    const res = await demoLogin(email);
+    const accessToken = res.data.access_token;
+    localStorage.setItem('token', accessToken);
+    setToken(accessToken);
+    let userData = { email, role: 'patient', is_caregiver: false };
+    try {
+      const meRes = await getCurrentUser();
+      userData = meRes.data;
+    } catch (_) {
+      try {
+        const profRes = await getProfile();
+        userData = profRes.data;
+      } catch (err) {}
+    }
+    if (!userData.role) {
+      userData.role = userData.is_caregiver ? 'clinician' : 'patient';
+    }
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('userEmail', userData.email || email);
+    setUser(userData);
+    return { data: { user: userData, access_token: accessToken } };
   };
 
   const refreshUser = async () => {
@@ -132,7 +156,7 @@ export const AuthProvider = ({ children }) => {
   const isPatient = !isClinician;
 
   return (
-    <AuthContext.Provider value={{ user, token, login, googleLogin, register, refreshUser, updateProfile, logout, loading, isClinician, isPatient }}>
+    <AuthContext.Provider value={{ user, token, login, demoAuthLogin, googleLogin, register, refreshUser, updateProfile, logout, loading, isClinician, isPatient }}>
       {children}
     </AuthContext.Provider>
   );

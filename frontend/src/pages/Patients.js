@@ -702,36 +702,36 @@ const styles = {
     alignItems: 'flex-start'
   },
   avatar: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '6px',
+    width: '42px',
+    height: '42px',
+    borderRadius: '10px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontWeight: 600,
-    fontSize: '13px'
+    fontWeight: 700,
+    fontSize: '15px'
   },
   patientName: {
     margin: 0,
-    fontSize: '14px',
-    lineHeight: '20px',
+    fontSize: '17px',
+    lineHeight: '24px',
     fontFamily: "Inter, system-ui, sans-serif",
-    fontWeight: 600
+    fontWeight: 700
   },
   patientMeta: {
-    fontSize: '12px',
-    lineHeight: '18px',
+    fontSize: '14px',
+    lineHeight: '20px',
     fontWeight: 400,
     display: 'block',
-    marginTop: '2px',
+    marginTop: '3px',
     fontFamily: "Inter, system-ui, sans-serif"
   },
   riskBadge: {
-    fontSize: '10px',
-    fontWeight: 600,
-    letterSpacing: '0.03em',
-    padding: '3px 8px',
-    borderRadius: '5px',
+    fontSize: '12px',
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    padding: '4px 10px',
+    borderRadius: '6px',
     border: '1px solid',
     textTransform: 'uppercase',
     fontFamily: "Inter, system-ui, sans-serif"
@@ -739,30 +739,30 @@ const styles = {
   scoreRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '8px',
+    gap: '12px',
     borderTop: '1px solid rgba(128,128,128,0.15)',
     borderBottom: '1px solid rgba(128,128,128,0.15)',
-    padding: '10px 0'
+    padding: '14px 0'
   },
   scoreItem: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px'
+    gap: '3px'
   },
   scoreLabel: {
-    fontSize: '11px',
-    fontWeight: 600,
-    letterSpacing: '0.03em',
+    fontSize: '12px',
+    fontWeight: 700,
+    letterSpacing: '0.04em',
     textTransform: 'uppercase',
     fontFamily: "Inter, system-ui, sans-serif"
   },
   scoreNum: {
-    fontSize: '13px',
-    fontWeight: 600,
+    fontSize: '15.5px',
+    fontWeight: 700,
     fontFamily: "Inter, system-ui, sans-serif"
   },
   driftFlag: {
-    fontSize: '11px',
+    fontSize: '12.5px',
     fontWeight: 600,
     fontFamily: "Inter, system-ui, sans-serif"
   },
@@ -773,99 +773,99 @@ const styles = {
   },
   detailInspectorCol: {
     border: '1px solid',
-    borderRadius: '12px',
-    padding: '24px',
+    borderRadius: '16px',
+    padding: '28px',
     position: 'sticky',
     top: '80px'
   },
   inspectorContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '20px'
+    gap: '24px'
   },
   inspectorTop: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     borderBottom: '1px solid rgba(128,128,128,0.15)',
-    paddingBottom: '16px'
+    paddingBottom: '20px'
   },
   inspectorEyebrow: {
-    fontSize: '11px',
-    fontWeight: 600,
-    letterSpacing: '0.04em',
+    fontSize: '12.5px',
+    fontWeight: 700,
+    letterSpacing: '0.05em',
     textTransform: 'uppercase',
     fontFamily: "Inter, system-ui, sans-serif"
   },
   inspectorTitle: {
-    margin: '4px 0 4px 0',
-    fontSize: '24px',
-    lineHeight: '30px',
+    margin: '6px 0 6px 0',
+    fontSize: '28px',
+    lineHeight: '34px',
     letterSpacing: '-0.015em',
     fontFamily: "Inter, system-ui, sans-serif",
-    fontWeight: 600
+    fontWeight: 700
   },
   navActionBtn: {
     border: 'none',
-    borderRadius: '6px',
-    padding: '6px 12px',
-    fontSize: '12px',
+    borderRadius: '8px',
+    padding: '8px 16px',
+    fontSize: '13.5px',
     fontWeight: 600,
-    lineHeight: '18px',
+    lineHeight: '20px',
     cursor: 'pointer',
     fontFamily: "Inter, system-ui, sans-serif",
     transition: 'opacity 0.15s ease'
   },
   cogniBanner: {
     border: '1px solid',
-    borderRadius: '10px',
-    padding: '16px 20px',
+    borderRadius: '14px',
+    padding: '20px 24px',
     display: 'flex',
     alignItems: 'center',
-    gap: '24px'
+    gap: '28px'
   },
   bannerDivider: {
     width: '1px',
-    height: '48px',
+    height: '52px',
   },
   sectionHeading: {
-    margin: '0 0 8px 0',
-    fontSize: '16px',
-    lineHeight: '24px',
+    margin: '0 0 10px 0',
+    fontSize: '18px',
+    lineHeight: '26px',
     letterSpacing: '-0.01em',
     fontFamily: "Inter, system-ui, sans-serif",
-    fontWeight: 600
+    fontWeight: 700
   },
   subtestGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: '8px'
+    gap: '12px'
   },
   subtestBox: {
     border: '1px solid',
-    borderRadius: '8px',
-    padding: '10px 12px',
+    borderRadius: '10px',
+    padding: '12px 14px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px'
+    gap: '3px'
   },
   shapCard: {
     border: '1px solid',
-    borderRadius: '10px',
-    padding: '16px'
+    borderRadius: '14px',
+    padding: '20px'
   },
   loadingBox: {
-    padding: '32px',
+    padding: '36px',
     textAlign: 'center',
-    fontSize: '13px',
+    fontSize: '15px',
     fontFamily: "Inter, system-ui, sans-serif"
   },
   emptyBox: {
     border: '1px solid',
-    borderRadius: '10px',
-    padding: '32px',
+    borderRadius: '14px',
+    padding: '36px',
     textAlign: 'center',
-    fontSize: '13px',
+    fontSize: '15px',
     fontFamily: "Inter, system-ui, sans-serif"
   }
 };

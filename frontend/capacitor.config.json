@@ -1,0 +1,10 @@
+{
+  "appId": "com.cogniveil.mobile",
+  "appName": "CogniVeil",
+  "webDir": "build",
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true,
+    "androidScheme": "https"
+  }
+}

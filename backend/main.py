@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse, FileResponse
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, date
 from typing import List, Optional
@@ -141,12 +141,17 @@ else:
         "http://127.0.0.1:3001",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        "http://10.152.1.187:8000",
+        "http://10.152.1.187:3000",
+        "capacitor://localhost",
+        "https://localhost",
+        "http://localhost"
     ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:[0-9]+)?",
+    allow_origin_regex=r"(https?://(localhost|127\.0\.0\.1|10\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+)(:[0-9]+)?|capacitor://localhost)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -155,6 +160,24 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {"message": "CogniVeil API is running with 10 MCP tools and EWMA baseline deviation engine"}
+
+@app.get("/download-apk")
+@app.get("/CogniVeil.apk")
+def download_apk_endpoint():
+    """Serves the compiled CogniVeil Android APK directly for wireless mobile browser download."""
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "CogniVeil.apk"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "CogniVeil.apk"),
+        os.path.abspath("CogniVeil.apk"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return FileResponse(
+                c,
+                media_type="application/vnd.android.package-archive",
+                filename="CogniVeil.apk"
+            )
+    raise HTTPException(status_code=404, detail="CogniVeil.apk not found on server")
 
 @app.post("/api/auth/demo", response_model=schemas.Token)
 def demo_login_endpoint(email: str = "arjun@demo.com", db: Session = Depends(get_db)):

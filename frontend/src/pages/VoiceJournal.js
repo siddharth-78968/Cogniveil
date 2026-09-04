@@ -65,6 +65,9 @@ const VoiceJournal = () => {
   const [langInfo, setLangInfo] = useState(null);
   const [transcript, setTranscript] = useState('');
   const [simulateMic, setSimulateMic] = useState(false);
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
+  const [practiceDone, setPracticeDone] = useState(false);
+  const isPracticeModeRef = useRef(false);
 
   // Clinician Inspection State
   const [patients, setPatients] = useState([]);
@@ -81,7 +84,7 @@ const VoiceJournal = () => {
     }
   }, []);
 
-  const isClinician = currentUser?.is_caregiver === true;
+  const isClinician = currentUser?.role === 'clinician' || currentUser?.role === 'doctor' || Boolean(currentUser?.is_caregiver);
 
   useEffect(() => {
     if (isClinician) {
@@ -149,6 +152,7 @@ const VoiceJournal = () => {
   const startRecording = async () => {
     try {
       setQualityError(null);
+      setPracticeDone(false);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const preferredMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : undefined;
       mediaRecorder.current = new MediaRecorder(stream, preferredMime ? { mimeType: preferredMime } : undefined);
@@ -170,12 +174,15 @@ const VoiceJournal = () => {
           rmsSamples.current.push(rms);
         }, 100);
       }
-      mediaRecorder.current.ondataavailable = (e) => { audioChunks.current.push(e.data); };
       mediaRecorder.current.onstop = () => {
         const audioBlob = new Blob(audioChunks.current, { type: mediaRecorder.current.mimeType || 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
-        analyseAudio(audioBlob);
+        if (isPracticeModeRef.current) {
+          setPracticeDone(true);
+        } else {
+          analyseAudio(audioBlob);
+        }
       };
       const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (Recognition) {
@@ -637,30 +644,138 @@ const VoiceJournal = () => {
           </div>
         )}
 
-        {/* Recorder */}
+        {/* Recorder Card */}
         {!result && (
           <div style={styles.recorderCard}>
-            {!analysing ? (
+            {practiceDone ? (
+              /* Practice Mode Encouragement Card */
+              <div style={{
+                padding: '1.5rem',
+                backgroundColor: '#f4fbf6',
+                borderRadius: '16px',
+                border: '1.5px solid #bbf7d0',
+                textAlign: 'center',
+                maxWidth: '520px',
+                width: '100%'
+              }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: '#dcfce7',
+                  color: '#15803d',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem auto',
+                  fontSize: '1.8rem'
+                }}>
+                  🎉
+                </div>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#14532d', margin: '0 0 0.5rem 0' }}>
+                  Great, that's how it works!
+                </h3>
+                <p style={{ fontSize: '0.88rem', color: '#166534', lineHeight: '1.6', margin: '0 0 1.25rem 0' }}>
+                  Your microphone captured your voice clearly. This practice recording stayed completely on your device and was <strong>neither sent to the server nor saved to your medical record</strong>. Ready for the real one?
+                </p>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => {
+                      setIsPracticeMode(false);
+                      isPracticeModeRef.current = false;
+                      setPracticeDone(false);
+                      setAudioURL(null);
+                      setTimer(0);
+                    }}
+                    style={{
+                      padding: '0.75rem 1.6rem',
+                      borderRadius: '10px',
+                      backgroundColor: '#15803d',
+                      color: '#ffffff',
+                      fontWeight: '700',
+                      fontSize: '0.9rem',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 3px 12px rgba(21, 128, 61, 0.25)'
+                    }}
+                  >
+                    Start Real Recording →
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPracticeDone(false);
+                      setAudioURL(null);
+                      setTimer(0);
+                    }}
+                    style={{
+                      padding: '0.75rem 1.25rem',
+                      borderRadius: '10px',
+                      backgroundColor: '#ffffff',
+                      color: '#15803d',
+                      border: '1.5px solid #86efac',
+                      fontWeight: '700',
+                      fontSize: '0.88rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Practice Again
+                  </button>
+                </div>
+              </div>
+            ) : !analysing ? (
               <>
-                {/* Mic visualiser */}
+                {/* Mode Selector Pill: Practice vs Real */}
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '0.25rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextMode = !isPracticeMode;
+                      setIsPracticeMode(nextMode);
+                      isPracticeModeRef.current = nextMode;
+                      setPracticeDone(false);
+                      setAudioURL(null);
+                      setTimer(0);
+                    }}
+                    style={{
+                      padding: '0.45rem 1rem',
+                      borderRadius: '8px',
+                      backgroundColor: isPracticeMode ? 'rgba(21, 128, 61, 0.12)' : '#f1f5f9',
+                      color: isPracticeMode ? '#15803d' : '#475569',
+                      border: `1.5px solid ${isPracticeMode ? '#86efac' : '#cbd5e1'}`,
+                      fontSize: '0.82rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>🎯</span>
+                    <span>{isPracticeMode ? '✓ Practice Mode Active (Click to switch to Real)' : 'Try a practice recording first (no data saved)'}</span>
+                  </button>
+                </div>
+
+                {/* Mic visualiser with high-contrast active pulse */}
                 <div style={styles.micOuter}>
                   {ripple && (
                     <>
-                      <div style={{ ...styles.ripple, animationDelay: '0s' }} />
-                      <div style={{ ...styles.ripple, animationDelay: '0.5s' }} />
-                      <div style={{ ...styles.ripple, animationDelay: '1s' }} />
+                      <div style={{ ...styles.ripple, animationDelay: '0s', borderColor: '#ef4444' }} />
+                      <div style={{ ...styles.ripple, animationDelay: '0.5s', borderColor: '#ef4444' }} />
+                      <div style={{ ...styles.ripple, animationDelay: '1s', borderColor: '#ef4444' }} />
                     </>
                   )}
                   <div style={{
                     ...styles.micInner,
-                    backgroundColor: recording ? '#ef444415' : '#00d4aa15',
-                    border: `2px solid ${recording ? '#ef4444' : '#00d4aa'}`,
+                    backgroundColor: recording ? '#fee2e2' : '#f5f3ff',
+                    border: `3px solid ${recording ? '#ef4444' : '#4338CA'}`,
+                    boxShadow: recording ? '0 0 30px rgba(239,68,68,0.45)' : 'none',
                   }}>
                     <span style={styles.micEmoji}>
                       {recording ? (
-                        <div style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: '#ef4444' }} />
+                        <div style={{ width: '16px', height: '16px', borderRadius: '3px', backgroundColor: '#dc2626' }} />
                       ) : (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
                           <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                           <line x1="12" y1="19" x2="12" y2="22"></line>
@@ -670,42 +785,95 @@ const VoiceJournal = () => {
                   </div>
                 </div>
 
-                {/* Timer */}
-                {recording && (
-                  <div style={styles.timerBox}>
+                {/* Unambiguous Recording State Indicator */}
+                {recording ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '0.4rem 1rem',
+                      borderRadius: '20px',
+                      backgroundColor: '#fee2e2',
+                      color: '#dc2626',
+                      fontWeight: '800',
+                      fontSize: '0.82rem',
+                      letterSpacing: '0.04em',
+                      border: '1px solid #fca5a5'
+                    }}>
+                      <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#dc2626', display: 'inline-block' }} />
+                      <span>{isPracticeMode ? 'PRACTICE RECORDING IN PROGRESS' : 'RECORDING IN PROGRESS — Audio is active'}</span>
+                    </div>
                     <span style={styles.timerText}>{formatTime(timer)}</span>
-                    <span style={styles.timerLabel}>● RECORDING</span>
                   </div>
-                )}
-
-                {!recording && !audioURL && (
-                  <p style={styles.hintText}>Press the button below and speak continuously for 15-30 seconds</p>
+                ) : (
+                  /* Reassurance Copy (Priority 3.1) */
+                  <div style={{ textAlign: 'center', maxWidth: '480px' }}>
+                    <p style={{ fontSize: '0.96rem', color: '#1e293b', fontWeight: '700', margin: '0 0 4px 0' }}>
+                      "There's no right or wrong answer — just talk naturally."
+                    </p>
+                    <p style={{ ...styles.hintText, margin: 0 }}>
+                      Press the button below and speak continuously for 15–30 seconds.
+                    </p>
+                  </div>
                 )}
 
                 {/* Waveform bars when recording */}
                 {recording && (
                   <div style={styles.waveform}>
-                    {Array.from({ length: 12 }).map((_, i) => (
+                    {Array.from({ length: 14 }).map((_, i) => (
                       <div key={i} style={{
                         ...styles.waveBar,
-                        animationDelay: `${i * 0.08}s`,
-                        height: `${Math.random() * 24 + 8}px`,
+                        backgroundColor: '#dc2626',
+                        animationDelay: `${i * 0.07}s`,
+                        height: `${Math.random() * 26 + 10}px`,
                       }} />
                     ))}
                   </div>
                 )}
 
+                {/* Record / Stop Button */}
                 <button
                   style={{
                     ...styles.recordBtn,
-                    backgroundColor: recording ? '#ef4444' : '#00d4aa',
-                    color: recording ? 'white' : '#080c14',
-                    boxShadow: recording ? '0 0 30px rgba(239,68,68,0.3)' : '0 0 30px rgba(0,212,170,0.3)',
+                    backgroundColor: recording ? '#dc2626' : (isPracticeMode ? '#15803d' : '#273822'),
+                    color: '#ffffff',
+                    boxShadow: recording ? '0 4px 25px rgba(220, 38, 38, 0.4)' : '0 4px 18px rgba(39, 56, 34, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
                   }}
                   onClick={recording ? stopRecording : startRecording}
                 >
-                  {recording ? 'Stop Recording' : 'Start Recording'}
+                  {recording ? (
+                    <>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: '#ffffff', display: 'inline-block' }} />
+                      <span>Stop & Finalize Entry ({formatTime(timer)})</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🎙️</span>
+                      <span>{isPracticeMode ? 'Start Practice Recording' : 'Start Voice Journal'}</span>
+                    </>
+                  )}
                 </button>
+
+                {/* Privacy reassurance note (Priority 3.1) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '0.65rem 1rem',
+                  borderRadius: '10px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  maxWidth: '520px'
+                }}>
+                  <span style={{ fontSize: '1.1rem' }}>🔒</span>
+                  <span style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: '1.4' }}>
+                    <strong>Privacy Guarantee:</strong> Only you and your care team can hear this. Your family only sees trends, never the raw recording.
+                  </span>
+                </div>
 
                 {timer > 0 && timer < 10 && !recording && (
                   <p style={styles.tooShortText}>⚠️ Too short — please speak for at least 10 seconds for reliable analysis</p>
@@ -726,94 +894,169 @@ const VoiceJournal = () => {
           </div>
         )}
 
-        {/* Results Viewport */}
+        {/* Results Viewport: Role-based disclosure */}
         {result && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
-            
-            {/* Evidence Quality Header Strip */}
-            {(() => {
-              const eq = getEvidenceQualityBadge(result.evidenceQuality);
-              return (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  backgroundColor: eq.bg,
-                  border: `1.5px solid ${eq.border}`,
-                  padding: '0.75rem 1.25rem',
-                  borderRadius: '14px',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '1rem' }}>
-                      {result.evidenceQuality === 'GOOD' ? '🛡️' : result.evidenceQuality === 'MODERATE' ? '🔍' : result.evidenceQuality === 'LIMITED' ? '⚡' : '⚠️'}
-                    </span>
-                    <span style={{ color: eq.text, fontWeight: '800', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
-                      {eq.label}
+          !isClinician && !simulateMic ? (
+            /* Warm, reassuring patient-facing confirmation (Priority 3.3: no exam-like fear gauge) */
+            <div style={{
+              padding: '3rem 2rem',
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              border: '1.5px solid #d2ded0',
+              textAlign: 'center',
+              maxWidth: '580px',
+              margin: '1.5rem auto',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.04)'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                backgroundColor: '#eaf4eb',
+                color: '#273822',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1.25rem auto',
+                fontSize: '2rem'
+              }}>
+                ✓
+              </div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111A12', margin: '0 0 0.5rem 0' }}>
+                Voice Journal Recorded Successfully
+              </h2>
+              <p style={{ fontSize: '0.92rem', color: '#556557', lineHeight: '1.6', margin: '0 0 1.5rem 0' }}>
+                Thank you for completing today's voice entry. Your acoustic speech cadence, pause rates, and fluency indicators have been securely integrated into your longitudinal baseline.
+              </p>
+              <div style={{
+                padding: '0.95rem 1.25rem',
+                borderRadius: '12px',
+                backgroundColor: '#f6f9f5',
+                border: '1px solid #e2ece0',
+                marginBottom: '1.75rem',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem'
+              }}>
+                <span style={{ fontSize: '1.35rem' }}>🔒</span>
+                <span style={{ fontSize: '0.82rem', color: '#445446', lineHeight: '1.5' }}>
+                  <strong>Protected Telemetry:</strong> Raw voice audio is strictly private. Your longitudinal trajectory is visible to you and your authorized care team.
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => navigate('/dashboard')}
+                  style={{
+                    padding: '0.75rem 1.6rem',
+                    borderRadius: '10px',
+                    backgroundColor: '#273822',
+                    color: '#ffffff',
+                    fontWeight: '700',
+                    fontSize: '0.9rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(39, 56, 34, 0.2)'
+                  }}
+                >
+                  Return to Dashboard →
+                </button>
+                <button 
+                  onClick={() => { setResult(null); setAudioURL(null); setTimer(0); }}
+                  style={{
+                    padding: '0.75rem 1.35rem',
+                    borderRadius: '10px',
+                    backgroundColor: '#ffffff',
+                    color: '#273822',
+                    border: '1.5px solid #d2ded0',
+                    fontWeight: '700',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Record Another Entry
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+              {/* Evidence Quality Header Strip */}
+              {(() => {
+                const eq = getEvidenceQualityBadge(result.evidenceQuality);
+                return (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: eq.bg,
+                    border: `1.5px solid ${eq.border}`,
+                    padding: '0.75rem 1.25rem',
+                    borderRadius: '14px',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '1rem' }}>
+                        {result.evidenceQuality === 'GOOD' ? '🛡️' : result.evidenceQuality === 'MODERATE' ? '🔍' : result.evidenceQuality === 'LIMITED' ? '⚡' : '⚠️'}
+                      </span>
+                      <span style={{ color: eq.text, fontWeight: '800', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
+                        {eq.label}
+                      </span>
+                    </div>
+                    <span style={{ color: eq.text, fontSize: '0.76rem', fontWeight: '600' }}>
+                      {result.evidenceQuality === 'GOOD' ? 'Acoustic parameters & transcript fully validated for screening' :
+                       result.evidenceQuality === 'MODERATE' ? 'Acceptable signal telemetry with partial duration or confidence' :
+                       result.evidenceQuality === 'LIMITED' ? 'Limited speech energy or short duration; interpret alongside clinical baseline' :
+                       'Insufficient audio length/speech for calibrated inference'}
                     </span>
                   </div>
-                  <span style={{ color: eq.text, fontSize: '0.76rem', fontWeight: '600' }}>
-                    {result.evidenceQuality === 'GOOD' ? 'Acoustic parameters & transcript fully validated for screening' :
-                     result.evidenceQuality === 'MODERATE' ? 'Acceptable signal telemetry with partial duration or confidence' :
-                     result.evidenceQuality === 'LIMITED' ? 'Limited speech energy or short duration; interpret alongside clinical baseline' :
-                     'Insufficient audio length/speech for calibrated inference'}
-                  </span>
-                </div>
-              );
-            })()}
+                );
+              })()}
 
-            {/* Top Row: AI Model Score & Audio Recording */}
-            {(() => {
-              const riskScore = result.speechMlModel?.riskPercentage ?? Math.round(Number(result.speechMlModel?.probability ?? result.speechMlModel?.riskProbability ?? 0.25) * 100);
-              const riskCategory = result.speechMlModel?.riskCategory || (riskScore >= 60 ? 'High' : riskScore >= 35 ? 'Moderate' : 'Low');
-              const isInsufficient = result.evidenceQuality === 'INSUFFICIENT';
-              const circumference = 2 * Math.PI * 40;
-              const offset = circumference - (riskScore / 100) * circumference;
+              {/* Top Row: AI Model Score & Audio Recording */}
+              {(() => {
+                const riskScore = result.speechMlModel?.riskPercentage ?? Math.round(Number(result.speechMlModel?.probability ?? result.speechMlModel?.riskProbability ?? 0.25) * 100);
+                const riskCategory = result.speechMlModel?.riskCategory || (riskScore >= 60 ? 'High' : riskScore >= 35 ? 'Moderate' : 'Low');
+                const isInsufficient = result.evidenceQuality === 'INSUFFICIENT';
+                const circumference = 2 * Math.PI * 40;
+                const offset = circumference - (riskScore / 100) * circumference;
 
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 340px) 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
-                  {/* Output A: Validated ML Speech Risk Model Card */}
-                  <div style={{
-                    ...styles.scoreCard,
-                    boxShadow: `0 0 40px ${getRiskColor(riskCategory)}22`,
-                    border: `1px solid ${getRiskColor(riskCategory)}33`,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    padding: '1.75rem 1.25rem',
-                    backgroundColor: '#ffffff'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '0.5rem' }}>
-                      <span style={{ fontSize: '0.66rem', fontWeight: '800', letterSpacing: '0.08em', color: '#4f46e5' }}>
-                        SPEECH ML MODEL · v{result.speechMlModel?.modelVersion || '2026.1'}
-                      </span>
-                      <span style={{ fontSize: '0.66rem', fontWeight: '700', color: result.speechMlModel?.available ? '#16a34a' : '#dc2626' }}>
-                        {result.speechMlModel?.available ? '● ARTIFACT ACTIVE' : '○ UNAVAILABLE'}
-                      </span>
-                    </div>
-
-                    <div style={styles.ringWrapper}>
-                      <svg width="130" height="130" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" strokeWidth="8" />
-                        <circle
-                          cx="50" cy="50" r="40"
-                          fill="none"
-                          stroke={isInsufficient ? '#94a3b8' : getRiskColor(riskCategory)}
-                          strokeWidth="8"
-                          strokeDasharray={circumference}
-                          strokeDashoffset={offset}
-                          strokeLinecap="round"
-                          transform="rotate(-90 50 50)"
-                          style={{ transition: 'stroke-dashoffset 1s ease' }}
-                        />
-                      </svg>
-                      <div style={styles.ringCenter}>
-                        <span style={{ ...styles.scoreNum, color: isInsufficient ? '#64748b' : getRiskColor(riskCategory) }}>{riskScore}</span>
-                        <span style={styles.scoreOf}>% RISK PROB</span>
+                return (
+                  <div style={styles.resultsGrid}>
+                    {/* Output A: Validated ML Speech Risk Model Card */}
+                    <div style={styles.scoreCard}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.66rem', fontWeight: '800', letterSpacing: '0.08em', color: '#4f46e5' }}>
+                          SPEECH ML MODEL · v{result.speechMlModel?.modelVersion || '2026.1'}
+                        </span>
+                        <span style={{ fontSize: '0.66rem', fontWeight: '700', color: result.speechMlModel?.available ? '#16a34a' : '#dc2626' }}>
+                          {result.speechMlModel?.available ? '● ARTIFACT ACTIVE' : '○ UNAVAILABLE'}
+                        </span>
                       </div>
-                    </div>
 
-                    <div style={{
-                      ...styles.riskPill,
+                      <div style={styles.ringWrapper}>
+                        <svg width="130" height="130" viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" strokeWidth="8" />
+                          <circle
+                            cx="50" cy="50" r="40"
+                            fill="none"
+                            stroke={isInsufficient ? '#94a3b8' : getRiskColor(riskCategory)}
+                            strokeWidth="8"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={offset}
+                            strokeLinecap="round"
+                            transform="rotate(-90 50 50)"
+                            style={{ transition: 'strokeDashoffset 1s ease' }}
+                          />
+                        </svg>
+                        <div style={styles.ringCenter}>
+                          <span style={{ ...styles.scoreNum, color: isInsufficient ? '#64748b' : getRiskColor(riskCategory) }}>{riskScore}</span>
+                          <span style={styles.scoreOf}>% RISK PROB</span>
+                        </div>
+                      </div>
+
+                      <div style={{
+                        ...styles.riskPill,
                       backgroundColor: isInsufficient ? '#fff1f2' : getRiskColor(riskCategory) + '20',
                       border: isInsufficient ? '1px solid #fecdd3' : `1px solid ${getRiskColor(riskCategory)}44`,
                       color: isInsufficient ? '#be123c' : getRiskColor(riskCategory),
@@ -1148,6 +1391,7 @@ const VoiceJournal = () => {
             </div>
 
           </div>
+          )
         )}
       </div>
     </DoctorLayout>
@@ -1155,101 +1399,101 @@ const VoiceJournal = () => {
 };
 
 const styles = {
-  container: { maxWidth: '850px', margin: '0 auto' },
-  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' },
-  pageLabel: { color: '#4338CA', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.1em', marginBottom: '0.25rem' },
-  pageTitle: { color: '#1e293b', fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.02em', margin: '0 0 0.25rem 0' },
-  pageSub: { color: '#64748b', fontSize: '0.88rem', lineHeight: '1.4', maxWidth: '560px', margin: 0 },
+  container: { maxWidth: '1000px', margin: '0 auto' },
+  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.5rem' },
+  pageLabel: { color: '#273822', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.08em', marginBottom: '0.35rem' },
+  pageTitle: { color: 'inherit', fontSize: '2.2rem', fontWeight: '800', letterSpacing: '-0.02em', margin: '0 0 0.4rem 0' },
+  pageSub: { color: '#64748b', fontSize: '1.05rem', lineHeight: '1.6', maxWidth: '720px', margin: 0 },
   promptCard: {
-    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
-    borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem',
-    borderLeft: '4px solid #4338CA',
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+    backgroundColor: '#ffffff', border: '1px solid #dce5da',
+    borderRadius: '20px', padding: '2rem 2.25rem', marginBottom: '2rem',
+    borderLeft: '5px solid #273822',
+    boxShadow: '0 6px 24px rgba(0, 0, 0, 0.04)',
   },
-  promptBadge: { color: '#4338CA', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.1em', marginBottom: '0.5rem' },
-  promptText: { color: '#1e293b', fontSize: '1.1rem', lineHeight: '1.6', fontStyle: 'italic', fontWeight: '600', margin: 0 },
+  promptBadge: { color: '#273822', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.08em', marginBottom: '0.65rem' },
+  promptText: { color: '#141e13', fontSize: '1.35rem', lineHeight: '1.7', fontStyle: 'italic', fontWeight: '600', margin: 0 },
   recorderCard: {
-    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
-    borderRadius: '20px', padding: '3.5rem 2rem',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
-    marginBottom: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+    backgroundColor: '#ffffff', border: '1px solid #dce5da',
+    borderRadius: '24px', padding: '4rem 2.5rem',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem',
+    marginBottom: '2rem', boxShadow: '0 6px 24px rgba(0, 0, 0, 0.04)',
   },
-  micOuter: { position: 'relative', width: '130px', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  micOuter: { position: 'relative', width: '140px', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   ripple: {
-    position: 'absolute', width: '130px', height: '130px', borderRadius: '50%',
+    position: 'absolute', width: '140px', height: '140px', borderRadius: '50%',
     border: '2px solid #ef444455',
     animation: 'rippleAnim 1.5s ease-out infinite',
   },
   micInner: {
-    width: '100px', height: '100px', borderRadius: '50%',
+    width: '110px', height: '110px', borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'all 0.3s', position: 'relative', zIndex: 1,
-    backgroundColor: '#f5f3ff', border: '2px solid #4338CA',
+    backgroundColor: '#eaf4e8', border: '2px solid #273822',
   },
-  micEmoji: { fontSize: '2.5rem' },
-  timerBox: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
-  timerText: { color: '#ef4444', fontSize: '2.8rem', fontWeight: '800', fontFamily: 'monospace', lineHeight: 1 },
-  timerLabel: { color: '#ef4444', fontSize: '0.7rem', letterSpacing: '0.1em', fontWeight: '800' },
-  hintText: { color: '#64748b', fontSize: '0.88rem', fontWeight: '600' },
-  waveform: { display: 'flex', alignItems: 'center', gap: '4px', height: '40px' },
+  micEmoji: { fontSize: '2.8rem' },
+  timerBox: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
+  timerText: { color: '#ef4444', fontSize: '3.4rem', fontWeight: '800', fontFamily: 'monospace', lineHeight: 1 },
+  timerLabel: { color: '#ef4444', fontSize: '0.85rem', letterSpacing: '0.1em', fontWeight: '800' },
+  hintText: { color: '#64748b', fontSize: '1.05rem', fontWeight: '600' },
+  waveform: { display: 'flex', alignItems: 'center', gap: '6px', height: '48px' },
   waveBar: {
-    width: '4px', backgroundColor: '#4338CA', borderRadius: '2px',
+    width: '5px', backgroundColor: '#273822', borderRadius: '3px',
     animation: 'waveAnim 0.6s ease-in-out infinite',
   },
   recordBtn: {
-    border: 'none', borderRadius: '12px',
-    padding: '0.9rem 2.5rem', fontSize: '0.95rem', fontWeight: '700',
+    border: 'none', borderRadius: '14px',
+    padding: '1.1rem 3rem', fontSize: '1.08rem', fontWeight: '700',
     cursor: 'pointer', letterSpacing: '0.02em', transition: 'all 0.3s',
   },
-  tooShortText: { color: '#ef4444', fontSize: '0.82rem', fontWeight: '700' },
-  analysingBox: { padding: '1rem', width: '100%', maxWidth: '360px' },
-  analysingSpinner: { display: 'flex', flexDirection: 'column', gap: '1rem' },
+  tooShortText: { color: '#ef4444', fontSize: '0.92rem', fontWeight: '700' },
+  analysingBox: { padding: '1.5rem', width: '100%', maxWidth: '420px' },
+  analysingSpinner: { display: 'flex', flexDirection: 'column', gap: '1.25rem' },
   analysingStep: {
-    display: 'flex', alignItems: 'center', gap: '0.75rem',
-    color: '#475569', fontSize: '0.88rem', fontWeight: '600',
+    display: 'flex', alignItems: 'center', gap: '0.85rem',
+    color: '#475569', fontSize: '1rem', fontWeight: '600',
     animation: 'fadeIn 0.5s ease both',
   },
   analysingDot: {
-    width: '8px', height: '8px', borderRadius: '50%',
-    backgroundColor: '#4338CA', flexShrink: 0,
+    width: '10px', height: '10px', borderRadius: '50%',
+    backgroundColor: '#273822', flexShrink: 0,
   },
-  resultsGrid: { display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' },
+  resultsGrid: { display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' },
   scoreCard: {
-    backgroundColor: '#ffffff', borderRadius: '20px', border: '1px solid #eef2f6',
-    padding: '2rem', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', gap: '1rem', minWidth: '240px',
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+    backgroundColor: '#ffffff', borderRadius: '24px', border: '1px solid #dce5da',
+    padding: '2.5rem', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', gap: '1.25rem', minWidth: '280px',
+    boxShadow: '0 6px 24px rgba(0, 0, 0, 0.04)',
   },
-  cardLabel: { color: '#94a3b8', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.1em', alignSelf: 'flex-start' },
+  cardLabel: { color: '#64748b', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.08em', alignSelf: 'flex-start' },
   ringWrapper: { position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
   ringCenter: { position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  scoreNum: { fontSize: '2.2rem', fontWeight: '800', lineHeight: 1 },
-  scoreOf: { color: '#94a3b8', fontSize: '0.75rem', fontWeight: '600' },
-  riskPill: { padding: '0.4rem 1.2rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700' },
-  metricsCol: { flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '1rem' },
-  metricsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' },
+  scoreNum: { fontSize: '2.8rem', fontWeight: '800', lineHeight: 1 },
+  scoreOf: { color: '#64748b', fontSize: '0.88rem', fontWeight: '600' },
+  riskPill: { padding: '0.5rem 1.4rem', borderRadius: '24px', fontSize: '0.95rem', fontWeight: '700' },
+  metricsCol: { flex: 1, minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '1.25rem' },
+  metricsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' },
   metricCard: {
-    backgroundColor: '#ffffff', border: '1px solid #eef2f6',
-    borderRadius: '14px', padding: '1rem',
-    display: 'flex', alignItems: 'center', gap: '0.75rem',
+    backgroundColor: '#ffffff', border: '1px solid #dce5da',
+    borderRadius: '16px', padding: '1.35rem',
+    display: 'flex', alignItems: 'center', gap: '1rem',
     boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)',
   },
-  metricIcon: { fontSize: '1.4rem', flexShrink: 0 },
-  metricLabel: { color: '#64748b', fontSize: '0.72rem', fontWeight: '700', marginBottom: '2px' },
-  metricValue: { color: '#1e293b', fontSize: '0.95rem', fontWeight: '800' },
-  audioCard: { backgroundColor: '#ffffff', border: '1px solid #eef2f6', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)' },
-  audio: { width: '100%', borderRadius: '8px', marginTop: '0.5rem' },
-  actionRow: { display: 'flex', gap: '0.75rem' },
+  metricIcon: { fontSize: '1.6rem', flexShrink: 0 },
+  metricLabel: { color: '#64748b', fontSize: '0.85rem', fontWeight: '700', marginBottom: '4px' },
+  metricValue: { color: '#141e13', fontSize: '1.15rem', fontWeight: '800' },
+  audioCard: { backgroundColor: '#ffffff', border: '1px solid #dce5da', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)' },
+  audio: { width: '100%', borderRadius: '10px', marginTop: '0.75rem' },
+  actionRow: { display: 'flex', gap: '1rem' },
   retryBtn: {
     flex: 1, backgroundColor: '#ffffff', color: '#64748b',
-    border: '1.5px solid #e2e8f0', borderRadius: '10px',
-    padding: '0.75rem', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '700',
+    border: '1.5px solid #dce5da', borderRadius: '12px',
+    padding: '0.95rem', fontSize: '1.02rem', cursor: 'pointer', fontWeight: '700',
   },
   doneBtn: {
-    flex: 1, backgroundColor: '#4338CA', color: '#ffffff',
-    border: 'none', borderRadius: '10px',
-    padding: '0.75rem', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '700',
-    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
+    flex: 1, backgroundColor: '#273822', color: '#ffffff',
+    border: 'none', borderRadius: '12px',
+    padding: '0.95rem', fontSize: '1.02rem', cursor: 'pointer', fontWeight: '700',
+    boxShadow: '0 4px 14px rgba(39, 56, 34, 0.25)',
   },
 };
 

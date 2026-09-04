@@ -81,6 +81,16 @@ const tests = [
   },
 ];
 
+const TEST_ROTATION_SCHEDULE = {
+  0: ['trail_making', 'pattern_recall'], // Sun: Executive Function + Spatial Memory
+  1: ['reaction_time', 'digit_span'],    // Mon: Psychomotor Speed + Working Memory
+  2: ['stroop', 'pattern_recall'],       // Tue: Executive Inhibition + Spatial Memory
+  3: ['word_recall', 'trail_making'],    // Wed: Episodic Recall + Mental Sequencing
+  4: ['pattern_recall', 'digit_span'],   // Thu: Spatial Memory + Working Memory
+  5: ['reaction_time', 'stroop'],        // Fri: Psychomotor Speed + Inhibition
+  6: ['word_recall', 'reaction_time']    // Sat: Episodic Memory + Motor Latency
+};
+
 const renderTestIcon = (iconType) => {
   switch (iconType) {
     case 'trail':
@@ -1524,6 +1534,8 @@ const Tests = () => {
   const { theme, isDark } = useTheme();
   const [activeTest, setActiveTest] = useState(null);
   const [simulateMode, setSimulateMode] = useState(false);
+  const [batteryMode, setBatteryMode] = useState('daily'); // 'daily' (2 rotating tests) or 'weekly' (all 6 tests)
+  const [isGuidedMode, setIsGuidedMode] = useState(false);
 
   // Clinician Inspection State
   const [patients, setPatients] = useState([]);
@@ -1540,7 +1552,7 @@ const Tests = () => {
     }
   }, []);
 
-  const isClinician = currentUser?.is_caregiver === true;
+  const isClinician = currentUser?.role === 'clinician' || currentUser?.role === 'doctor' || Boolean(currentUser?.is_caregiver);
 
   const userEmail = localStorage.getItem('userEmail') || 'default';
   const today = new Date().toDateString();
@@ -1555,6 +1567,14 @@ const Tests = () => {
   });
   const [allDone, setAllDone] = useState(false);
   const [alreadyDone, setAlreadyDone] = useState(false);
+
+  // Determine current active tests based on rotation schedule or full battery
+  const dayOfWeek = new Date().getDay();
+  const dailyTestIds = TEST_ROTATION_SCHEDULE[dayOfWeek] || ['reaction_time', 'digit_span'];
+  const currentTests = batteryMode === 'daily'
+    ? tests.filter(t => dailyTestIds.includes(t.id))
+    : tests;
+  const completedInScope = currentTests.filter(t => completed.includes(t.id)).length;
 
   // Fetch patient list and cognitive results when in clinician mode
   React.useEffect(() => {
@@ -1606,14 +1626,23 @@ const Tests = () => {
   const handleComplete = async (testId, score, duration, metadata = null) => {
     try { await saveTestResult({ test_type: testId, score, duration_seconds: duration, metadata }); }
     catch (err) { console.log('Could not save'); }
-    const newCompleted = [...completed, testId];
+    const newCompleted = Array.from(new Set([...completed, testId]));
     setCompleted(newCompleted);
     localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
-    if (newCompleted.length === tests.length) {
+
+    const scopeComplete = currentTests.every(t => newCompleted.includes(t.id));
+    if (scopeComplete) {
       try { await calculateScore(); } catch (err) { }
       const uEmail = localStorage.getItem('userEmail') || 'default';
       localStorage.setItem(`lastTestDate_${uEmail}`, new Date().toDateString());
       setTimeout(() => setAllDone(true), 300);
+    } else if (isGuidedMode) {
+      const next = currentTests.find(t => !newCompleted.includes(t.id));
+      if (next) {
+        setTimeout(() => setActiveTest(next.id), 300);
+      } else {
+        setTimeout(() => setActiveTest(null), 200);
+      }
     } else {
       setTimeout(() => setActiveTest(null), 200);
     }
@@ -1796,28 +1825,28 @@ const Tests = () => {
         style={{ 
           backgroundColor: theme.cardBg, 
           borderColor: theme.border, 
-          maxWidth: '560px', 
-          margin: '3rem auto',
+          maxWidth: '640px', 
+          margin: '3.5rem auto',
           textAlign: 'center',
           alignItems: 'center',
-          padding: '2.5rem'
+          padding: '3.25rem 2.75rem'
         }}
       >
-        <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', color: '#4ade80', marginBottom: '0.75rem' }}>
+        <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', color: '#4ade80', marginBottom: '1rem' }}>
           ✓
         </div>
-        <h2 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: '24px', fontWeight: 600, color: theme.text, margin: '0 0 0.5rem 0', letterSpacing: '-0.015em' }}>
+        <h2 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: '28px', fontWeight: 700, color: theme.text, margin: '0 0 0.65rem 0', letterSpacing: '-0.015em' }}>
           Today's Battery Completed
         </h2>
-        <p style={{ color: theme.subtext, fontSize: '0.88rem', lineHeight: '1.5', margin: '0 0 1rem 0' }}>
+        <p style={{ color: theme.subtext, fontSize: '1.05rem', lineHeight: '1.6', margin: '0 0 1.25rem 0' }}>
           You have already recorded your standardized psychometric metrics for today. Come back tomorrow for longitudinal tracking.
         </p>
-        <p style={{ color: theme.subtext, fontSize: '0.78rem', marginBottom: '1.5rem', fontFamily: 'Inter, system-ui, sans-serif', fontWeight: '500' }}>
+        <p style={{ color: theme.subtext, fontSize: '0.92rem', marginBottom: '1.75rem', fontFamily: 'Inter, system-ui, sans-serif', fontWeight: '600' }}>
           Next session available: Tomorrow ({new Date(Date.now() + 86400000).toLocaleDateString()})
         </p>
         <button 
           className="cv-start-test-btn" 
-          style={{ backgroundColor: '#273822', color: '#ffffff', padding: '0.75rem 1.8rem' }}
+          style={{ backgroundColor: '#273822', color: '#ffffff', padding: '0.95rem 2.2rem', fontSize: '1.02rem' }}
           onClick={() => navigate('/dashboard')}
         >
           View Clinical Dashboard →
@@ -1833,33 +1862,33 @@ const Tests = () => {
         style={{ 
           backgroundColor: theme.cardBg, 
           borderColor: theme.border, 
-          maxWidth: '560px', 
-          margin: '3rem auto',
+          maxWidth: '640px', 
+          margin: '3.5rem auto',
           textAlign: 'center',
           alignItems: 'center',
-          padding: '2.5rem'
+          padding: '3.25rem 2.75rem'
         }}
       >
-        <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#4ade80', marginBottom: '0.75rem' }}>
+        <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.4rem', color: '#4ade80', marginBottom: '1rem' }}>
           🎉
         </div>
-        <h2 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: '24px', fontWeight: 600, color: theme.text, margin: '0 0 0.5rem 0', letterSpacing: '-0.015em' }}>
+        <h2 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: '28px', fontWeight: 700, color: theme.text, margin: '0 0 0.65rem 0', letterSpacing: '-0.015em' }}>
           Daily Battery Complete!
         </h2>
-        <p style={{ color: theme.subtext, fontSize: '0.88rem', lineHeight: '1.5', margin: '0 0 1.25rem 0' }}>
+        <p style={{ color: theme.subtext, fontSize: '1.05rem', lineHeight: '1.6', margin: '0 0 1.5rem 0' }}>
           Your longitudinal CogniScore and domain-specific psychometric indices have been updated in your profile.
         </p>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
           <button 
             className="cv-start-test-btn" 
-            style={{ backgroundColor: '#273822', color: '#ffffff', padding: '0.75rem 1.5rem' }}
+            style={{ backgroundColor: '#273822', color: '#ffffff', padding: '0.95rem 1.85rem', fontSize: '1.02rem' }}
             onClick={() => navigate('/dashboard')}
           >
             View Dashboard →
           </button>
           <button 
             className="cv-back-link" 
-            style={{ color: theme.text, borderColor: theme.border, backgroundColor: theme.cardBg, padding: '0.75rem 1.5rem' }}
+            style={{ color: theme.text, borderColor: theme.border, backgroundColor: theme.cardBg, padding: '0.95rem 1.85rem', fontSize: '1.02rem', borderRadius: '12px' }}
             onClick={() => navigate('/voice')}
           >
             Take Voice Journal →
@@ -1895,6 +1924,75 @@ const Tests = () => {
             </div>
           )}
 
+          {/* Mode Selector: 2-Test Daily Check-in vs 6-Test Full Weekly Battery */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', gap: '0.45rem', backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#edf3ec', padding: '4px', borderRadius: '10px', border: `1px solid ${theme.borderSubtle}` }}>
+              <button 
+                type="button"
+                onClick={() => { setBatteryMode('daily'); setIsGuidedMode(false); }}
+                style={{
+                  padding: '0.5rem 1.1rem',
+                  borderRadius: '8px',
+                  fontSize: '0.84rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: batteryMode === 'daily' ? (isDark ? '#273822' : '#ffffff') : 'transparent',
+                  color: batteryMode === 'daily' ? (isDark ? '#f1f5ee' : '#273822') : theme.subtext,
+                  boxShadow: batteryMode === 'daily' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                ⚡ Today's Check-in (2 Tests · ~2–3 min)
+              </button>
+              <button 
+                type="button"
+                onClick={() => { setBatteryMode('weekly'); setIsGuidedMode(false); }}
+                style={{
+                  padding: '0.5rem 1.1rem',
+                  borderRadius: '8px',
+                  fontSize: '0.84rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: batteryMode === 'weekly' ? (isDark ? '#273822' : '#ffffff') : 'transparent',
+                  color: batteryMode === 'weekly' ? (isDark ? '#f1f5ee' : '#273822') : theme.subtext,
+                  boxShadow: batteryMode === 'weekly' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                📋 Full Weekly Battery (6 Tests · ~7 min)
+              </button>
+            </div>
+
+            {/* Guided Flow Action Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsGuidedMode(true);
+                const firstIncomplete = currentTests.find(t => !completed.includes(t.id)) || currentTests[0];
+                setActiveTest(firstIncomplete.id);
+              }}
+              style={{
+                padding: '0.55rem 1.25rem',
+                borderRadius: '10px',
+                backgroundColor: '#273822',
+                color: '#ffffff',
+                fontWeight: '700',
+                fontSize: '0.86rem',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 3px 10px rgba(39, 56, 34, 0.25)'
+              }}
+            >
+              <span>▶ Start Guided Check-in</span>
+              <span style={{ fontSize: '0.76rem', opacity: 0.85 }}>({currentTests.length} tests · auto-advance)</span>
+            </button>
+          </div>
+
           {/* Hero Intelligence Card */}
           <div 
             className="cv-tests-hero" 
@@ -1910,10 +2008,12 @@ const Tests = () => {
                   <span>STANDARDIZED CLINICAL PSYCHOMETRICS · TIER-1 PROTOCOL</span>
                 </div>
                 <h1 className="cv-tests-title" style={{ color: theme.text }}>
-                  Daily Cognitive Battery
+                  {batteryMode === 'daily' ? "Today's Focused Cognitive Check-in" : "Full Weekly Cognitive Battery"}
                 </h1>
                 <p className="cv-tests-subtitle" style={{ color: theme.subtext }}>
-                  Calibrated daily evaluations measuring short-term spatial memory, working memory span, episodic verbal recall, executive inhibition, and motor reflex latencies.
+                  {batteryMode === 'daily' 
+                    ? "2 rotating clinical micro-tests (~2–3 minutes total) selected for today's longitudinal psychomotor and memory tracking."
+                    : "Complete standardized 6-test clinical battery for comprehensive longitudinal baseline mapping."}
                 </p>
               </div>
 
@@ -1925,11 +2025,11 @@ const Tests = () => {
                   borderColor: theme.borderSubtle 
                 }}
               >
-                <span className="cv-tests-counter-num" style={{ color: completed.length === tests.length ? '#4ade80' : isDark ? '#a3b18a' : '#273822' }}>
-                  {completed.length} <span style={{ fontSize: '1rem', color: theme.subtext, fontWeight: '600' }}>/ {tests.length}</span>
+                <span className="cv-tests-counter-num" style={{ color: completedInScope === currentTests.length ? '#4ade80' : isDark ? '#a3b18a' : '#273822' }}>
+                  {completedInScope} <span style={{ fontSize: '1rem', color: theme.subtext, fontWeight: '600' }}>/ {currentTests.length}</span>
                 </span>
                 <span className="cv-tests-counter-label" style={{ color: theme.subtext }}>
-                  {completed.length === tests.length ? 'Battery Completed' : 'Tests Finalized'}
+                  {completedInScope === currentTests.length ? 'Session Completed' : 'Tests Finalized'}
                 </span>
               </div>
             </div>
@@ -1941,7 +2041,7 @@ const Tests = () => {
             >
               <div 
                 className="cv-tests-progress-fill" 
-                style={{ width: `${(completed.length / tests.length) * 100}%` }} 
+                style={{ width: `${(completedInScope / currentTests.length) * 100}%` }} 
               />
             </div>
 
@@ -1949,11 +2049,11 @@ const Tests = () => {
             <div className="cv-tests-telemetry-row">
               <div className="cv-tests-chip" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eef4ed', color: theme.subtext }}>
                 <span>⏱️</span>
-                <span>Est. Session Time: ~7 min</span>
+                <span>Est. Time: {batteryMode === 'daily' ? '~2–3 min' : '~7 min'}</span>
               </div>
               <div className="cv-tests-chip" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eef4ed', color: theme.subtext }}>
                 <span>🔬</span>
-                <span>Longitudinal Baseline Calibration</span>
+                <span>{batteryMode === 'daily' ? 'Daily Rotating Subset' : 'Longitudinal Baseline'}</span>
               </div>
               <div className="cv-tests-chip" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eef4ed', color: theme.subtext }}>
                 <span>🔒</span>
@@ -1967,7 +2067,7 @@ const Tests = () => {
 
           {/* Test Cards List */}
           <div className="cv-tests-list">
-            {tests.map((test) => {
+            {currentTests.map((test) => {
               const isDone = completed.includes(test.id);
               return (
                 <div
@@ -2025,9 +2125,12 @@ const Tests = () => {
                       {test.description}
                     </p>
 
-                    <p className="cv-test-target" style={{ color: isDark ? 'rgba(163, 177, 138, 0.7)' : '#526e49' }}>
-                      {test.target}
-                    </p>
+                    {/* Only show clinical rationale to clinicians, not patients */}
+                    {isClinician && (
+                      <p className="cv-test-target" style={{ color: isDark ? 'rgba(163, 177, 138, 0.7)' : '#526e49' }}>
+                        {test.target}
+                      </p>
+                    )}
                   </div>
 
                   {/* Action / Status */}
@@ -2077,9 +2180,12 @@ const Tests = () => {
                 borderColor: theme.border,
                 backgroundColor: theme.cardBg 
               }}
-              onClick={() => setActiveTest(null)}
+              onClick={() => {
+                setIsGuidedMode(false);
+                setActiveTest(null);
+              }}
             >
-              ← Back to Battery Overview
+              {isGuidedMode ? '← Exit Guided Flow' : '← Back to Battery Overview'}
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div 
@@ -2097,8 +2203,10 @@ const Tests = () => {
                 {renderTestIcon(tests.find(t => t.id === activeTest)?.iconType)}
               </div>
               <div>
-                <span style={{ fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0.06em', color: theme.subtext, textTransform: 'uppercase', display: 'block' }}>
-                  ACTIVE EVALUATION
+                <span style={{ fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0.06em', color: isDark ? '#a3b18a' : '#273822', textTransform: 'uppercase', display: 'block' }}>
+                  {isGuidedMode 
+                    ? `GUIDED TEST ${(currentTests.findIndex(t => t.id === activeTest) + 1)} OF ${currentTests.length}`
+                    : 'ACTIVE EVALUATION'}
                 </span>
                 <span style={{ fontSize: '0.92rem', fontWeight: '800', color: theme.text }}>
                   {tests.find(t => t.id === activeTest)?.name}

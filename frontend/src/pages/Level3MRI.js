@@ -28,7 +28,7 @@ const Level3MRI = () => {
     }
   }, []);
 
-  const isClinician = currentUser?.is_caregiver === true;
+  const isClinician = currentUser?.role === 'clinician' || currentUser?.role === 'doctor' || Boolean(currentUser?.is_caregiver);
 
   useEffect(() => {
     if (isClinician) {

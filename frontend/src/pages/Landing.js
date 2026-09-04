@@ -2107,9 +2107,18 @@ const Landing = () => {
               <Link to="/consent">Informed Consent</Link>
             </div>
           </div>
-
         </div>
       </footer>
+
+      {/* Mobile-Only Sticky Floating Quick Action Bar */}
+      <div className="cv-mobile-sticky-bar">
+        <button 
+          className="cv-mobile-sticky-btn" 
+          onClick={() => navigate('/login')}
+        >
+          <span>🚀 Sign In / Open Workstation</span>
+        </button>
+      </div>
 
     </div>
   );
