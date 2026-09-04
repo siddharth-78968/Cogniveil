@@ -551,20 +551,35 @@ const Level2Assessment = () => {
 
             {/* Progress */}
             <div style={styles.progressRow}>
-              {[1, 2, 3].map(s => (
-                <div key={s} style={styles.progressStep}>
-                  <div style={{
-                    ...styles.progressDot,
-                    backgroundColor: step >= s ? '#a78bfa' : '#ffffff10',
-                    border: step === s ? '2px solid #a78bfa' : '2px solid transparent',
-                  }}>
-                    {step > s ? '✓' : s}
+              {[1, 2, 3].map(s => {
+                const isActive = step === s;
+                const isCompleted = step > s;
+                const isUpcoming = step < s;
+                return (
+                  <div key={s} style={styles.progressStep}>
+                    <div style={{
+                      ...styles.progressDot,
+                      backgroundColor: isCompleted ? '#7c3aed' : isActive ? '#8b5cf6' : '#f1f5f9',
+                      color: isUpcoming ? '#64748b' : '#ffffff',
+                      border: isCompleted 
+                        ? '2px solid #7c3aed' 
+                        : isActive 
+                          ? '2px solid #8b5cf6' 
+                          : '2px solid #cbd5e1',
+                      boxShadow: isActive ? '0 0 0 4px rgba(139, 92, 246, 0.15)' : 'none',
+                    }}>
+                      {isCompleted ? '✓' : s}
+                    </div>
+                    <span style={{ 
+                      ...styles.progressLabel, 
+                      color: isActive ? '#7c3aed' : isCompleted ? '#475569' : '#64748b',
+                      fontWeight: isActive ? '700' : '600'
+                    }}>
+                      {s === 1 ? 'Personal' : s === 2 ? 'Medical' : 'Lifestyle'}
+                    </span>
                   </div>
-                  <span style={{ ...styles.progressLabel, color: step >= s ? '#a78bfa' : '#ffffff25' }}>
-                    {s === 1 ? 'Personal' : s === 2 ? 'Medical' : 'Lifestyle'}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
               <div style={styles.progressLine} />
             </div>
 
@@ -1077,9 +1092,10 @@ const styles = {
   progressDot: {
     width: '36px', height: '36px', borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '0.85rem', fontWeight: '700', color: 'white',
+    fontSize: '0.85rem', fontWeight: '700',
+    transition: 'all 0.2s ease',
   },
-  progressLabel: { fontSize: '0.75rem', fontWeight: '600', color: '#64748b' },
+  progressLabel: { fontSize: '0.78rem', fontWeight: '600', transition: 'color 0.2s ease' },
   progressLine: {
     position: 'absolute', top: '18px', left: '36px', right: '36px',
     height: '2px', backgroundColor: '#e2e8f0', zIndex: 0,
