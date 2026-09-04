@@ -222,10 +222,10 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div style={{ ...styles.loadingScreen, backgroundColor: theme.bg, color: theme.text }}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4338CA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', animation: 'spin 2s linear infinite' }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a3b18a' : '#273822'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', animation: 'spin 2s linear infinite' }}>
           <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
         </svg>
-        <p style={{ color: '#4338CA', fontWeight: '700' }}>Loading CogniVeil Dashboard...</p>
+        <p style={{ color: isDark ? '#a3b18a' : '#273822', fontWeight: '700', fontFamily: "'Mulish', 'Inter', sans-serif" }}>Loading CogniVeil Dashboard...</p>
       </div>
     );
   }

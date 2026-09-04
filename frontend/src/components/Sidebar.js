@@ -212,7 +212,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
             width: '4px',
             height: '4px',
             borderRadius: '50%',
-            backgroundColor: '#53B7C5'
+            backgroundColor: isDark ? '#a3b18a' : '#273822'
           }} />
         )}
       </div>
@@ -232,18 +232,18 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
   };
 
   return (
-    <aside style={{ ...styles.sidebar, backgroundColor: isDark ? '#081119' : '#0F4C4A' }}>
+    <aside style={{ ...styles.sidebar, backgroundColor: isDark ? '#0b100c' : '#eaf1e8', borderRight: isDark ? '1px solid #202e21' : '1px solid #d2ded0' }}>
       {/* Brand Header */}
-      <div style={styles.brandBox} onClick={() => navigate('/dashboard')}>
-        <div style={styles.brandIconWrapper}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#53B7C5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <div style={{ ...styles.brandBox, borderBottom: isDark ? '1px solid #202e21' : '1px solid #d2ded0' }} onClick={() => navigate('/dashboard')}>
+        <div style={{ ...styles.brandIconWrapper, backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#dce8da' }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a3b18a' : '#273822'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"></path>
             <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"></path>
           </svg>
         </div>
         <div style={styles.brandTextGroup}>
-          <span style={styles.brandTitle}>COGNIVEIL</span>
-          <span style={styles.brandSub}>Clinical Intelligence</span>
+          <span style={{ ...styles.brandTitle, color: isDark ? '#f1f5ee' : '#0d170e' }}>COGNIVEIL</span>
+          <span style={{ ...styles.brandSub, color: isDark ? '#a3b89d' : '#3d5438' }}>Clinical Intelligence</span>
         </div>
       </div>
 
@@ -251,7 +251,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
       <div style={styles.navScrollArea}>
         {navGroups.map((group, gIdx) => (
           <div key={gIdx} style={styles.groupContainer}>
-            <div style={styles.groupHeader}>{group.group}</div>
+            <div style={{ ...styles.groupHeader, color: isDark ? '#768d71' : '#5c7557' }}>{group.group}</div>
             <nav style={styles.navLinks}>
               {group.items.map((item, iIdx) => {
                 const active = item.path ? isActive(item.path) : false;
@@ -261,15 +261,15 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                     onClick={() => handleItemClick(item)}
                     style={{
                       ...styles.navItem,
-                      backgroundColor: active ? 'rgba(83, 183, 197, 0.15)' : 'transparent',
-                      color: active ? '#53B7C5' : '#E0FCFF',
-                      borderLeft: active ? '3px solid #53B7C5' : '3px solid transparent',
+                      backgroundColor: active ? (isDark ? 'rgba(163, 177, 138, 0.16)' : '#dce8da') : 'transparent',
+                      color: active ? (isDark ? '#f1f5ee' : '#273822') : (isDark ? '#a3b89d' : '#3d5438'),
+                      borderLeft: active ? `3px solid ${isDark ? '#a3b18a' : '#273822'}` : '3px solid transparent',
                     }}
                   >
-                    <span style={{ ...styles.iconSpan, color: active ? '#53B7C5' : '#A7C4C2' }}>
+                    <span style={{ ...styles.iconSpan, color: active ? (isDark ? '#a3b18a' : '#273822') : (isDark ? '#768d71' : '#5c7557') }}>
                       {renderIcon(item.icon, item.isAi)}
                     </span>
-                    <span style={{ fontSize: '0.82rem', fontWeight: active ? '700' : '500' }}>{item.label}</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: active ? '700' : '500', fontFamily: "'Mulish', 'Inter', sans-serif" }}>{item.label}</span>
                   </button>
                 );
               })}
@@ -279,7 +279,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
       </div>
 
       {/* User Profile & Sign Out */}
-      <div style={styles.userSection}>
+      <div style={{ ...styles.userSection, borderTop: isDark ? '1px solid #202e21' : '1px solid #d2ded0' }}>
         <div style={styles.userCard}>
           <div
             onClick={() => setIsProfileModalOpen(true)}
@@ -296,7 +296,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
             }}
             title="Click to edit name, email, or account details with verification"
           >
-            <div style={{ ...styles.userAvatar, position: 'relative' }}>
+            <div style={{ ...styles.userAvatar, backgroundColor: isDark ? '#3d5236' : '#273822', position: 'relative' }}>
               {(user?.name || user?.email || 'U')[0].toUpperCase()}
               <span style={{
                 position: 'absolute',
@@ -305,7 +305,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                 width: '13px',
                 height: '13px',
                 borderRadius: '50%',
-                backgroundColor: '#273822',
+                backgroundColor: isDark ? '#3d5236' : '#273822',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -319,8 +319,8 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
               </span>
             </div>
             <div style={styles.userInfo}>
-              <span style={styles.userName}>{user?.name || user?.email?.split('@')[0]}</span>
-              <span style={{ ...styles.userRole, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ ...styles.userName, color: isDark ? '#f1f5ee' : '#0d170e' }}>{user?.name || user?.email?.split('@')[0]}</span>
+              <span style={{ ...styles.userRole, color: isDark ? '#a3b89d' : '#475e43', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span>{isClinician ? 'Clinician / Neurologist' : 'Monitored Patient'}</span>
                 <span style={{ opacity: 0.6 }}>· Edit</span>
               </span>
@@ -328,7 +328,7 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
           </div>
           <button 
             onClick={handleLogout} 
-            style={styles.logoutBtn} 
+            style={{ ...styles.logoutBtn, color: isDark ? '#a3b89d' : '#475e43' }} 
             title="Sign Out"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -356,8 +356,8 @@ const styles = {
     flexDirection: 'column',
     position: 'sticky',
     top: 0,
-    borderRight: '1px solid rgba(255, 255, 255, 0.08)',
     zIndex: 50,
+    fontFamily: "'Mulish', 'Inter', -apple-system, sans-serif",
   },
   brandBox: {
     display: 'flex',
@@ -365,13 +365,11 @@ const styles = {
     gap: '0.75rem',
     padding: '1.25rem 1.25rem 1rem 1.25rem',
     cursor: 'pointer',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
   },
   brandIconWrapper: {
     width: '38px',
     height: '38px',
     borderRadius: '10px',
-    backgroundColor: 'rgba(83, 183, 197, 0.15)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -381,16 +379,16 @@ const styles = {
     flexDirection: 'column',
   },
   brandTitle: {
-    fontSize: '1rem',
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: '0.08em',
+    fontSize: '1.05rem',
+    fontFamily: "'Newsreader', Georgia, serif",
+    fontWeight: '700',
+    letterSpacing: '0.04em',
   },
   brandSub: {
     fontSize: '0.68rem',
-    color: '#53B7C5',
-    fontWeight: '600',
-    letterSpacing: '0.02em',
+    fontFamily: "'Mulish', 'Inter', sans-serif",
+    fontWeight: '700',
+    letterSpacing: '0.04em',
   },
   navScrollArea: {
     flex: 1,
@@ -403,7 +401,7 @@ const styles = {
   groupHeader: {
     fontSize: '0.65rem',
     fontWeight: '800',
-    color: '#829AB1',
+    fontFamily: "'Mulish', 'Inter', sans-serif",
     letterSpacing: '0.08em',
     padding: '0 1.25rem',
     marginBottom: '0.35rem',
@@ -432,7 +430,6 @@ const styles = {
   },
   userSection: {
     padding: '0.85rem 1.25rem',
-    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
   },
   userCard: {
     display: 'flex',
@@ -443,8 +440,6 @@ const styles = {
     width: '32px',
     height: '32px',
     borderRadius: '50%',
-    backgroundColor: '#53B7C5',
-    color: '#102A43',
     fontWeight: '800',
     fontSize: '0.82rem',
     display: 'flex',
@@ -460,19 +455,18 @@ const styles = {
   userName: {
     fontSize: '0.78rem',
     fontWeight: '700',
-    color: '#FFFFFF',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+    fontFamily: "'Mulish', 'Inter', sans-serif",
   },
   userRole: {
     fontSize: '0.68rem',
-    color: '#829AB1',
+    fontFamily: "'Mulish', 'Inter', sans-serif",
   },
   logoutBtn: {
     background: 'none',
     border: 'none',
-    color: '#829AB1',
     cursor: 'pointer',
     padding: '4px',
     display: 'flex',

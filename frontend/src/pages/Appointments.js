@@ -377,7 +377,7 @@ const Appointments = () => {
 
           <div style={{ ...styles.statCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
             <span style={{ ...styles.statLabel, color: theme.subtext }}>COMPLETED / ARCHIVED</span>
-            <div style={{ ...styles.statValue, color: '#53B7C5' }}>{completedCount}</div>
+            <div style={{ ...styles.statValue, color: isDark ? '#a3b18a' : '#273822' }}>{completedCount}</div>
             <span style={{ ...styles.statSub, color: theme.subtext }}>Evaluations finalized</span>
           </div>
         </div>
@@ -397,8 +397,10 @@ const Appointments = () => {
                 onClick={() => setFilter(t.key)}
                 style={{
                   ...styles.filterTab,
-                  color: filter === t.key ? (isDark ? '#53B7C5' : '#0F4C4A') : theme.subtext,
-                  borderBottom: filter === t.key ? `2px solid ${isDark ? '#53B7C5' : '#0F4C4A'}` : '2px solid transparent'
+                  color: filter === t.key ? (isDark ? '#f1f5ee' : '#273822') : theme.subtext,
+                  borderBottom: filter === t.key ? `2px solid ${isDark ? '#a3b18a' : '#273822'}` : '2px solid transparent',
+                  fontWeight: filter === t.key ? '700' : '500',
+                  fontFamily: "'Mulish', 'Inter', sans-serif"
                 }}
               >
                 {t.label}
@@ -435,7 +437,7 @@ const Appointments = () => {
                 : isDue
                 ? 'rgba(217, 119, 69, 0.15)'
                 : isFinished
-                ? 'rgba(83, 183, 197, 0.15)'
+                ? (isDark ? 'rgba(163, 177, 138, 0.16)' : '#eaf1e8')
                 : 'rgba(201, 76, 76, 0.15)';
 
               const badgeColor = isAccepted
@@ -443,7 +445,7 @@ const Appointments = () => {
                 : isDue
                 ? '#D97745'
                 : isFinished
-                ? '#53B7C5'
+                ? (isDark ? '#a3b18a' : '#273822')
                 : '#C94C4C';
 
               return (
@@ -457,7 +459,7 @@ const Appointments = () => {
                 >
                   <div style={styles.apptCardTop}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ ...styles.patientAvatar, backgroundColor: isDark ? '#162B3D' : '#E8F5EE', color: '#0F4C4A' }}>
+                      <div style={{ ...styles.patientAvatar, backgroundColor: isDark ? '#162018' : '#eaf1e8', color: isDark ? '#a3b18a' : '#273822' }}>
                         {isClinician 
                           ? (appt.patient_name ? appt.patient_name.charAt(0).toUpperCase() : 'P')
                           : (appt.clinician_name ? appt.clinician_name.charAt(0).toUpperCase() : 'Dr')}
@@ -546,7 +548,7 @@ const Appointments = () => {
                     )}
                     <button
                       onClick={() => setSelectedAppt(appt)}
-                      style={{ ...styles.actionBtnSecondary, borderColor: theme.border, color: isDark ? '#53B7C5' : '#0F4C4A', marginLeft: 'auto', fontWeight: '700' }}
+                      style={{ ...styles.actionBtnSecondary, borderColor: theme.border, color: isDark ? '#a3b18a' : '#273822', marginLeft: 'auto', fontWeight: '700', fontFamily: "'Mulish', 'Inter', sans-serif" }}
                       title="Inspect full appointment details"
                     >
                       View Details →
@@ -573,18 +575,19 @@ const Appointments = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: `1px solid ${theme.border}`, paddingBottom: '0.75rem' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <h3 style={{ margin: 0, color: theme.text, fontSize: '1.2rem', fontWeight: '800' }}>
+                    <h3 style={{ margin: 0, color: theme.text, fontSize: '1.35rem', fontWeight: '500', fontFamily: "'Newsreader', Georgia, serif" }}>
                       {selectedAppt.patient_name}
                     </h3>
                     <span style={{
                       ...styles.statusBadge,
-                      backgroundColor: selectedAppt.status === 'Accepted' ? 'rgba(47, 125, 91, 0.15)' : selectedAppt.status === 'Due' || selectedAppt.status === 'Pending' ? 'rgba(217, 119, 69, 0.15)' : selectedAppt.status === 'Finished' ? 'rgba(83, 183, 197, 0.15)' : 'rgba(201, 76, 76, 0.15)',
-                      color: selectedAppt.status === 'Accepted' ? '#2F7D5B' : selectedAppt.status === 'Due' || selectedAppt.status === 'Pending' ? '#D97745' : selectedAppt.status === 'Finished' ? '#53B7C5' : '#C94C4C',
+                      backgroundColor: selectedAppt.status === 'Accepted' ? 'rgba(47, 125, 91, 0.15)' : selectedAppt.status === 'Due' || selectedAppt.status === 'Pending' ? 'rgba(217, 119, 69, 0.15)' : selectedAppt.status === 'Finished' ? (isDark ? 'rgba(163, 177, 138, 0.16)' : '#eaf1e8') : 'rgba(201, 76, 76, 0.15)',
+                      color: selectedAppt.status === 'Accepted' ? '#2F7D5B' : selectedAppt.status === 'Due' || selectedAppt.status === 'Pending' ? '#D97745' : selectedAppt.status === 'Finished' ? (isDark ? '#a3b18a' : '#273822') : '#C94C4C',
+                      fontFamily: "'JetBrains Mono', monospace"
                     }}>
                       {selectedAppt.status}
                     </span>
                   </div>
-                  <span style={{ fontSize: '0.78rem', color: theme.subtext }}>
+                  <span style={{ fontSize: '0.78rem', color: theme.subtext, fontFamily: "'Mulish', 'Inter', sans-serif" }}>
                     Consultation ID #{selectedAppt.id} · Created {new Date(selectedAppt.created_at || Date.now()).toLocaleDateString()}
                   </span>
                 </div>
@@ -592,9 +595,9 @@ const Appointments = () => {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ ...styles.apptDetailsBox, backgroundColor: isDark ? '#081119' : '#F7F9F8', borderColor: theme.borderSubtle }}>
+                <div style={{ ...styles.apptDetailsBox, backgroundColor: isDark ? '#141c15' : '#f8faf7', borderColor: theme.borderSubtle }}>
                   <div style={styles.apptDetailItem}>
-                    <span style={{ ...styles.detailLabel, color: theme.subtext }}>Modality / Battery</span>
+                    <span style={{ ...styles.detailLabel, color: theme.subtext, fontFamily: "'Mulish', 'Inter', sans-serif" }}>Modality / Battery</span>
                     <strong style={{ color: theme.text, fontSize: '0.9rem' }}>{selectedAppt.appointment_type}</strong>
                   </div>
                   <div style={styles.apptDetailItem}>

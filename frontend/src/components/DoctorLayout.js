@@ -252,7 +252,7 @@ const DoctorLayout = ({
                           borderBottom: `1px solid ${theme.borderSubtle}`
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = isDark ? '#162B3D' : '#F0F5F4';
+                          e.currentTarget.style.backgroundColor = isDark ? '#1e2d1f' : '#eaf1e8';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = 'transparent';
@@ -264,12 +264,12 @@ const DoctorLayout = ({
                               ...styles.categoryBadge,
                               backgroundColor:
                                 item.category === 'patient'
-                                  ? '#0F4C4A'
+                                  ? '#273822'
                                   : item.category === 'biomarker'
-                                  ? '#D97745'
+                                  ? (isDark ? '#6f4a2d' : '#8c5937')
                                   : item.category === 'test'
-                                  ? '#287C78'
-                                  : '#10202E',
+                                  ? '#3d5236'
+                                  : (isDark ? '#1a271b' : '#3d5438'),
                               color: '#FFFFFF'
                             }}
                           >
@@ -300,26 +300,38 @@ const DoctorLayout = ({
               onClick={handleEvidenceGraphClick}
               style={{
                 ...styles.graphBtn,
-                backgroundColor: theme.cardBg,
-                borderColor: theme.border,
-                color: theme.primaryTeal
+                backgroundColor: isDark ? '#162018' : '#eaf1e8',
+                borderColor: isDark ? '#202e21' : '#d2ded0',
+                color: isDark ? '#f1f5ee' : '#273822',
+                fontFamily: "'Mulish', 'Inter', sans-serif"
               }}
               title="View Multimodal Signal Topology"
             >
-              🕸️ Evidence Graph
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+              <span>Evidence Graph</span>
             </button>
 
             <button
               onClick={handleAgentPipelineClick}
               style={{
                 ...styles.graphBtn,
-                backgroundColor: theme.cardBg,
-                borderColor: theme.border,
-                color: theme.secondaryTeal
+                backgroundColor: isDark ? '#162018' : '#eaf1e8',
+                borderColor: isDark ? '#202e21' : '#d2ded0',
+                color: isDark ? '#f1f5ee' : '#273822',
+                fontFamily: "'Mulish', 'Inter', sans-serif"
               }}
               title="View 10-Node Agent Execution Pipeline"
             >
-              ⚡ 10-Agent Pipeline
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              <span>10-Agent Pipeline</span>
             </button>
 
             {/* Notification Bell Container */}
@@ -338,7 +350,7 @@ const DoctorLayout = ({
                   height="17"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke={isDark ? '#9FB3C8' : '#627D98'}
+                  stroke={isDark ? '#a3b89d' : '#3d5438'}
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -392,8 +404,8 @@ const DoctorLayout = ({
                             ...styles.notifItem,
                             backgroundColor: !n.is_read
                               ? isDark
-                                ? 'rgba(83, 183, 197, 0.08)'
-                                : '#F0F9F8'
+                                ? 'rgba(163, 177, 138, 0.12)'
+                                : '#eaf1e8'
                               : 'transparent',
                             borderBottom: `1px solid ${theme.borderSubtle}`
                           }}
@@ -546,13 +558,17 @@ const styles = {
     borderBottom: '1px solid rgba(128,128,128,0.2)',
     fontSize: '0.7rem',
     fontWeight: '700',
-    letterSpacing: '0.05em'
+    letterSpacing: '0.05em',
+    fontFamily: "'Mulish', 'Inter', sans-serif"
   },
   dropdownTitle: {
-    color: '#53B7C5'
+    color: '#3d5236',
+    fontFamily: "'Mulish', 'Inter', sans-serif",
+    fontWeight: '700'
   },
   dropdownCount: {
-    color: '#829ab1'
+    color: '#768d71',
+    fontFamily: "'JetBrains Mono', monospace"
   },
   dropdownList: {
     maxHeight: '340px',
@@ -571,7 +587,8 @@ const styles = {
     textTransform: 'uppercase',
     padding: '2px 6px',
     borderRadius: '4px',
-    letterSpacing: '0.04em'
+    letterSpacing: '0.04em',
+    fontFamily: "'JetBrains Mono', monospace"
   },
   headerRightActions: {
     display: 'flex',
@@ -580,14 +597,15 @@ const styles = {
   },
   graphBtn: {
     border: '1px solid',
-    borderRadius: '8px',
-    padding: '0.45rem 0.85rem',
-    fontSize: '0.78rem',
+    borderRadius: '10px',
+    padding: '0.5rem 0.95rem',
+    fontSize: '0.82rem',
     fontWeight: '700',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: '4px'
+    gap: '6px',
+    transition: 'all 0.15s ease'
   },
   notificationBtn: {
     width: '36px',
@@ -610,7 +628,8 @@ const styles = {
     borderRadius: '10px',
     padding: '1px 5px',
     minWidth: '16px',
-    textAlign: 'center'
+    textAlign: 'center',
+    fontFamily: "'JetBrains Mono', monospace"
   },
   notificationDrawer: {
     position: 'absolute',
@@ -631,11 +650,12 @@ const styles = {
   markAllBtn: {
     background: 'none',
     border: 'none',
-    color: '#53B7C5',
+    color: '#3d5236',
     fontSize: '0.72rem',
     fontWeight: '700',
     cursor: 'pointer',
-    textDecoration: 'underline'
+    textDecoration: 'underline',
+    fontFamily: "'Mulish', 'Inter', sans-serif"
   },
   notifList: {
     maxHeight: '360px',
@@ -650,7 +670,7 @@ const styles = {
     width: '6px',
     height: '6px',
     borderRadius: '50%',
-    backgroundColor: '#53B7C5',
+    backgroundColor: '#3d5236',
     marginTop: '4px'
   },
   typeTag: {
