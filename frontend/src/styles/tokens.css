@@ -41,15 +41,22 @@
   --cv-font-grotesk: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --cv-font-mono: 'JetBrains Mono', monospace;
 
-  /* Centralized Typography Scale */
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-base: 14px;
-  --text-md: 16px;
-  --text-lg: 18px;
-  --text-xl: 24px;
-  --text-2xl: 28px;
-  --text-3xl: 34px;
+  /* Centralized Typography Scale - Elevated & Breathable */
+  --text-xs: 12.5px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-md: 18px;
+  --text-lg: 21px;
+  --text-xl: 26px;
+  --text-2xl: 32px;
+  --text-3xl: 40px;
+
+  /* Spacious Geometry & Modern Padding */
+  --cv-space-xs: 6px;
+  --cv-space-sm: 12px;
+  --cv-space-md: 20px;
+  --cv-space-lg: 28px;
+  --cv-space-xl: 40px;
 
   /* Geometry & Restrained Radius */
   --cv-radius-input: 6px;

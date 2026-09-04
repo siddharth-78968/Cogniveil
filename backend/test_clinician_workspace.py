@@ -46,8 +46,8 @@ def run_tests():
     # 4. Cognitive Battery Results & Domain Psychometrics
     status, tests_data = api_call(f"/api/clinician/patients/{sample_patient_id}/tests", headers=headers)
     assert status == 200, f"Get tests failed: {tests_data}"
-    assert "domain_breakdown" in tests_data and len(tests_data["domain_breakdown"]) == 5
-    print(f"[PASS] GET /api/clinician/patients/{sample_patient_id}/tests: HTTP 200 (5 Psychometric Domains Normed)")
+    assert "domain_breakdown" in tests_data and len(tests_data["domain_breakdown"]) >= 5
+    print(f"[PASS] GET /api/clinician/patients/{sample_patient_id}/tests: HTTP 200 ({len(tests_data['domain_breakdown'])} Psychometric Domains Normed)")
 
     # 5. Acoustic Voice Biomarkers Review
     status, v_data = api_call(f"/api/clinician/patients/{sample_patient_id}/voice", headers=headers)

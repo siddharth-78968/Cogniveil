@@ -1,0 +1,115 @@
+/* ==========================================================================
+   COGNIVEIL — RESPONSIVE AUTHENTICATION STYLES (DESKTOP + MOBILE)
+   ========================================================================== */
+
+.cv-auth-root {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.cv-auth-hero-col {
+  flex: 1.15;
+  min-height: 100vh;
+  padding: 3.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.cv-auth-form-col {
+  flex: 0.95;
+  min-height: 100vh;
+  padding: 3rem 3.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.cv-auth-card-wrapper {
+  max-width: 520px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cv-auth-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cv-auth-title {
+  font-family: 'Newsreader', 'Georgia', serif;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.15;
+}
+
+.cv-auth-desktop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+/* ── MOBILE BREAKPOINT (<= 960px) ── */
+@media (max-width: 960px) {
+  .cv-auth-desktop-header {
+    display: none !important;
+  }
+
+  .cv-auth-root {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* Hide huge heavy editorial left hero on mobile to bring login front & center */
+  .cv-auth-hero-col {
+    display: none !important;
+  }
+
+  /* Compact mobile branding header inside auth column */
+  .cv-auth-mobile-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .cv-auth-form-col {
+    flex: 1;
+    min-height: 100vh;
+    padding: 1.5rem 1.1rem !important;
+    justify-content: flex-start;
+  }
+
+  .cv-auth-card-wrapper {
+    max-width: 100%;
+  }
+
+  .cv-auth-card {
+    padding: 1.5rem 1.15rem !important;
+    border-radius: 18px !important;
+  }
+
+  .cv-auth-demo-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 961px) {
+  .cv-auth-mobile-header {
+    display: none !important;
+  }
+}

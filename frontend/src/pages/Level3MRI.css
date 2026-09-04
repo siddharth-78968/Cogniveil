@@ -1,0 +1,868 @@
+/* ==========================================================================
+   COGNIVEIL — TIER 3 BRAIN MRI MORPHOMETRY & GRAD-CAM STYLES
+   PyTorch ResNet-18 Volumetric Classification, OASIS/ADNI CDR Staging, Grad-CAM
+   ========================================================================== */
+
+@keyframes cvScanBeam {
+  0% {
+    top: 0%;
+    opacity: 0.2;
+  }
+  50% {
+    top: 96%;
+    opacity: 0.9;
+  }
+  100% {
+    top: 0%;
+    opacity: 0.2;
+  }
+}
+
+@keyframes cvMriSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes cvMriFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cvGradCamGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(167, 139, 250, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(167, 139, 250, 0.45);
+  }
+}
+
+/* ── Container Layout ─────────────────────────────────────────────────────── */
+.cv-mri-container {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  padding-bottom: 3.5rem;
+  animation: cvMriFadeIn 0.3s ease-out;
+}
+
+/* ── Hero Banner ──────────────────────────────────────────────────────────── */
+.cv-mri-hero {
+  border-radius: 18px;
+  padding: 1.6rem 1.85rem;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(163, 177, 138, 0.22);
+  background: linear-gradient(135deg, rgba(20, 32, 25, 0.85) 0%, rgba(12, 20, 15, 0.95) 100%);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.light-mode .cv-mri-hero {
+  background: linear-gradient(135deg, #f3f8f1 0%, #e7f0e5 100%);
+  border-color: rgba(61, 82, 54, 0.2);
+  box-shadow: 0 10px 24px -6px rgba(39, 56, 34, 0.08);
+}
+
+.cv-mri-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cv-mri-tier-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  color: #c4b5fd;
+  text-transform: uppercase;
+}
+
+.light-mode .cv-mri-tier-pill {
+  background: #ede9fe;
+  border-color: #a78bfa;
+  color: #6d28d9;
+}
+
+.cv-mri-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #a3b18a;
+  text-transform: uppercase;
+}
+
+.light-mode .cv-mri-eyebrow {
+  color: #3d5236;
+}
+
+.cv-mri-title {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 2.1rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: #f1f5f9;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.light-mode .cv-mri-title {
+  color: #1b2a1a;
+}
+
+.cv-mri-subtitle {
+  font-size: 0.86rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 720px;
+}
+
+.light-mode .cv-mri-subtitle {
+  color: #526e49;
+}
+
+/* ── Decoupled Disclaimer Banner (Amber) ──────────────────────────────────── */
+.cv-mri-disclaimer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.95rem 1.4rem;
+  border-radius: 14px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fde68a;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  box-shadow: 0 6px 18px -4px rgba(245, 158, 11, 0.12);
+}
+
+.light-mode .cv-mri-disclaimer {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.cv-mri-disclaimer-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* ── Upload & Dropzone Card ───────────────────────────────────────────────── */
+.cv-mri-upload-card {
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  background: linear-gradient(145deg, rgba(20, 32, 24, 0.82) 0%, rgba(12, 20, 15, 0.95) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(163, 177, 138, 0.25);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  text-align: center;
+}
+
+.light-mode .cv-mri-upload-card {
+  background: #ffffff;
+  border-color: #dce7da;
+  box-shadow: 0 12px 32px -8px rgba(39, 56, 34, 0.08);
+}
+
+.cv-mri-dropzone {
+  width: 100%;
+  max-width: 580px;
+  border: 2px dashed rgba(163, 177, 138, 0.35);
+  border-radius: 18px;
+  padding: 2.5rem 1.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.light-mode .cv-mri-dropzone {
+  background: #f8faf7;
+  border-color: #c8d8c6;
+}
+
+.cv-mri-dropzone:hover {
+  border-color: #a78bfa;
+  background: rgba(167, 139, 250, 0.05);
+  transform: translateY(-2px);
+}
+
+.light-mode .cv-mri-dropzone:hover {
+  border-color: #6d28d9;
+  background: #f5f3ff;
+}
+
+.cv-mri-icon-circle {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.12);
+  border: 1.5px solid rgba(167, 139, 250, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c4b5fd;
+  transition: transform 0.2s ease;
+}
+
+.light-mode .cv-mri-icon-circle {
+  background: #ede9fe;
+  border-color: #a78bfa;
+  color: #6d28d9;
+}
+
+.cv-mri-dropzone:hover .cv-mri-icon-circle {
+  transform: scale(1.08);
+}
+
+.cv-mri-upload-heading {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.light-mode .cv-mri-upload-heading {
+  color: #1b2a1a;
+}
+
+.cv-mri-upload-sub {
+  font-size: 0.88rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.light-mode .cv-mri-upload-sub {
+  color: #526e49;
+}
+
+.cv-mri-upload-formats {
+  font-size: 0.76rem;
+  color: #a3b18a;
+  font-family: 'JetBrains Mono', monospace;
+  margin: 0;
+}
+
+.light-mode .cv-mri-upload-formats {
+  color: #3d5236;
+}
+
+.cv-mri-browse-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 2rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+  transition: all 0.18s ease;
+  margin-top: 0.5rem;
+}
+
+.cv-mri-browse-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45);
+}
+
+/* ── Preloaded Demo Scans Strip ───────────────────────────────────────────── */
+.cv-mri-samples-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 640px;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.light-mode .cv-mri-samples-card {
+  border-top-color: #e2ede0;
+}
+
+.cv-mri-samples-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #a3b18a;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.light-mode .cv-mri-samples-label {
+  color: #3d5236;
+}
+
+.cv-mri-samples-pills {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cv-mri-demo-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(163, 177, 138, 0.25);
+  border-radius: 10px;
+  color: #c8d8c6;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.light-mode .cv-mri-demo-pill {
+  background: #f0f6ef;
+  border-color: #c8d8c6;
+  color: #273822;
+}
+
+.cv-mri-demo-pill:hover {
+  background: rgba(167, 139, 250, 0.18);
+  border-color: #a78bfa;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.light-mode .cv-mri-demo-pill:hover {
+  background: #ede9fe;
+  border-color: #6d28d9;
+  color: #4338ca;
+}
+
+/* Decoupled Architecture Callout */
+.cv-mri-arch-card {
+  width: 100%;
+  max-width: 680px;
+  padding: 0.95rem 1.35rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.light-mode .cv-mri-arch-card {
+  background: #f7fbf6;
+  border-color: #e2ede0;
+  color: #475569;
+}
+
+/* ── Scan Preview Card ────────────────────────────────────────────────────── */
+.cv-mri-preview-card {
+  border-radius: 20px;
+  padding: 2.25rem 2rem;
+  background: linear-gradient(145deg, rgba(20, 32, 24, 0.85) 0%, rgba(12, 20, 15, 0.95) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(163, 177, 138, 0.25);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.35rem;
+}
+
+.light-mode .cv-mri-preview-card {
+  background: #ffffff;
+  border-color: #dce7da;
+}
+
+.cv-mri-scan-viewport {
+  position: relative;
+  width: 290px;
+  height: 290px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid rgba(167, 139, 250, 0.4);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  background: #000000;
+}
+
+.cv-mri-scan-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cv-mri-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent 0%, #22d3ee 50%, transparent 100%);
+  box-shadow: 0 0 16px #22d3ee;
+  animation: cvScanBeam 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.cv-mri-preview-specs {
+  display: flex;
+  gap: 1.25rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  color: #a3b18a;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.light-mode .cv-mri-preview-specs {
+  color: #3d5236;
+}
+
+.cv-mri-preview-actions {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  max-width: 440px;
+  margin-top: 0.5rem;
+}
+
+.cv-mri-btn-secondary {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(163, 177, 138, 0.3);
+  color: #c8d8c6;
+  border-radius: 12px;
+  padding: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.light-mode .cv-mri-btn-secondary {
+  background: #ffffff;
+  border-color: #c8d8c6;
+  color: #273822;
+}
+
+.cv-mri-btn-secondary:hover {
+  border-color: #a3b18a;
+  background: rgba(163, 177, 138, 0.12);
+}
+
+.cv-mri-btn-primary {
+  flex: 1.2;
+  background: linear-gradient(135deg, #00d4aa 0%, #00a884 100%);
+  border: none;
+  color: #06110e;
+  border-radius: 12px;
+  padding: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 212, 170, 0.35);
+  transition: all 0.18s ease;
+}
+
+.light-mode .cv-mri-btn-primary {
+  background: linear-gradient(135deg, #287c78 0%, #1c5956 100%);
+  color: #ffffff;
+}
+
+.cv-mri-btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+/* ── Multi-Stage Neuroimaging Synthesis Screen ────────────────────────────── */
+.cv-mri-eval-screen {
+  border-radius: 22px;
+  padding: 3rem 2.2rem;
+  background: linear-gradient(145deg, rgba(20, 32, 24, 0.92) 0%, rgba(12, 20, 15, 0.98) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  text-align: center;
+  animation: cvMriFadeIn 0.35s ease-out;
+}
+
+.light-mode .cv-mri-eval-screen {
+  background: #ffffff;
+  border-color: #c8d8c6;
+}
+
+.cv-mri-eval-brain-icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(34, 211, 238, 0.12);
+  border: 2px solid #22d3ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.35);
+}
+
+.cv-mri-eval-title {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.light-mode .cv-mri-eval-title {
+  color: #1b2a1a;
+}
+
+.cv-mri-eval-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 480px;
+  text-align: left;
+}
+
+.cv-mri-eval-step {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: all 0.25s ease;
+}
+
+.light-mode .cv-mri-eval-step {
+  background: #f7fbf6;
+  border-color: #e5ede3;
+  color: #475569;
+}
+
+.cv-mri-eval-step.active {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.4);
+  color: #ffffff;
+}
+
+.light-mode .cv-mri-eval-step.active {
+  background: #ecfeff;
+  border-color: #06b6d4;
+  color: #0e7490;
+}
+
+.cv-mri-eval-step.completed {
+  color: #a3b18a;
+  border-color: rgba(163, 177, 138, 0.25);
+}
+
+.light-mode .cv-mri-eval-step.completed {
+  color: #2e7d32;
+  border-color: #c8d8c6;
+}
+
+.cv-mri-step-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(34, 211, 238, 0.3);
+  border-top-color: #22d3ee;
+  border-radius: 50%;
+  animation: cvMriSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Results Viewport ─────────────────────────────────────────────────────── */
+.cv-mri-result-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: cvMriFadeIn 0.35s ease-out;
+}
+
+/* Confirmatory Header Card */
+.cv-mri-result-header-card {
+  border-radius: 20px;
+  padding: 1.75rem 2rem;
+  background: linear-gradient(145deg, rgba(20, 32, 24, 0.88) 0%, rgba(12, 20, 15, 0.96) 100%);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(163, 177, 138, 0.25);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.light-mode .cv-mri-result-header-card {
+  background: #ffffff;
+  border-color: #dce7da;
+}
+
+.cv-mri-result-title {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0 0 0.25rem 0;
+}
+
+.light-mode .cv-mri-result-title {
+  color: #1b2a1a;
+}
+
+.cv-mri-cdr-badge {
+  padding: 0.5rem 1.4rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Grad-CAM Interactive Viewer ─────────────────────────────────────────── */
+.cv-mri-gradcam-box {
+  border-radius: 20px;
+  padding: 1.85rem 2rem;
+  background: linear-gradient(145deg, rgba(18, 28, 22, 0.9) 0%, rgba(10, 18, 14, 0.98) 100%);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  box-shadow: 0 14px 36px -10px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.light-mode .cv-mri-gradcam-box {
+  background: #ffffff;
+  border-color: #dce7da;
+}
+
+.cv-mri-gradcam-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cv-mri-mode-pill-group {
+  display: flex;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.light-mode .cv-mri-mode-pill-group {
+  background: #f1f5f0;
+  border-color: #e2ede0;
+}
+
+.cv-mri-mode-pill {
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.cv-mri-mode-pill.active {
+  background: #a78bfa;
+  color: #080c14;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(167, 139, 250, 0.4);
+}
+
+.cv-mri-mode-pill.inactive {
+  background: transparent;
+  color: #94a3b8;
+}
+
+.light-mode .cv-mri-mode-pill.inactive {
+  color: #526e49;
+}
+
+/* Grad-CAM Viewer Split */
+.cv-mri-gradcam-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.75rem;
+  align-items: center;
+}
+
+@media (max-width: 820px) {
+  .cv-mri-gradcam-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cv-mri-cam-display-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cv-mri-cam-img-frame {
+  width: 310px;
+  height: 310px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid rgba(167, 139, 250, 0.5);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+  background: #000000;
+}
+
+.cv-mri-cam-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cv-mri-colorbar-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 290px;
+}
+
+.cv-mri-colorbar-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #38bdf8 0%, #22c55e 35%, #eab308 70%, #ef4444 100%);
+}
+
+.cv-mri-colorbar-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* Focal Attention Zones */
+.cv-mri-focal-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cv-mri-focal-item {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.light-mode .cv-mri-focal-item {
+  background: #f7fbf6;
+  border-color: #e2ede0;
+}
+
+/* Quantitative Morphometry Metrics Grid */
+.cv-mri-morph-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.95rem;
+}
+
+.cv-mri-metric-tile {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.light-mode .cv-mri-metric-tile {
+  background: #ffffff;
+  border-color: #e2ede0;
+}
+
+.cv-mri-metric-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.light-mode .cv-mri-metric-label {
+  color: #526e49;
+}
+
+.cv-mri-metric-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #f1f5f9;
+}
+
+.light-mode .cv-mri-metric-val {
+  color: #1b2a1a;
+}
+
+.cv-mri-metric-norm {
+  font-size: 0.74rem;
+  color: #a3b18a;
+}
+
+.light-mode .cv-mri-metric-norm {
+  color: #3d5236;
+}
+
+/* Retake / Actions */
+.cv-mri-result-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}

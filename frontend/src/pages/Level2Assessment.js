@@ -30,7 +30,7 @@ const Level2Assessment = () => {
   const [patientsError, setPatientsError] = useState(null);
   const [level2Error, setLevel2Error] = useState(null);
 
-  const isClinician = user?.is_caregiver === true;
+  const isClinician = user?.role === 'clinician' || user?.role === 'doctor' || Boolean(user?.is_caregiver);
 
   useEffect(() => {
     if (isClinician) {

@@ -1,0 +1,1044 @@
+/* ==========================================================================
+   COGNIVEIL — ACOUSTIC VOICE JOURNAL & EARLY SCREENING STYLES
+   Multilingual Speech Biomarkers, Xue et al. CNN Model & Saliency Timeline
+   ========================================================================== */
+
+@keyframes cvMicRipple {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.25;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes cvWavePulse {
+  0%, 100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes cvVjSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes cvVjFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cvScoreReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Container Layout ─────────────────────────────────────────────────────── */
+.cv-vj-container {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  padding-bottom: 3rem;
+  animation: cvVjFadeIn 0.3s ease-out;
+}
+
+/* ── Hero Banner ──────────────────────────────────────────────────────────── */
+.cv-vj-hero {
+  border-radius: 18px;
+  padding: 1.6rem 1.85rem;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(163, 177, 138, 0.22);
+  background: linear-gradient(135deg, rgba(20, 32, 22, 0.85) 0%, rgba(12, 20, 14, 0.95) 100%);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.light-mode .cv-vj-hero {
+  background: linear-gradient(135deg, #f3f8f1 0%, #e7f0e5 100%);
+  border-color: rgba(61, 82, 54, 0.2);
+  box-shadow: 0 10px 24px -6px rgba(39, 56, 34, 0.08);
+}
+
+.cv-vj-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #a3b18a;
+  margin-bottom: 0.35rem;
+}
+
+.light-mode .cv-vj-eyebrow {
+  color: #3d5236;
+}
+
+.cv-vj-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00d4aa;
+  box-shadow: 0 0 10px #00d4aa;
+}
+
+.cv-vj-title {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.95rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: #f1f5f9;
+  margin: 0 0 0.35rem 0;
+  line-height: 1.15;
+}
+
+.light-mode .cv-vj-title {
+  color: #1b2a1a;
+}
+
+.cv-vj-subtitle {
+  font-size: 0.86rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 620px;
+}
+
+.light-mode .cv-vj-subtitle {
+  color: #526e49;
+}
+
+.cv-vj-lang-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cv-vj-lang-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #a3b18a;
+  text-transform: uppercase;
+}
+
+.light-mode .cv-vj-lang-label {
+  color: #3d5236;
+}
+
+.cv-vj-lang-select {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1.5px solid rgba(163, 177, 138, 0.35);
+  border-radius: 12px;
+  color: #e2e8f0;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 145px;
+}
+
+.light-mode .cv-vj-lang-select {
+  background: #ffffff;
+  border-color: #c8d8c6;
+  color: #1b2a1a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.cv-vj-lang-select:focus {
+  border-color: #00d4aa;
+  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.15);
+}
+
+.cv-vj-whisper-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Narrative Task Card ──────────────────────────────────────────────────── */
+.cv-vj-task-card {
+  border-radius: 18px;
+  padding: 1.45rem 1.75rem;
+  background: rgba(18, 26, 20, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(163, 177, 138, 0.2);
+  border-left: 4px solid #00d4aa;
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  position: relative;
+}
+
+.light-mode .cv-vj-task-card {
+  background: #ffffff;
+  border-color: #e2ede0;
+  border-left: 4px solid #287c78;
+  box-shadow: 0 6px 18px -4px rgba(39, 56, 34, 0.06);
+}
+
+.cv-vj-task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cv-vj-task-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #00d4aa;
+  text-transform: uppercase;
+}
+
+.light-mode .cv-vj-task-badge {
+  color: #0f4c4a;
+}
+
+.cv-vj-shuffle-btn {
+  background: rgba(163, 177, 138, 0.12);
+  border: 1px solid rgba(163, 177, 138, 0.3);
+  color: #a3b18a;
+  border-radius: 8px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.18s ease;
+}
+
+.light-mode .cv-vj-shuffle-btn {
+  background: #eef5ed;
+  border-color: #c8d8c6;
+  color: #273822;
+}
+
+.cv-vj-shuffle-btn:hover {
+  background: rgba(0, 212, 170, 0.18);
+  border-color: #00d4aa;
+  color: #00d4aa;
+}
+
+.cv-vj-task-prompt {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.25rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.light-mode .cv-vj-task-prompt {
+  color: #1b2a1a;
+}
+
+.cv-vj-task-hint {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.light-mode .cv-vj-task-hint {
+  color: #526e49;
+}
+
+/* ── Recorder Hub Card ────────────────────────────────────────────────────── */
+.cv-vj-recorder-card {
+  border-radius: 22px;
+  padding: 2.75rem 2rem;
+  background: linear-gradient(145deg, rgba(20, 30, 22, 0.8) 0%, rgba(13, 20, 15, 0.95) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(163, 177, 138, 0.25);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  text-align: center;
+}
+
+.light-mode .cv-vj-recorder-card {
+  background: #ffffff;
+  border-color: #dce7da;
+  box-shadow: 0 12px 32px -8px rgba(39, 56, 34, 0.08);
+}
+
+/* Mic Ripple & Visualizer */
+.cv-vj-mic-outer {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cv-vj-ripple-ring {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 212, 170, 0.5);
+  animation: cvMicRipple 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  pointer-events: none;
+}
+
+.cv-vj-ripple-ring.recording {
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+.cv-vj-mic-inner {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 212, 170, 0.08);
+  border: 2.5px solid #00d4aa;
+  box-shadow: 0 0 30px rgba(0, 212, 170, 0.25);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.light-mode .cv-vj-mic-inner {
+  background: #f0f7f3;
+  border-color: #287c78;
+  box-shadow: 0 4px 20px rgba(40, 124, 120, 0.2);
+}
+
+.cv-vj-mic-inner.recording {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  box-shadow: 0 0 36px rgba(239, 68, 68, 0.4);
+  transform: scale(1.05);
+}
+
+.cv-vj-mic-icon-svg {
+  width: 44px;
+  height: 44px;
+  color: #00d4aa;
+  transition: color 0.2s ease;
+}
+
+.light-mode .cv-vj-mic-icon-svg {
+  color: #287c78;
+}
+
+.cv-vj-mic-inner.recording .cv-vj-mic-icon-svg {
+  color: #ef4444;
+}
+
+/* Timer & Status */
+.cv-vj-timer-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cv-vj-timer-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: #ef4444;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.cv-vj-timer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ef4444;
+  text-transform: uppercase;
+}
+
+.cv-vj-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+/* Real-time Waveform Bars */
+.cv-vj-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 48px;
+  padding: 0 1rem;
+}
+
+.cv-vj-wave-bar {
+  width: 4px;
+  background: #00d4aa;
+  border-radius: 999px;
+  transition: height 0.1s ease;
+  animation: cvWavePulse 0.8s ease-in-out infinite alternate;
+}
+
+.cv-vj-wave-bar.recording {
+  background: #ef4444;
+}
+
+.light-mode .cv-vj-wave-bar {
+  background: #287c78;
+}
+
+.light-mode .cv-vj-wave-bar.recording {
+  background: #dc2626;
+}
+
+.cv-vj-hint-text {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: 0;
+  max-width: 440px;
+}
+
+.light-mode .cv-vj-hint-text {
+  color: #526e49;
+}
+
+/* Tactile Buttons */
+.cv-vj-btn-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cv-vj-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0.95rem 2.5rem;
+  border-radius: 14px;
+  font-size: 0.96rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.35);
+}
+
+.cv-vj-action-btn.start {
+  background: linear-gradient(135deg, #00d4aa 0%, #00a884 100%);
+  color: #06110e;
+  box-shadow: 0 8px 26px -6px rgba(0, 212, 170, 0.45);
+}
+
+.light-mode .cv-vj-action-btn.start {
+  background: linear-gradient(135deg, #287c78 0%, #1c5956 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 24px -6px rgba(40, 124, 120, 0.3);
+}
+
+.cv-vj-action-btn.stop {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 26px -6px rgba(239, 68, 68, 0.45);
+}
+
+.cv-vj-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+}
+
+.cv-vj-action-btn:active:not(:disabled) {
+  transform: scale(0.96) translateY(1px);
+}
+
+.cv-vj-action-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Demo Sample Pills Strip */
+.cv-vj-samples-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+}
+
+.light-mode .cv-vj-samples-box {
+  border-top-color: #e2ede0;
+}
+
+.cv-vj-samples-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #a3b18a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.light-mode .cv-vj-samples-title {
+  color: #3d5236;
+}
+
+.cv-vj-samples-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cv-vj-demo-pill {
+  background: rgba(163, 177, 138, 0.1);
+  border: 1px solid rgba(163, 177, 138, 0.25);
+  border-radius: 10px;
+  color: #c8d8c6;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.light-mode .cv-vj-demo-pill {
+  background: #f0f6ef;
+  border-color: #c8d8c6;
+  color: #273822;
+}
+
+.cv-vj-demo-pill:hover {
+  background: rgba(0, 212, 170, 0.18);
+  border-color: #00d4aa;
+  color: #00d4aa;
+  transform: translateY(-1px);
+}
+
+.light-mode .cv-vj-demo-pill:hover {
+  background: #e1efe0;
+  border-color: #287c78;
+  color: #1a5653;
+}
+
+/* ── Multi-Stage Evaluation Synthesis Screen ──────────────────────────────── */
+.cv-vj-eval-screen {
+  border-radius: 22px;
+  padding: 3rem 2.2rem;
+  background: linear-gradient(145deg, rgba(20, 32, 22, 0.92) 0%, rgba(12, 20, 14, 0.98) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  animation: cvVjFadeIn 0.35s ease-out;
+  text-align: center;
+}
+
+.light-mode .cv-vj-eval-screen {
+  background: #ffffff;
+  border-color: #c8d8c6;
+  box-shadow: 0 12px 32px -8px rgba(39, 56, 34, 0.1);
+}
+
+.cv-vj-eval-radar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(0, 212, 170, 0.12);
+  border: 2px solid #00d4aa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(0, 212, 170, 0.35);
+  animation: cvMicRipple 2s infinite ease-out;
+}
+
+.light-mode .cv-vj-eval-radar {
+  background: #edf6f2;
+  border-color: #287c78;
+}
+
+.cv-vj-eval-title {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.light-mode .cv-vj-eval-title {
+  color: #1b2a1a;
+}
+
+.cv-vj-eval-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: 100%;
+  max-width: 440px;
+  text-align: left;
+}
+
+.cv-vj-eval-step {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: all 0.25s ease;
+}
+
+.light-mode .cv-vj-eval-step {
+  background: #f7fbf6;
+  border-color: #e5ede3;
+  color: #475569;
+}
+
+.cv-vj-eval-step.active {
+  background: rgba(0, 212, 170, 0.12);
+  border-color: rgba(0, 212, 170, 0.4);
+  color: #ffffff;
+}
+
+.light-mode .cv-vj-eval-step.active {
+  background: #e8f5ee;
+  border-color: #287c78;
+  color: #0f4c4a;
+}
+
+.cv-vj-eval-step.completed {
+  color: #a3b18a;
+  border-color: rgba(163, 177, 138, 0.25);
+}
+
+.light-mode .cv-vj-eval-step.completed {
+  color: #2e7d32;
+  border-color: #c8d8c6;
+}
+
+.cv-vj-step-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 212, 170, 0.3);
+  border-top-color: #00d4aa;
+  border-radius: 50%;
+  animation: cvVjSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Results Viewport ─────────────────────────────────────────────────────── */
+.cv-vj-results-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: cvScoreReveal 0.35s ease-out;
+}
+
+.cv-vj-results-top-row {
+  display: grid;
+  grid-template-columns: minmax(290px, 340px) 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+@media (max-width: 820px) {
+  .cv-vj-results-top-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Xue et al. Model Risk Card */
+.cv-vj-score-card {
+  border-radius: 20px;
+  padding: 2rem 1.6rem;
+  background: linear-gradient(145deg, rgba(20, 32, 22, 0.88) 0%, rgba(13, 22, 15, 0.96) 100%);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(163, 177, 138, 0.25);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  text-align: center;
+}
+
+.light-mode .cv-vj-score-card {
+  background: #ffffff;
+  border-color: #dce7da;
+  box-shadow: 0 10px 24px -6px rgba(39, 56, 34, 0.08);
+}
+
+.cv-vj-model-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #38bdf8;
+  text-transform: uppercase;
+}
+
+.cv-vj-gauge-wrapper {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cv-vj-gauge-svg {
+  transform: rotate(-90deg);
+  width: 140px;
+  height: 140px;
+}
+
+.cv-vj-gauge-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 9;
+}
+
+.light-mode .cv-vj-gauge-track {
+  stroke: rgba(0, 0, 0, 0.08);
+}
+
+.cv-vj-gauge-fill {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease;
+}
+
+.cv-vj-gauge-center {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cv-vj-score-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #f1f5f9;
+  line-height: 1;
+}
+
+.light-mode .cv-vj-score-num {
+  color: #1b2a1a;
+}
+
+.cv-vj-score-denom {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.cv-vj-risk-pill {
+  padding: 0.4rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Biometrics & Playback Column */
+.cv-vj-metrics-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.cv-vj-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.cv-vj-metric-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.light-mode .cv-vj-metric-card {
+  background: #ffffff;
+  border-color: #e2ede0;
+  box-shadow: 0 4px 12px rgba(39, 56, 34, 0.04);
+}
+
+.cv-vj-metric-icon {
+  font-size: 1.45rem;
+  flex-shrink: 0;
+}
+
+.cv-vj-metric-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cv-vj-metric-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.light-mode .cv-vj-metric-label {
+  color: #526e49;
+}
+
+.cv-vj-metric-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.light-mode .cv-vj-metric-val {
+  color: #1b2a1a;
+}
+
+/* Audio Player Card */
+.cv-vj-audio-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1.15rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.light-mode .cv-vj-audio-card {
+  background: #ffffff;
+  border-color: #e2ede0;
+}
+
+.cv-vj-audio-player {
+  width: 100%;
+  border-radius: 8px;
+  outline: none;
+}
+
+/* Class Activation Maps (CAM) Saliency Timeline */
+.cv-vj-timeline-card {
+  border-radius: 18px;
+  padding: 1.6rem 1.75rem;
+  background: linear-gradient(145deg, rgba(20, 32, 22, 0.85) 0%, rgba(13, 22, 15, 0.95) 100%);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(163, 177, 138, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.light-mode .cv-vj-timeline-card {
+  background: #ffffff;
+  border-color: #dce7da;
+}
+
+.cv-vj-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.cv-vj-timeline-title {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.light-mode .cv-vj-timeline-title {
+  color: #1b2a1a;
+}
+
+.cv-vj-timeline-legend {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.cv-vj-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cv-vj-legend-chip {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.cv-vj-timeline-bar {
+  display: flex;
+  height: 42px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cv-vj-timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.cv-vj-timeline-note {
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.light-mode .cv-vj-timeline-note {
+  background: #fffbeb;
+  border-color: #fef3c7;
+  color: #92400e;
+}
+
+/* Action Buttons Row */
+.cv-vj-actions-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.cv-vj-btn-secondary {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(163, 177, 138, 0.3);
+  color: #c8d8c6;
+  border-radius: 12px;
+  padding: 0.85rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.light-mode .cv-vj-btn-secondary {
+  background: #ffffff;
+  border-color: #c8d8c6;
+  color: #273822;
+}
+
+.cv-vj-btn-secondary:hover {
+  background: rgba(163, 177, 138, 0.15);
+  border-color: #a3b18a;
+}
+
+.cv-vj-btn-primary {
+  flex: 1;
+  background: linear-gradient(135deg, #00d4aa 0%, #00a884 100%);
+  border: none;
+  color: #06110e;
+  border-radius: 12px;
+  padding: 0.85rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 212, 170, 0.35);
+  transition: all 0.2s ease;
+}
+
+.light-mode .cv-vj-btn-primary {
+  background: linear-gradient(135deg, #287c78 0%, #1c5956 100%);
+  color: #ffffff;
+}
+
+.cv-vj-btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}

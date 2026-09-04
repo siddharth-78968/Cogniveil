@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { loginUser, registerUser, getCurrentUser, getProfile, loginWithGoogle, demoAuth } from '../utils/api';
+import { loginUser, registerUser, getCurrentUser, getProfile, loginWithGoogle, demoAuth, demoLogin } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -50,8 +50,8 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
-  const loginDemo = async (email) => {
-    const res = await demoAuth(email);
+  const demoAuthLogin = async (email) => {
+    const res = await (demoAuth || demoLogin)(email);
     const accessToken = res.data.access_token;
     localStorage.setItem('token', accessToken);
     setToken(accessToken);
@@ -85,6 +85,8 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     return res;
   };
+
+  const loginDemo = demoAuthLogin;
 
   const refreshUser = async () => {
     try {
@@ -168,7 +170,7 @@ export const AuthProvider = ({ children }) => {
   const isPatient = !isClinician;
 
   return (
-    <AuthContext.Provider value={{ user, token, login, loginDemo, googleLogin, register, refreshUser, updateProfile, logout, loading, isClinician, isPatient }}>
+    <AuthContext.Provider value={{ user, token, login, loginDemo, demoAuthLogin, googleLogin, register, refreshUser, updateProfile, logout, loading, isClinician, isPatient }}>
       {children}
     </AuthContext.Provider>
   );

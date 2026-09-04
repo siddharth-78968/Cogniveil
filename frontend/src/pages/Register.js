@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { triggerGoogleSignIn, GoogleIcon } from '../utils/googleAuth';
+import './Register.css';
 
 const SunIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -74,8 +75,17 @@ const Register = () => {
             navigate('/dashboard');
           }
         } catch (err) {
-          const detail = err.response?.data?.detail;
-          const errMsg = typeof detail === 'string' ? detail : 'Google sign-up failed.';
+          let errMsg = 'Google sign-up failed.';
+          if (err.code === 'ERR_NETWORK' || !err.response) {
+            errMsg = 'Cannot connect to backend server. Please ensure the Python backend is running on port 8000.';
+          } else if (err.response?.data?.detail) {
+            const detail = err.response.data.detail;
+            if (typeof detail === 'string') {
+              errMsg = detail;
+            } else if (Array.isArray(detail)) {
+              errMsg = detail.map(d => d.msg || d.detail).join(', ');
+            }
+          }
           setError(errMsg);
           if (errMsg.toLowerCase().includes('already registered')) {
             setAlreadyRegisteredEmail(googleData.email);
@@ -149,9 +159,9 @@ const Register = () => {
   };
 
   return (
-    <div style={{ ...styles.pageWrapper, backgroundColor: theme.bg, color: theme.text }}>
+    <div className="cv-reg-root" style={{ ...styles.pageWrapper, backgroundColor: theme.bg, color: theme.text }}>
       {/* Top Navigation */}
-      <header style={{ ...styles.header, backgroundColor: theme.topHeaderBg, borderBottom: `1px solid ${theme.border}` }}>
+      <header className="cv-reg-header" style={{ ...styles.header, backgroundColor: theme.topHeaderBg, borderBottom: `1px solid ${theme.border}` }}>
         <div 
           style={{ ...styles.brandBox, cursor: 'pointer' }} 
           onClick={() => navigate('/')}
@@ -174,8 +184,8 @@ const Register = () => {
             C
           </div>
           <span style={{ ...styles.brandTitle, color: theme.text }}>CogniVeil</span>
-          <span style={{ ...styles.brandPipe, color: theme.border }}>/</span>
-          <span style={{ ...styles.brandSub, color: theme.subtext }}>Patient onboarding & enrollment</span>
+          <span className="cv-reg-brand-pipe" style={{ ...styles.brandPipe, color: theme.border }}>/</span>
+          <span className="cv-reg-brand-sub" style={{ ...styles.brandSub, color: theme.subtext }}>Patient onboarding & enrollment</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -225,12 +235,12 @@ const Register = () => {
       </header>
 
       {/* Main Registration Card */}
-      <div style={styles.centerContainer}>
-        <div style={{ ...styles.authCard, backgroundColor: theme.cardBg, border: `1px solid ${theme.border}` }}>
+      <div className="cv-reg-container" style={styles.centerContainer}>
+        <div className="cv-reg-card" style={{ ...styles.authCard, backgroundColor: theme.cardBg, border: `1px solid ${theme.border}` }}>
           
           <div style={styles.cardHeader}>
             <span style={{ ...styles.kicker, color: isDark ? '#94a3b8' : '#0284C7' }}>Baseline profile registration</span>
-            <h1 style={{ ...styles.cardTitle, color: theme.text }}>Create Patient Profile</h1>
+            <h1 className="cv-reg-title" style={{ ...styles.cardTitle, color: theme.text }}>Create Patient Profile</h1>
             <p style={{ ...styles.cardSub, color: theme.subtext }}>
               Establish a baseline profile for longitudinal cognitive telemetry and multimodal screening.
             </p>
@@ -271,7 +281,7 @@ const Register = () => {
               />
             </div>
 
-            <div style={styles.rowGroup}>
+            <div className="cv-reg-row" style={styles.rowGroup}>
               <div style={{ ...styles.inputGroup, flex: 1 }}>
                 <label style={{ ...styles.label, color: theme.text }}>Age (years)</label>
                 <input
@@ -697,71 +707,71 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '2.5rem 1rem',
+    padding: '3rem 1.5rem',
   },
   authCard: {
     width: '100%',
-    maxWidth: '540px',
-    borderRadius: '16px',
-    padding: '2.25rem',
-    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.05)',
+    maxWidth: '580px',
+    borderRadius: '20px',
+    padding: '2.75rem 2.5rem',
+    boxShadow: '0 12px 36px rgba(0, 0, 0, 0.06)',
   },
   cardHeader: {
-    marginBottom: '1.75rem',
+    marginBottom: '2rem',
   },
   kicker: {
-    fontSize: '12px',
+    fontSize: '13px',
     fontFamily: "'JetBrains Mono', monospace",
     display: 'block',
-    marginBottom: '4px',
+    marginBottom: '6px',
     fontWeight: '700',
   },
   cardTitle: {
     fontFamily: "'Newsreader', Georgia, serif",
-    fontSize: '2rem',
+    fontSize: '2.4rem',
     fontWeight: '400',
-    letterSpacing: '-0.015em',
-    margin: '0 0 8px 0',
+    letterSpacing: '-0.02em',
+    margin: '0 0 10px 0',
   },
   cardSub: {
-    fontSize: '13.5px',
-    lineHeight: '1.55',
+    fontSize: '15px',
+    lineHeight: '1.65',
     margin: 0,
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1.1rem',
+    gap: '1.35rem',
   },
   inputGroup: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.35rem',
+    gap: '0.45rem',
   },
   rowGroup: {
     display: 'flex',
-    gap: '1rem',
+    gap: '1.25rem',
   },
   label: {
-    fontSize: '12.5px',
+    fontSize: '14.5px',
     fontWeight: '600',
   },
   input: {
     width: '100%',
-    padding: '0.75rem 1rem',
+    padding: '0.95rem 1.15rem',
     border: '1px solid',
-    borderRadius: '8px',
-    fontSize: '14px',
+    borderRadius: '10px',
+    fontSize: '15.5px',
     outline: 'none',
     boxSizing: 'border-box',
     fontFamily: 'inherit',
   },
   select: {
     width: '100%',
-    padding: '0.75rem 1rem',
+    padding: '0.95rem 1.15rem',
     border: '1px solid',
-    borderRadius: '8px',
-    fontSize: '14px',
+    borderRadius: '10px',
+    fontSize: '15.5px',
     outline: 'none',
     boxSizing: 'border-box',
     fontFamily: 'inherit',
@@ -769,28 +779,28 @@ const styles = {
   textBtn: {
     background: 'none',
     border: 'none',
-    fontSize: '12px',
+    fontSize: '13.5px',
     cursor: 'pointer',
     padding: 0,
   },
   checkboxGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.65rem',
-    padding: '0.25rem 0',
+    gap: '0.85rem',
+    padding: '0.35rem 0',
   },
   errorBox: {
     backgroundColor: 'rgba(184, 92, 74, 0.15)',
     border: '1px solid #B85C4A',
-    borderRadius: '6px',
-    padding: '0.75rem',
-    fontSize: '13px',
+    borderRadius: '8px',
+    padding: '0.9rem 1.15rem',
+    fontSize: '14px',
     color: '#B85C4A',
   },
   footerNote: {
-    marginTop: '1.75rem',
+    marginTop: '2rem',
     textAlign: 'center',
-    fontSize: '13px',
+    fontSize: '14.5px',
   },
 };
 

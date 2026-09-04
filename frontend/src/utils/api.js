@@ -1,24 +1,46 @@
 import axios from 'axios';
 
 export const getApiBaseUrl = () => {
+  const saved = localStorage.getItem('cogniveil_api_url');
+  if (saved && saved.trim()) return saved.trim().replace(/\/+$/, '');
+
   // If explicitly configured with a non-localhost remote URL, use it
   if (process.env.REACT_APP_API_URL && !process.env.REACT_APP_API_URL.includes('localhost') && !process.env.REACT_APP_API_URL.includes('127.0.0.1')) {
-    return process.env.REACT_APP_API_URL;
+    return process.env.REACT_APP_API_URL.replace(/\/+$/, '');
   }
+
   // When running in production on any hosted domain (Vercel, Render, etc.), automatically route to live Render backend
-  if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  if (typeof window !== 'undefined' && window.location.hostname && 
+      window.location.hostname !== 'localhost' && 
+      window.location.hostname !== '127.0.0.1' && 
+      !window.location.hostname.startsWith('10.') && 
+      !window.location.hostname.startsWith('192.168.')) {
     return 'https://cogniveil-backend.onrender.com';
   }
-  return process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+  // If running in browser at localhost
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:8000';
+  }
+
+  // Default to local Wi-Fi IP for Android APK / mobile devices
+  return 'http://10.152.1.187:8000';
 };
 
-const API_BASE_URL = getApiBaseUrl();
+export const setApiBaseUrl = (newUrl) => {
+  if (!newUrl) {
+    localStorage.removeItem('cogniveil_api_url');
+  } else {
+    localStorage.setItem('cogniveil_api_url', newUrl.trim().replace(/\/+$/, ''));
+  }
+};
 
 const API = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
 });
 
 API.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseUrl();
   const token = localStorage.getItem('token');
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
@@ -36,7 +58,7 @@ API.interceptors.request.use((config) => {
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isAuthUrl = error.config && (error.config.url?.includes('/login') || error.config.url?.includes('/register'));
+    const isAuthUrl = error.config && (error.config.url?.includes('/login') || error.config.url?.includes('/register') || error.config.url?.includes('/auth/'));
     if (error.response && error.response.status === 401 && !isAuthUrl) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -50,6 +72,7 @@ export default API;
 
 export const registerUser = (data) => API.post('/register', data);
 export const loginUser = (data) => API.post('/login', data);
+export const demoLogin = (email) => API.post(`/api/auth/demo?email=${encodeURIComponent(email)}`);
 export const loginWithGoogle = (data) => API.post('/api/auth/google', data);
 export const getProfile = () => API.get('/me');
 export const getCurrentUser = () => API.get('/auth/me');
