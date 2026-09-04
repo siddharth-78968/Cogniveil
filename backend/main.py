@@ -150,22 +150,35 @@ else:
         "http://127.0.0.1:3001",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        "https://cogniveil-lppa.vercel.app",
+        "https://cogniveil.vercel.app",
+        "https://cogniveil-backend.onrender.com",
     ]
+
+# Explicitly ensure Vercel frontend domains are included in allow_origins
+for extra_origin in [
+    "https://cogniveil-lppa.vercel.app",
+    "https://cogniveil.vercel.app",
+    "https://cogniveil-backend.onrender.com",
+]:
+    if extra_origin not in allow_origins:
+        allow_origins.append(extra_origin)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:[0-9]+)?",
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {"message": "CogniVeil API is running with 10 MCP tools and EWMA baseline deviation engine"}
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def api_health():
     return {"status": "ok", "service": "CogniVeil API", "version": "2026.1"}
 
