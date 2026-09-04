@@ -13,8 +13,7 @@ import {
   getClinicianPatients,
   createClinicianPatient,
   updateClinicianPatient,
-  deleteClinicianPatient,
-  getStreak
+  deleteClinicianPatient
 } from '../utils/api';
 import ReferralReportModal from '../components/ReferralReportModal';
 import ExplainMyResultModal from '../components/ExplainMyResultModal';
@@ -79,7 +78,6 @@ const Dashboard = () => {
   const [showEvidenceGraphModal, setShowEvidenceGraphModal] = useState(false);
   const [showAgentPipelineModal, setShowAgentPipelineModal] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [streak, setStreak] = useState(null);
   const [referralPayload, setReferralPayload] = useState(null);
   const [dashboardAppointments, setDashboardAppointments] = useState([]);
   const [clinicianPatients, setClinicianPatients] = useState([]);
@@ -264,13 +262,6 @@ const Dashboard = () => {
       console.error('Error fetching dashboard appointments:', err);
     }
 
-    try {
-      const streakRes = await getStreak();
-      setStreak(streakRes.data);
-    } catch (err) {
-      console.error('Error fetching streak in dashboard:', err);
-    }
-
     if (isClinician) {
       try {
         const patRes = await getClinicianPatients();
@@ -449,67 +440,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* DementAI "Buy Patients Time" Lead Time Benefit Callout */}
-            <div style={{
-              marginTop: '1rem',
-              padding: '0.95rem 1.4rem',
-              borderRadius: '14px',
-              backgroundColor: theme.statBoxBg,
-              border: `1px solid ${theme.border}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: '280px' }}>
-                <div style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '10px',
-                  backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#e8efe6',
-                  color: isDark ? '#a3b18a' : '#273822',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
-                  </svg>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                    <span style={{ fontSize: '0.92rem', fontWeight: '700', color: theme.text }}>
-                      {history.length < 7
-                        ? `Day ${Math.max(history.length, 1)} of 7 — Building your personal baseline`
-                        : `Personal Baseline Established · ${streak?.current_streak || history.length || 1} Day Streak`}
-                    </span>
-                    <span style={{ fontSize: '0.8rem', color: theme.subtext, fontFamily: "'JetBrains Mono', monospace", fontWeight: '700' }}>
-                      {history.length < 7 ? `${Math.round((history.length / 7) * 100)}% Calibrated` : `${history.length} Sessions Logged`}
-                    </span>
-                  </div>
-                  <div style={{ ...styles.progressBarTrack, height: '6px' }}>
-                    <div style={{ ...styles.progressBarFill, width: `${Math.min((history.length / 7) * 100, 100)}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{
-                  fontSize: '0.78rem',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontWeight: '700',
-                  padding: '0.35rem 0.75rem',
-                  borderRadius: '8px',
-                  backgroundColor: isDark ? 'rgba(34, 211, 238, 0.1)' : '#e0f2fe',
-                  color: isDark ? '#38bdf8' : '#0284c7',
-                  border: `1px solid ${isDark ? 'rgba(56, 189, 248, 0.3)' : '#bae6fd'}`
-                }}>
-                  {streak?.attended_today ? '✓ Checked-in Today' : 'Routine Active'}
-                </span>
-              </div>
-            </div>
           </div>
 
           {/* 4 Patient Stat Cards: Differentiated Hierarchy */}
