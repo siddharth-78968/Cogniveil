@@ -22,19 +22,17 @@ const AccessibilityBar = () => {
           display: 'inline-flex',
           alignItems: 'center',
           gap: '8px',
-          fontSize: '0.72rem',
-          fontWeight: '800',
-          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '0.74rem',
+          fontWeight: '600',
+          fontFamily: "'Inter', system-ui, sans-serif",
           color: theme.subtext,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase'
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 8v8" />
             <path d="M8 12h8" />
           </svg>
-          Clinical Accessibility · WCAG 2.1 AA
+          Accessibility options <span style={{ opacity: 0.75, fontSize: '0.7rem', fontWeight: '400' }}>(WCAG 2.1 AA)</span>
         </span>
       </div>
 

@@ -271,7 +271,6 @@ const Dashboard = () => {
           <div style={{ ...styles.patientWelcomeCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <span style={styles.patientEyebrow}>PERSONAL COGNITIVE MONITORING</span>
                 <h1 style={{ ...styles.patientTitle, color: theme.text }}>Welcome back, {user?.name || user?.email?.split('@')[0]}</h1>
                 <p style={{ ...styles.patientSub, color: theme.subtext }}>
                   Longitudinal neuromotor & speech biomarker screening. Take your 3-minute daily tests to maintain baseline accuracy.
@@ -280,10 +279,6 @@ const Dashboard = () => {
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <button style={styles.startTestsBtn} onClick={() => navigate('/tests')}>
                   <span>Take Today's Tests</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
-                  </svg>
                 </button>
                 <button 
                   style={{
@@ -383,16 +378,16 @@ const Dashboard = () => {
                       Days Continuous Streak
                     </span>
                     <span style={{
-                      fontSize: '0.68rem',
+                      fontSize: '0.74rem',
                       fontFamily: "'JetBrains Mono', monospace",
-                      fontWeight: '700',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '9999px',
-                      backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ede0',
-                      color: isDark ? '#a3b18a' : '#273822',
-                      border: `1px solid ${isDark ? '#3d5236' : '#c5d6c2'}`
+                      fontWeight: '600',
+                      color: isDark ? '#22D3EE' : '#0891B2',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px'
                     }}>
-                      {streak?.attended_today ? 'Completed Today' : 'Streak Active'}
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'currentColor' }} />
+                      {streak?.attended_today ? 'Completed today' : 'Active routine'}
                     </span>
                   </div>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: theme.subtext }}>
@@ -532,8 +527,8 @@ const Dashboard = () => {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: '800', fontFamily: "'JetBrains Mono', monospace", color: score?.is_deviating ? (isDark ? '#c5b083' : '#705c30') : (isDark ? '#a3b18a' : '#273822') }}>
-                    CLINICAL LEAD TIME WINDOW: {score?.is_deviating ? '6–8 MONTHS EARLY DRIFT DETECTED' : 'ACTIVE BASELINE SURVEILLANCE'}
+                  <div style={{ fontSize: '0.84rem', fontWeight: '700', fontFamily: "'Inter', system-ui, sans-serif", color: score?.is_deviating ? (isDark ? '#f59e0b' : '#b45309') : (isDark ? '#22D3EE' : '#0891B2') }}>
+                    Clinical lead-time window: {score?.is_deviating ? '6–8 months early drift detected' : 'Active baseline surveillance'}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: theme.subtext, marginTop: '2px' }}>
                     CogniVeil does not diagnose — it buys care teams and families precious time by detecting subtle drift months before symptoms prompt a clinic visit.
@@ -558,98 +553,129 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* 4 Patient Stat Cards */}
+          {/* 4 Patient Stat Cards: Differentiated Hierarchy */}
           <div style={styles.patientStatsGrid}>
-            <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>COGNISCORE</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a3b18a' : '#273822'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="20" x2="18" y2="10"></line>
-                  <line x1="12" y1="20" x2="12" y2="4"></line>
-                  <line x1="6" y1="20" x2="6" y2="14"></line>
-                </svg>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: '0.5rem 0 0.25rem 0' }}>
-                <span style={styles.patientBigScore}>{score?.score != null ? Math.round(score.score * 10) / 10 : 'Not available'}</span>
-                {score?.score != null && <span style={{ color: theme.subtext, fontSize: '0.85rem', fontWeight: '600' }}>/ 100</span>}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Primary Hero Card: CogniScore with Waveform-resolves-to-number motif */}
+            <div style={{ 
+              ...styles.patientHeroStatCard, 
+              backgroundColor: theme.cardBg, 
+              borderColor: isDark ? '#1E293B' : theme.border 
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: '600', fontFamily: "'Newsreader', Georgia, serif", color: theme.text }}>
+                  CogniScore
+                </span>
+                {/* Reserved Diagnostic Risk Indicator */}
                 <span style={{
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: '20px',
-                  fontSize: '0.72rem',
-                  fontWeight: '800',
-                  color: score?.risk_level === 'High' ? (isDark ? '#d9777f' : '#943840') : score?.risk_level === 'Moderate' ? (isDark ? '#c5b083' : '#705c30') : score?.risk_level === 'Low' ? (isDark ? '#a3b18a' : '#3d5236') : theme.subtext,
-                  backgroundColor: score?.risk_level === 'High' ? (isDark ? 'rgba(217, 119, 127, 0.2)' : '#faebec') : score?.risk_level === 'Moderate' ? (isDark ? 'rgba(197, 176, 131, 0.2)' : '#f5f0e4') : score?.risk_level === 'Low' ? (isDark ? 'rgba(163, 177, 138, 0.2)' : '#e8efe6') : (isDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9'),
+                  padding: '0.2rem 0.65rem',
+                  borderRadius: '4px',
+                  fontSize: '0.74rem',
+                  fontWeight: '700',
+                  fontFamily: "'Inter', sans-serif",
+                  letterSpacing: '0.02em',
+                  color: score?.risk_level === 'High' ? '#EF4444' : score?.risk_level === 'Moderate' ? '#F59E0B' : score?.risk_level === 'Low' ? '#10B981' : theme.subtext,
+                  backgroundColor: score?.risk_level === 'High' ? (isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2') : score?.risk_level === 'Moderate' ? (isDark ? 'rgba(245, 158, 11, 0.15)' : '#FFFBEB') : score?.risk_level === 'Low' ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5') : (isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9'),
+                  border: `1px solid ${score?.risk_level === 'High' ? 'rgba(239, 68, 68, 0.3)' : score?.risk_level === 'Moderate' ? 'rgba(245, 158, 11, 0.3)' : score?.risk_level === 'Low' ? 'rgba(16, 185, 129, 0.3)' : 'transparent'}`
                 }}>
-                  {score?.risk_level ? `${score.risk_level} Risk` : 'No assessments yet'}
+                  {score?.risk_level ? `${score.risk_level} Risk` : 'Pending'}
+                </span>
+              </div>
+
+              {/* Signature Motif: Waveform-resolves-to-number */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.75rem 0 0.35rem 0' }}>
+                <svg width="68" height="26" viewBox="0 0 68 26" fill="none" style={{ opacity: isDark ? 0.8 : 0.65, flexShrink: 0 }}>
+                  <path 
+                    d="M2 13 H12 L16 5 L22 21 L28 8 L34 18 L38 10 L44 14 H66" 
+                    stroke={isDark ? '#22D3EE' : '#0891B2'} 
+                    strokeWidth="1.75" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                  />
+                  <circle cx="66" cy="14" r="2" fill={isDark ? '#22D3EE' : '#0891B2'} />
+                </svg>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                  <span style={styles.patientBigScore}>
+                    {score?.score != null ? Math.round(score.score * 10) / 10 : '—'}
+                  </span>
+                  {score?.score != null && (
+                    <span style={{ color: theme.subtext, fontSize: '0.88rem', fontWeight: '500', fontFamily: "'JetBrains Mono', monospace" }}>
+                      / 100
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.2rem' }}>
+                <span style={{ fontSize: '0.75rem', color: theme.subtext }}>
+                  Daily composite neuromotor & speech index
                 </span>
                 {score?.is_deviating && (
-                  <span style={{ fontSize: '0.72rem', color: isDark ? '#d9777f' : '#943840', fontWeight: '700' }}>Drift Alert</span>
+                  <span style={{ 
+                    fontSize: '0.7rem', 
+                    color: '#EF4444', 
+                    fontWeight: '700', 
+                    padding: '0.1rem 0.45rem', 
+                    borderRadius: '4px', 
+                    backgroundColor: 'rgba(239, 68, 68, 0.12)', 
+                    border: '1px solid rgba(239, 68, 68, 0.3)' 
+                  }}>
+                    Drift Alert
+                  </span>
                 )}
               </div>
             </div>
 
-            <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>DAILY BATTERY</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
+            {/* Secondary Card: Daily Battery (decorative calendar icon removed, badge flattened) */}
+            <div style={{ ...styles.patientSecondaryStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: '600', color: theme.subtext, fontFamily: "'Inter', sans-serif" }}>
+                Daily battery
+              </span>
+              <div style={{ margin: '0.4rem 0 0.2rem 0' }}>
+                <p style={{ ...styles.patientCardValue, color: theme.text, margin: 0 }}>
+                  {score?.active_score != null ? `${Math.round(score.active_score)} pts` : 'No tests yet'}
+                </p>
               </div>
-              <p style={{ ...styles.patientCardValue, color: theme.text }}>
-                {score?.active_score != null ? `${Math.round(score.active_score)} pts` : 'No tests yet'}
+              <p style={{ fontSize: '0.74rem', color: theme.subtext, margin: 0 }}>
+                5 micro-tasks completed
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                <span style={{
-                  fontSize: '0.7rem',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontWeight: '700',
-                  padding: '0.1rem 0.45rem',
-                  borderRadius: '9999px',
-                  backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#e2ede0',
-                  color: isDark ? '#a3b18a' : '#273822',
-                  border: `1px solid ${isDark ? '#3d5236' : '#c5d6c2'}`
-                }}>
-                  {streak?.current_streak || history.length || 1}-Day Streak
-                </span>
-                <span style={{ ...styles.patientCardSub, color: theme.subtext, margin: 0 }}>5 Micro-Tasks</span>
-              </div>
             </div>
 
-            <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>VOICE JOURNAL</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {/* Secondary Card: Voice Journal (functional mic icon kept) */}
+            <div style={{ ...styles.patientSecondaryStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: '600', color: theme.subtext, fontFamily: "'Inter', sans-serif" }}>
+                  Voice journal
+                </span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#22D3EE' : '#0891B2'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                   <line x1="12" y1="19" x2="12" y2="23"></line>
                   <line x1="8" y1="23" x2="16" y2="23"></line>
                 </svg>
               </div>
-              <p style={{ ...styles.patientCardValue, color: theme.text }}>
-                {score?.voice_score != null ? `${Math.round(score.voice_score)} pts` : 'No voice recordings yet'}
+              <div style={{ margin: '0.4rem 0 0.2rem 0' }}>
+                <p style={{ ...styles.patientCardValue, color: theme.text, margin: 0 }}>
+                  {score?.voice_score != null ? `${Math.round(score.voice_score)} pts` : 'Pending'}
+                </p>
+              </div>
+              <p style={{ fontSize: '0.74rem', color: theme.subtext, margin: 0 }}>
+                Acoustic pause & fluency telemetry
               </p>
-              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Vernacular speech biomarker routing</p>
             </div>
 
-            <div style={{ ...styles.patientStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <span style={{ ...styles.statCardLabel, color: theme.subtext }}>BEHAVIORAL TELEMETRY</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
+            {/* Secondary Card: Behavioral Telemetry (decorative users icon removed) */}
+            <div style={{ ...styles.patientSecondaryStatCard, backgroundColor: theme.cardBg, borderColor: theme.border }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: '600', color: theme.subtext, fontFamily: "'Inter', sans-serif" }}>
+                Behavioral telemetry
+              </span>
+              <div style={{ margin: '0.4rem 0 0.2rem 0' }}>
+                <p style={{ ...styles.patientCardValue, color: theme.text, margin: 0 }}>
+                  {score?.passive_score != null ? `${Math.round(score.passive_score)} pts` : 'Active'}
+                </p>
               </div>
-              <p style={{ ...styles.patientCardValue, color: theme.text }}>
-                {score?.passive_score != null ? `${Math.round(score.passive_score)} pts` : 'No data yet'}
+              <p style={{ fontSize: '0.74rem', color: theme.subtext, margin: 0 }}>
+                Passive typing & scroll stability
               </p>
-              <p style={{ ...styles.patientCardSub, color: theme.subtext }}>Passive typing & navigation telemetry</p>
             </div>
           </div>
 
@@ -657,9 +683,8 @@ const Dashboard = () => {
           <div style={{ ...styles.card, backgroundColor: theme.cardBg, borderColor: theme.border, marginTop: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
               <div>
-                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#6366f1', letterSpacing: '0.08em' }}>TRANSPARENT SIGNAL FUSION</span>
-                <h3 style={{ ...styles.cardTitle, color: theme.text, margin: '2px 0 0 0' }}>CogniScore Modality Contribution & Primary Drivers</h3>
-                <p style={{ color: theme.subtext, fontSize: '0.8rem', margin: '2px 0 0 0' }}>
+                <h3 style={{ ...styles.cardTitle, color: theme.text, margin: 0 }}>CogniScore Modality Contribution & Primary Drivers</h3>
+                <p style={{ color: theme.subtext, fontSize: '0.8rem', margin: '3px 0 0 0' }}>
                   Deterministic multimodal fusion with transparent weight contributions and individual baseline delta tracking.
                 </p>
               </div>
@@ -708,8 +733,8 @@ const Dashboard = () => {
                 {/* Left Column: Contribution Breakdown */}
                 <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: '800', color: theme.text }}>MODALITY WEIGHT CONTRIBUTIONS</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: isDark ? '#a3b18a' : '#3d5236', fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: '600', color: theme.text }}>Modality weight contributions</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: isDark ? '#22D3EE' : '#0891B2', fontFamily: "'JetBrains Mono', monospace" }}>
                       {score?.voice_score ? 'Tri-Modal (60/20/20)' : 'Bi-Modal (80/20)'}
                     </span>
                   </div>
@@ -759,8 +784,8 @@ const Dashboard = () => {
                 {/* Right Column: Why? PRIMARY CONTRIBUTORS */}
                 <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: '800', color: theme.text }}>WHY? PRIMARY DELTA CONTRIBUTORS</span>
-                    <span style={{ fontSize: '0.72rem', fontWeight: '700', color: theme.subtext }}>VS PERSONAL BASELINE</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: '600', color: theme.text }}>Primary delta contributors</span>
+                    <span style={{ fontSize: '0.72rem', fontWeight: '500', color: theme.subtext }}>vs personal baseline</span>
                   </div>
 
                   {score?.is_deviating ? (
@@ -2025,42 +2050,54 @@ const styles = {
     margin: 0,
   },
   startTestsBtn: {
-    backgroundColor: '#273822',
+    backgroundColor: '#0891b2',
     color: '#ffffff',
     border: 'none',
-    borderRadius: '12px',
-    padding: '0.85rem 1.5rem',
-    fontSize: '0.92rem',
+    borderRadius: '8px',
+    padding: '0.75rem 1.4rem',
+    fontSize: '0.9rem',
     fontWeight: '700',
     cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(39, 56, 34, 0.2)',
+    boxShadow: 'none',
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
   },
   baselineProgressBox: {
     border: '1px solid',
-    borderRadius: '14px',
+    borderRadius: '12px',
     padding: '1rem 1.25rem',
     marginTop: '1.25rem',
   },
   patientStatsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-    gap: '1.25rem',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+    gap: '1rem',
     marginBottom: '1.5rem',
+    alignItems: 'stretch',
+  },
+  patientHeroStatCard: {
+    border: '1px solid',
+    borderRadius: '16px',
+    padding: '1.35rem 1.5rem',
+    boxShadow: 'none',
+  },
+  patientSecondaryStatCard: {
+    border: '1px solid',
+    borderRadius: '10px',
+    padding: '1.15rem 1.25rem',
+    boxShadow: 'none',
   },
   patientStatCard: {
     border: '1px solid',
-    borderRadius: '20px',
-    padding: '1.5rem',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+    borderRadius: '12px',
+    padding: '1.25rem',
+    boxShadow: 'none',
   },
   statCardLabel: {
-    fontSize: '0.72rem',
-    fontFamily: "'JetBrains Mono', monospace",
-    fontWeight: '800',
-    letterSpacing: '0.08em',
+    fontSize: '0.74rem',
+    fontFamily: "'Inter', sans-serif",
+    fontWeight: '600',
   },
   patientBigScore: {
     fontSize: '2.5rem',
