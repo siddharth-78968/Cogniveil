@@ -28,6 +28,15 @@ from agents.audit import AuditAgent
 import mcp_tools
 
 
+def _fmt_float(val: Any, default: str = "N/A", precision: int = 1) -> str:
+    if val is None:
+        return default
+    try:
+        return f"{float(val):.{precision}f}"
+    except (ValueError, TypeError):
+        return default
+
+
 class ChatAgent:
     """Read-only personal assistant for patient cognitive screening telemetry and trends."""
 
@@ -63,14 +72,14 @@ class ChatAgent:
             score_lines = []
             for s in scores[:10]:
                 d_str = s.created_at.strftime("%Y-%m-%d") if s.created_at else "recent"
-                score_lines.append(f"  - Date: {d_str}, CogniScore: {s.score:.1f}, Risk: {s.risk_level}, Active Score: {s.active_score:.1f}, Passive Telemetry: {s.passive_score:.1f}, EWMA: {s.ewma_score:.1f}, CUSUM: {s.cusum_value:.1f}, Deviating: {s.is_deviating}")
+                score_lines.append(f"  - Date: {d_str}, CogniScore: {_fmt_float(s.score)}, Risk: {s.risk_level}, Active Score: {_fmt_float(s.active_score)}, Passive Telemetry: {_fmt_float(s.passive_score)}, EWMA: {_fmt_float(s.ewma_score)}, CUSUM: {_fmt_float(s.cusum_value)}, Deviating: {s.is_deviating}")
             score_summary = "\n".join(score_lines) if score_lines else "No scores recorded yet."
 
             test_lines = []
             for t in tests[:8]:
                 d_str = t.created_at.strftime("%Y-%m-%d") if t.created_at else "recent"
                 t_name = (t.test_type or "test").replace("_", " ").title()
-                test_lines.append(f"  - {t_name}: Score {t.score:.1f}/100 on {d_str} (Duration: {t.duration_seconds or 0}s)")
+                test_lines.append(f"  - {t_name}: Score {_fmt_float(t.score)}/100 on {d_str} (Duration: {t.duration_seconds or 0}s)")
             test_summary = "\n".join(test_lines) if test_lines else "No individual tests recorded yet."
 
             apt_lines = []
@@ -97,7 +106,7 @@ Patient Name: {user.name} (Age: {user.age}, Gender: {user.gender})
 Current Status: Baseline {getattr(user, 'baseline_status', 'established')}
 
 LATEST ASSESSMENT:
-{f"Score: {latest_score.score:.1f}/100 ({latest_score.risk_level} Risk) | Active: {latest_score.active_score:.1f}/100 | Passive: {latest_score.passive_score:.1f}/100 | EWMA: {latest_score.ewma_score:.1f} | CUSUM: {latest_score.cusum_value:.1f} | Deviating: {latest_score.is_deviating}" if latest_score else "No screening session recorded."}
+{f"Score: {_fmt_float(latest_score.score)}/100 ({latest_score.risk_level or 'Unassessed'} Risk) | Active: {_fmt_float(latest_score.active_score)}/100 | Passive: {_fmt_float(latest_score.passive_score)}/100 | EWMA: {_fmt_float(latest_score.ewma_score)} | CUSUM: {_fmt_float(latest_score.cusum_value)} | Deviating: {latest_score.is_deviating}" if latest_score else "No screening session recorded."}
 
 SCORE HISTORY:
 {score_summary}
@@ -266,15 +275,7 @@ INSTRUCTIONS:
         question: str,
         session_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Main execution flow for user-grounded Q&A and progress tracking.
-
-        Flow:
-        (a) Fetch user's own ClinicalReport / CogniScore / Appointment rows (user_id scoped).
-        (b) Call 13_retrieve_guideline if guideline context is needed.
-        (c) Synthesize a grounded response based ONLY on (a) and (b).
-        (d) Pass draft response through existing SafetyAgent guardrail check.
-        (e) Log the interaction via existing AuditAgent.
-        """
+        """Main execution flow for user-grounded Q&A and progress tracking."""
         q_clean = question.strip()
         q_lower = q_clean.lower()
         sources_used: List[str] = []
@@ -336,7 +337,7 @@ INSTRUCTIONS:
                 t_date = t0.created_at.strftime("%Y-%m-%d") if t0.created_at else "recent session"
                 draft_response = (
                     f"You have completed {len(tests)} test sessions. Your most recent test was {t_name} "
-                    f"with a score of {t0.score:.1f}/100 recorded on {t_date}."
+                    f"with a score of {_fmt_float(t0.score)}/100 recorded on {t_date}."
                 )
             else:
                 draft_response = "You have not completed any cognitive tests yet. Head over to the Daily Tests tab to begin."
@@ -354,9 +355,9 @@ INSTRUCTIONS:
         # Branch 2: Direct Diagnostic Inquiries -> Safety redirection & screening context
         elif self._is_diagnostic_query(q_lower):
             sources_used.append("CogniVeil Screening Telemetry (Personal Database)")
-            score_val = f"{latest_score.score:.1f}" if latest_score else "N/A"
+            score_val = _fmt_float(latest_score.score) if latest_score else "N/A"
             risk_val = latest_score.risk_level if latest_score else "Baseline Collecting"
-            ewma_val = f"{latest_score.ewma_score:.1f}" if latest_score and latest_score.ewma_score else "N/A"
+            ewma_val = _fmt_float(latest_score.ewma_score) if latest_score else "N/A"
             is_dev = latest_score.is_deviating if latest_score else False
 
             dev_text = "indicates active deviation from your established baseline" if is_dev else "demonstrates stability relative to your baseline"
@@ -410,8 +411,8 @@ INSTRUCTIONS:
             elif len(scores) == 1:
                 s0 = scores[0]
                 draft_response = (
-                    f"Your current CogniScore is {s0.score:.1f} ({s0.risk_level} Risk). "
-                    f"Active psychometric score: {s0.active_score:.1f}, Passive behavioral telemetry: {s0.passive_score:.1f}. "
+                    f"Your current CogniScore is {_fmt_float(s0.score)} ({s0.risk_level or 'Unassessed'} Risk). "
+                    f"Active psychometric score: {_fmt_float(s0.active_score)}, Passive behavioral telemetry: {_fmt_float(s0.passive_score)}. "
                     f"Because you have completed 1 session, your baseline calibration is currently establishing. "
                     f"Continue your daily assessments over the next 7 days to generate EWMA trajectory curves."
                 )
@@ -419,19 +420,21 @@ INSTRUCTIONS:
                 # Longitudinal analysis over available window
                 s_current = scores[0]
                 s_prev = scores[min(len(scores) - 1, 6)]  # ~7 days or oldest available
-                diff = round(s_current.score - s_prev.score, 1)
+                sc_curr = s_current.score if s_current.score is not None else 0.0
+                sc_prev = s_prev.score if s_prev.score is not None else 0.0
+                diff = round(sc_curr - sc_prev, 1)
                 diff_str = f"+{diff}" if diff > 0 else f"{diff}"
                 
-                ewma_str = f"{s_current.ewma_score:.1f}" if s_current.ewma_score else f"{s_current.score:.1f}"
-                cusum_str = f"{s_current.cusum_value:.1f}" if s_current.cusum_value else "0.0"
+                ewma_str = _fmt_float(s_current.ewma_score, default=_fmt_float(s_current.score))
+                cusum_str = _fmt_float(s_current.cusum_value, default="0.0")
                 dev_status = "showing significant statistical drift (CUSUM alert)" if s_current.is_deviating else "stable within normative baseline limits"
 
                 draft_response = (
-                    f"Over the recorded period (last {len(scores)} sessions), your CogniScore moved from {s_prev.score:.1f} "
-                    f"to {s_current.score:.1f} ({diff_str} points, currently {s_current.risk_level} Risk). "
+                    f"Over the recorded period (last {len(scores)} sessions), your CogniScore moved from {_fmt_float(s_prev.score)} "
+                    f"to {_fmt_float(s_current.score)} ({diff_str} points, currently {s_current.risk_level or 'Unassessed'} Risk). "
                     f"Your EWMA (exponentially weighted moving average) score is {ewma_str} with a CUSUM drift value of {cusum_str}, "
                     f"which is {dev_status}. "
-                    f"Your latest active test score was {s_current.active_score:.1f} and passive digital telemetry was {s_current.passive_score:.1f}."
+                    f"Your latest active test score was {_fmt_float(s_current.active_score)} and passive digital telemetry was {_fmt_float(s_current.passive_score)}."
                 )
 
         # Branch 5: Report / Evidence / Subdomain Explanation
@@ -442,14 +445,14 @@ INSTRUCTIONS:
                 specialist_text = f" Recommended follow-up: {latest_report.recommended_specialist}." if latest_report.recommended_specialist else ""
                 snippet = (latest_report.narrative[:400] + "...") if len(latest_report.narrative or "") > 400 else (latest_report.narrative or "Report summary available.")
                 draft_response = (
-                    f"Your latest clinical screening summary recorded a CogniScore of {latest_report.cogni_score:.1f} "
-                    f"({latest_report.risk_level} Risk).{urgency_text}{specialist_text}\n\n"
+                    f"Your latest clinical screening summary recorded a CogniScore of {_fmt_float(latest_report.cogni_score)} "
+                    f"({latest_report.risk_level or 'Unassessed'} Risk).{urgency_text}{specialist_text}\n\n"
                     f"Key Excerpt: {snippet}"
                 )
             elif latest_score:
                 draft_response = (
-                    f"Your latest screening session recorded a CogniScore of {latest_score.score:.1f} ({latest_score.risk_level} Risk). "
-                    f"Active cognitive battery: {latest_score.active_score:.1f}, Passive behavioral telemetry: {latest_score.passive_score:.1f}. "
+                    f"Your latest screening session recorded a CogniScore of {_fmt_float(latest_score.score)} ({latest_score.risk_level or 'Unassessed'} Risk). "
+                    f"Active cognitive battery: {_fmt_float(latest_score.active_score)}, Passive behavioral telemetry: {_fmt_float(latest_score.passive_score)}. "
                     f"Baseline status is '{latest_score.baseline_status}'. You can generate a full clinical referral PDF from your dashboard."
                 )
             else:
@@ -472,7 +475,7 @@ INSTRUCTIONS:
             if latest_score:
                 draft_response = (
                     f"I can assist you with details regarding your personal CogniVeil screening results. "
-                    f"Your latest recorded CogniScore is {latest_score.score:.1f} ({latest_score.risk_level} Risk). "
+                    f"Your latest recorded CogniScore is {_fmt_float(latest_score.score)} ({latest_score.risk_level or 'Unassessed'} Risk). "
                     f"You can ask me about your weekly score trends, EWMA/CUSUM trajectory, upcoming clinical check-ins, "
                     f"or guideline referral criteria."
                 )
@@ -516,3 +519,4 @@ INSTRUCTIONS:
             "sources_used": sources_used,
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
+

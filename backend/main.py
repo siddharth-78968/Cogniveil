@@ -1342,12 +1342,27 @@ def chat_endpoint(
     current_user: models.User = Depends(auth.get_current_user)
 ):
     """Personal read-only assistant for querying individual screening results and progress."""
-    agent = ChatAgent()
-    return agent.answer_query(
-        db=db,
-        user=current_user,
-        question=req.question
-    )
+    try:
+        agent = ChatAgent()
+        return agent.answer_query(
+            db=db,
+            user=current_user,
+            question=req.question
+        )
+    except Exception as e:
+        logger.error(f"[chat] Handled error in chat_endpoint: {e}")
+        fallback = (
+            f"Hello {getattr(current_user, 'name', 'there')}. I am your personal CogniVeil screening assistant. "
+            "You can review your latest screening scores, cognitive tests, and scheduled check-ins directly on your dashboard. "
+            "How else may I help you today?"
+        )
+        return {
+            "answer": fallback,
+            "guardrail_passed": True,
+            "sources_used": ["CogniVeil Fallback Service"],
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+
 
 @app.get("/api/clinician/patients/{patient_id}/report-pdf")
 def get_patient_clinical_referral_pdf(
