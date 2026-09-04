@@ -719,7 +719,7 @@ const Login = () => {
                   type="button"
                   onClick={() => setGoogleRole('patient')}
                   style={{
-                    padding: '8px 10px',
+                    padding: '0.65rem 0.9rem',
                     borderRadius: '10px',
                     border: googleRole === 'patient'
                       ? '1.5px solid #10b981'
@@ -727,25 +727,30 @@ const Login = () => {
                     backgroundColor: googleRole === 'patient'
                       ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#eaf6ec')
                       : (isDark ? '#141c14' : '#f7faf5'),
-                    color: googleRole === 'patient' ? '#10b981' : (isDark ? '#9db099' : '#576c52'),
-                    fontSize: '0.82rem',
-                    fontWeight: '700',
+                    color: googleRole === 'patient' ? (isDark ? '#34d399' : '#059669') : (isDark ? '#9db099' : '#576c52'),
+                    fontSize: '0.86rem',
+                    fontWeight: '600',
+                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                    letterSpacing: '0.015em',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px',
+                    gap: '7px',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <span>👤</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: googleRole === 'patient' ? 1 : 0.75, flexShrink: 0 }}>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
                   <span>Patient</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setGoogleRole('clinician')}
                   style={{
-                    padding: '8px 10px',
+                    padding: '0.65rem 0.9rem',
                     borderRadius: '10px',
                     border: googleRole === 'clinician'
                       ? '1.5px solid #0ea5e9'
@@ -753,18 +758,26 @@ const Login = () => {
                     backgroundColor: googleRole === 'clinician'
                       ? (isDark ? 'rgba(14, 165, 233, 0.15)' : '#eaf4fa')
                       : (isDark ? '#141c14' : '#f7faf5'),
-                    color: googleRole === 'clinician' ? '#0ea5e9' : (isDark ? '#9db099' : '#576c52'),
-                    fontSize: '0.82rem',
-                    fontWeight: '700',
+                    color: googleRole === 'clinician' ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#9db099' : '#576c52'),
+                    fontSize: '0.86rem',
+                    fontWeight: '600',
+                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                    letterSpacing: '0.015em',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px',
+                    gap: '7px',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <span>🩺</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: googleRole === 'clinician' ? 1 : 0.75, flexShrink: 0 }}>
+                    <path d="M4.5 3v5a6 6 0 0 0 12 0V3" />
+                    <line x1="3" y1="3" x2="6" y2="3" />
+                    <line x1="15" y1="13" x2="18" y2="13" />
+                    <path d="M10.5 14v4a4 4 0 0 0 8 0v-2" />
+                    <circle cx="18.5" cy="16" r="2" />
+                  </svg>
                   <span>Clinician / Doctor</span>
                 </button>
               </div>
