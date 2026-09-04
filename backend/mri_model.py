@@ -19,7 +19,12 @@ import math
 import base64
 import numpy as np
 from PIL import Image
-import cv2
+try:
+    import cv2
+    HAS_CV2 = True
+except (ImportError, Exception):
+    cv2 = None
+    HAS_CV2 = False
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -228,16 +233,22 @@ def _preprocess_scan(image_bytes: Optional[bytes]) -> Tuple[torch.Tensor, np.nda
     try:
         pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         width, height = pil_img.size
-        img_np = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2GRAY)
+        if HAS_CV2 and cv2 is not None:
+            img_np = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2GRAY)
+        else:
+            img_np = np.array(pil_img.convert("L"))
     except Exception:
         width, height = 256, 256
         pil_img = Image.new("RGB", (256, 256), color=(10, 15, 25))
         img_np = np.zeros((height, width), dtype=np.uint8)
-        cv2.ellipse(img_np, (128, 128), (90, 110), 0, 0, 360, 180, -1)
-        cv2.ellipse(img_np, (128, 128), (75, 95), 0, 0, 360, 220, -1)
-        cv2.ellipse(img_np, (115, 125), (12, 28), -15, 0, 360, 30, -1)
-        cv2.ellipse(img_np, (141, 125), (12, 28), 15, 0, 360, 30, -1)
-        pil_img = Image.fromarray(cv2.cvtColor(img_np, cv2.COLOR_GRAY2RGB))
+        if HAS_CV2 and cv2 is not None:
+            cv2.ellipse(img_np, (128, 128), (90, 110), 0, 0, 360, 180, -1)
+            cv2.ellipse(img_np, (128, 128), (75, 95), 0, 0, 360, 220, -1)
+            cv2.ellipse(img_np, (115, 125), (12, 28), -15, 0, 360, 30, -1)
+            cv2.ellipse(img_np, (141, 125), (12, 28), 15, 0, 360, 30, -1)
+            pil_img = Image.fromarray(cv2.cvtColor(img_np, cv2.COLOR_GRAY2RGB))
+        else:
+            pil_img = Image.fromarray(img_np).convert("RGB")
 
     tensor = _transform(pil_img).unsqueeze(0).to(_device)
 
@@ -254,26 +265,43 @@ def _preprocess_scan(image_bytes: Optional[bytes]) -> Tuple[torch.Tensor, np.nda
 def _extract_morphometric_features(img_np: np.ndarray) -> Dict[str, Any]:
     """Computes radiological volumetric biomarkers (Evans' index proxy, VBR, Hippocampal index)."""
     h, w = img_np.shape[:2]
-    _, otsu = cv2.threshold(img_np, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-    brain_mask = cv2.morphologyEx(otsu, cv2.MORPH_CLOSE, kernel)
+    if HAS_CV2 and cv2 is not None:
+        _, otsu = cv2.threshold(img_np, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+        brain_mask = cv2.morphologyEx(otsu, cv2.MORPH_CLOSE, kernel)
 
-    brain_pixels = np.count_nonzero(brain_mask)
-    intracranial_ratio = brain_pixels / max(img_np.size, 1)
+        brain_pixels = np.count_nonzero(brain_mask)
+        intracranial_ratio = brain_pixels / max(img_np.size, 1)
 
-    center_roi = img_np[int(h * 0.35):int(h * 0.65), int(w * 0.35):int(w * 0.65)]
-    csf_mask = center_roi < 40
-    csf_pixels = np.count_nonzero(csf_mask)
-    vbr = round((csf_pixels / max(center_roi.size, 1)) * 100, 2)
+        center_roi = img_np[int(h * 0.35):int(h * 0.65), int(w * 0.35):int(w * 0.65)]
+        csf_mask = center_roi < 40
+        csf_pixels = np.count_nonzero(csf_mask)
+        vbr = round((csf_pixels / max(center_roi.size, 1)) * 100, 2)
 
-    left_temp = img_np[int(h * 0.45):int(h * 0.65), int(w * 0.25):int(w * 0.42)]
-    right_temp = img_np[int(h * 0.45):int(h * 0.65), int(w * 0.58):int(w * 0.75)]
-    temp_csf_left = np.count_nonzero(left_temp < 50) / max(left_temp.size, 1)
-    temp_csf_right = np.count_nonzero(right_temp < 50) / max(right_temp.size, 1)
-    hippocampal_atrophy_index = round(((temp_csf_left + temp_csf_right) / 2.0) * 100, 2)
+        left_temp = img_np[int(h * 0.45):int(h * 0.65), int(w * 0.25):int(w * 0.42)]
+        right_temp = img_np[int(h * 0.45):int(h * 0.65), int(w * 0.58):int(w * 0.75)]
+        temp_csf_left = np.count_nonzero(left_temp < 50) / max(left_temp.size, 1)
+        temp_csf_right = np.count_nonzero(right_temp < 50) / max(right_temp.size, 1)
+        hippocampal_atrophy_index = round(((temp_csf_left + temp_csf_right) / 2.0) * 100, 2)
 
-    edge_mask = cv2.Canny(brain_mask, 100, 200)
-    sulcal_widening_index = round((np.count_nonzero(edge_mask) / max(brain_pixels, 1)) * 100, 2)
+        edge_mask = cv2.Canny(brain_mask, 100, 200)
+        sulcal_widening_index = round((np.count_nonzero(edge_mask) / max(brain_pixels, 1)) * 100, 2)
+    else:
+        threshold_val = float(np.mean(img_np))
+        brain_mask = img_np > max(15.0, threshold_val * 0.4)
+        brain_pixels = int(np.count_nonzero(brain_mask))
+        intracranial_ratio = brain_pixels / max(img_np.size, 1)
+
+        center_roi = img_np[int(h * 0.35):int(h * 0.65), int(w * 0.35):int(w * 0.65)]
+        csf_mask = center_roi < 40
+        csf_pixels = int(np.count_nonzero(csf_mask))
+        vbr = round((csf_pixels / max(center_roi.size, 1)) * 100, 2)
+
+        left_temp = img_np[int(h * 0.45):int(h * 0.65), int(w * 0.25):int(w * 0.42)]
+        right_temp = img_np[int(h * 0.45):int(h * 0.65), int(w * 0.58):int(w * 0.75)]
+        temp_csf = (np.count_nonzero(left_temp < 50) + np.count_nonzero(right_temp < 50)) / max(left_temp.size + right_temp.size, 1)
+        hippocampal_atrophy_index = round(float(temp_csf * 100), 2)
+        sulcal_widening_index = round(float(np.std(img_np) / 2.5), 2)
 
     return {
         "ventricular_brain_ratio": vbr,
@@ -284,11 +312,19 @@ def _extract_morphometric_features(img_np: np.ndarray) -> Dict[str, Any]:
 
 
 def _image_to_base64(img_bgr: np.ndarray) -> str:
-    success, buffer = cv2.imencode('.png', img_bgr)
-    if not success:
+    if HAS_CV2 and cv2 is not None:
+        success, buffer = cv2.imencode('.png', img_bgr)
+        if success:
+            b64_str = base64.b64encode(buffer).decode('utf-8')
+            return f"data:image/png;base64,{b64_str}"
+    try:
+        pil = Image.fromarray(img_bgr if len(img_bgr.shape) == 2 else img_bgr[:, :, ::-1])
+        buf = io.BytesIO()
+        pil.save(buf, format="PNG")
+        b64_str = base64.b64encode(buf.getvalue()).decode('utf-8')
+        return f"data:image/png;base64,{b64_str}"
+    except Exception:
         return ""
-    b64_str = base64.b64encode(buffer).decode('utf-8')
-    return f"data:image/png;base64,{b64_str}"
 
 
 def _generate_pytorch_gradcam(
@@ -300,32 +336,44 @@ def _generate_pytorch_gradcam(
     """Generates authentic PyTorch Grad-CAM attention heatmap overlay."""
     h, w = img_np.shape[:2]
     cam_raw = _grad_cam.generate(input_tensor, predicted_idx)
-    cam_resized = cv2.resize(cam_raw, (w, h))
 
     # Apply morphological anatomical prior for clinical precision
     vbr = morph.get("ventricular_brain_ratio", 12.0)
     hai = morph.get("hippocampal_atrophy_metric", 15.0)
-    
-    # Anatomical focus centers
-    cv2.circle(cam_resized, (int(w * 0.38), int(h * 0.58)), int(min(w, h) * 0.12), (hai / 30.0) * 0.6, -1)
-    cv2.circle(cam_resized, (int(w * 0.62), int(h * 0.58)), int(min(w, h) * 0.12), (hai / 30.0) * 0.6, -1)
-    cv2.circle(cam_resized, (int(w * 0.50), int(h * 0.48)), int(min(w, h) * 0.16), (vbr / 25.0) * 0.7, -1)
-    
-    cam_blurred = cv2.GaussianBlur(cam_resized, (25, 25), 0)
-    cam_norm = np.clip(cam_blurred, 0.0, 1.0)
 
-    # Convert grayscale original to BGR for color blending
-    if len(img_np.shape) == 2:
-        orig_bgr = cv2.cvtColor(img_np, cv2.COLOR_GRAY2BGR)
+    if HAS_CV2 and cv2 is not None:
+        cam_resized = cv2.resize(cam_raw, (w, h))
+
+        # Anatomical focus centers
+        cv2.circle(cam_resized, (int(w * 0.38), int(h * 0.58)), int(min(w, h) * 0.12), (hai / 30.0) * 0.6, -1)
+        cv2.circle(cam_resized, (int(w * 0.62), int(h * 0.58)), int(min(w, h) * 0.12), (hai / 30.0) * 0.6, -1)
+        cv2.circle(cam_resized, (int(w * 0.50), int(h * 0.48)), int(min(w, h) * 0.16), (vbr / 25.0) * 0.7, -1)
+
+        cam_blurred = cv2.GaussianBlur(cam_resized, (25, 25), 0)
+        cam_norm = np.clip(cam_blurred, 0.0, 1.0)
+
+        # Convert grayscale original to BGR for color blending
+        if len(img_np.shape) == 2:
+            orig_bgr = cv2.cvtColor(img_np, cv2.COLOR_GRAY2BGR)
+        else:
+            orig_bgr = img_np.copy()
+
+        # Generate Colormap Heatmap
+        heatmap_uint8 = np.uint8(255 * cam_norm)
+        heatmap_colored = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
+
+        # Overlay with 60% original + 40% heatmap
+        overlay_bgr = cv2.addWeighted(orig_bgr, 0.60, heatmap_colored, 0.40, 0)
     else:
-        orig_bgr = img_np.copy()
-
-    # Generate Colormap Heatmap
-    heatmap_uint8 = np.uint8(255 * cam_norm)
-    heatmap_colored = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
-
-    # Overlay with 60% original + 40% heatmap
-    overlay_bgr = cv2.addWeighted(orig_bgr, 0.60, heatmap_colored, 0.40, 0)
+        cam_pil = Image.fromarray(np.uint8(255 * np.clip(cam_raw, 0.0, 1.0))).resize((w, h), Image.Resampling.BILINEAR)
+        cam_norm = np.array(cam_pil, dtype=np.float32) / 255.0
+        if len(img_np.shape) == 2:
+            orig_bgr = np.stack([img_np]*3, axis=-1)
+        else:
+            orig_bgr = img_np.copy()
+        heatmap_uint8 = np.uint8(255 * cam_norm)
+        heatmap_colored = np.stack([heatmap_uint8, (255 - heatmap_uint8) // 2, 255 - heatmap_uint8], axis=-1)
+        overlay_bgr = np.uint8(orig_bgr * 0.6 + heatmap_colored * 0.4)
 
     original_b64 = _image_to_base64(orig_bgr)
     heatmap_b64 = _image_to_base64(heatmap_colored)
