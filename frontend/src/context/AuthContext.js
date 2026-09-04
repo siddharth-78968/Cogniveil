@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { loginUser, registerUser, getCurrentUser, getProfile, loginWithGoogle } from '../utils/api';
+import { loginUser, registerUser, getCurrentUser, getProfile, loginWithGoogle, demoAuth } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -43,6 +43,42 @@ export const AuthProvider = ({ children }) => {
     // Normalize role
     if (!userData.role) {
       userData.role = userData.is_caregiver ? 'clinician' : 'patient';
+    }
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('userEmail', userData.email || email);
+    setUser(userData);
+    return res;
+  };
+
+  const loginDemo = async (email) => {
+    const res = await demoAuth(email);
+    const accessToken = res.data.access_token;
+    localStorage.setItem('token', accessToken);
+    setToken(accessToken);
+
+    let userData = { 
+      email, 
+      role: (email === 'riyamehta55@gmail.com' ? 'clinician' : 'patient'), 
+      is_caregiver: (email === 'riyamehta55@gmail.com') 
+    };
+    if (res.data && res.data.user) {
+      userData = res.data.user;
+    } else {
+      try {
+        const meRes = await getCurrentUser();
+        userData = meRes.data;
+      } catch (_) {
+        try {
+          const profRes = await getProfile();
+          userData = profRes.data;
+        } catch (err) {
+          // fallback
+        }
+      }
+    }
+    // Normalize role
+    if (!userData.role) {
+      userData.role = (email === 'riyamehta55@gmail.com' || userData.is_caregiver) ? 'clinician' : 'patient';
     }
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('userEmail', userData.email || email);
@@ -132,7 +168,7 @@ export const AuthProvider = ({ children }) => {
   const isPatient = !isClinician;
 
   return (
-    <AuthContext.Provider value={{ user, token, login, googleLogin, register, refreshUser, updateProfile, logout, loading, isClinician, isPatient }}>
+    <AuthContext.Provider value={{ user, token, login, loginDemo, googleLogin, register, refreshUser, updateProfile, logout, loading, isClinician, isPatient }}>
       {children}
     </AuthContext.Provider>
   );

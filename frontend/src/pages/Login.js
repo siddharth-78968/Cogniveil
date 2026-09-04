@@ -20,7 +20,7 @@ const Login = () => {
   const [showPass, setShowPass] = useState(false);
   const [googleRole, setGoogleRole] = useState('patient');
   const [notRegisteredGoogleEmail, setNotRegisteredGoogleEmail] = useState('');
-  const { login, googleLogin } = useAuth();
+  const { login, loginDemo, googleLogin } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -119,15 +119,20 @@ const Login = () => {
     });
   };
 
-  const handleDemoLogin = async (demoEmail, demoPass = 'demo1234') => {
+  const handleDemoLogin = async (demoEmail) => {
     setEmail(demoEmail);
-    setPassword(demoPass);
+    setPassword('demo1234');
     setLoading(true);
     setError('');
     try {
-      const res = await login(demoEmail, demoPass);
+      let res;
+      if (typeof loginDemo === 'function') {
+        res = await loginDemo(demoEmail);
+      } else {
+        res = await login(demoEmail, 'demo1234');
+      }
       const userObj = res.data?.user;
-      const isClinician = userObj?.role === 'clinician' || userObj?.is_caregiver;
+      const isClinician = userObj?.role === 'clinician' || userObj?.is_caregiver || demoEmail === 'riyamehta55@gmail.com';
       if (isClinician) {
         navigate('/patients');
       } else {
@@ -135,20 +140,20 @@ const Login = () => {
       }
     } catch (err) {
       try {
-        const res2 = await login(demoEmail, 'password123');
+        const res2 = await login(demoEmail, 'demo1234');
         const userObj2 = res2.data?.user;
-        const isClinician2 = userObj2?.role === 'clinician' || userObj2?.is_caregiver;
+        const isClinician2 = userObj2?.role === 'clinician' || userObj2?.is_caregiver || demoEmail === 'riyamehta55@gmail.com';
         if (isClinician2) {
           navigate('/patients');
         } else {
           navigate('/dashboard');
         }
       } catch (err2) {
-        if (err.code === 'ERR_NETWORK' || !err.response) {
+        if (err2.code === 'ERR_NETWORK' || !err2.response) {
           setError('Cannot connect to backend server. Please ensure the Python backend is running on port 8000.');
-        } else if (err.response?.data?.detail) {
-          const detail = err.response.data.detail;
-          setError(typeof detail === 'string' ? detail : 'Invalid email or password.');
+        } else if (err2.response?.data?.detail) {
+          const detail = err2.response.data.detail;
+          setError(typeof detail === 'string' ? detail : 'Failed to login with demo account.');
         } else {
           setError('Failed to login with demo account. Ensure the backend is running.');
         }

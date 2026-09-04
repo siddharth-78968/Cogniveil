@@ -164,14 +164,54 @@ def api_health():
 @app.post("/api/auth/demo", response_model=schemas.Token)
 def demo_login_endpoint(email: str = "arjun@demo.com", db: Session = Depends(get_db)):
     """Fast-path authentication endpoint for pre-configured demo profiles."""
-    user = db.query(models.User).filter(models.User.email == email).first()
+    clean_email = email.strip().lower() if email else "arjun@demo.com"
+    user = db.query(models.User).filter(models.User.email == clean_email).first()
     if not user:
         auto_seed_if_needed()
-        user = db.query(models.User).filter(models.User.email == email).first()
+        user = db.query(models.User).filter(models.User.email == clean_email).first()
+    if not user and email:
+        user = db.query(models.User).filter(models.User.email == email.strip()).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Demo account not found")
-    token = auth.create_access_token(data={"sub": user.email}, expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES))
-    return {"access_token": token, "token_type": "bearer"}
+        # Auto-create demo user on demand
+        is_clinician = (clean_email == "riyamehta55@gmail.com" or "supervisor" in clean_email or "doctor" in clean_email or "dr." in clean_email)
+        user = models.User(
+            name="Dr. Riya Mehta" if clean_email == "riyamehta55@gmail.com" else clean_email.split('@')[0].capitalize(),
+            email=clean_email,
+            hashed_password=auth.get_password_hash("demo1234"),
+            age=38 if is_clinician else 68,
+            gender="Female" if clean_email in ["riyamehta55@gmail.com", "meena@demo.com"] else "Male",
+            role="clinician" if is_clinician else "patient",
+            is_caregiver=is_clinician,
+            consent_granted=True,
+            baseline_status="completed",
+            level2_status="not_collected"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    if not hasattr(user, 'role') or not user.role:
+        user.role = "clinician" if user.is_caregiver else "patient"
+        db.commit()
+
+    token = auth.create_access_token(
+        data={
+            "sub": user.email,
+            "role": user.role,
+            "user_id": user.id,
+            "name": user.name
+        }, 
+        expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    
+    pipeline_state = "consent_required" if not user.consent_granted else ("baseline_period" if user.baseline_status == "collecting" else "full_pipeline_completed")
+    mcp_tools.log_audit(db, user.id, "demo_login", {"email": clean_email, "role": user.role}, {"status": "authenticated"}, pipeline_state=pipeline_state)
+    
+    return {
+        "access_token": token, 
+        "token_type": "bearer",
+        "user": user
+    }
 
 @app.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -225,10 +265,41 @@ def grant_consent(req: schemas.ConsentRequest, db: Session = Depends(get_db), cu
 @app.post("/login", response_model=schemas.Token)
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     clean_email = user.email.strip().lower() if user.email else ""
+    is_demo = clean_email.endswith("@demo.com") or clean_email == "riyamehta55@gmail.com" or "demo" in clean_email
+    
     db_user = db.query(models.User).filter(models.User.email == clean_email).first()
     if not db_user and user.email:
         db_user = db.query(models.User).filter(models.User.email == user.email.strip()).first()
-    if not db_user or not auth.verify_password(user.password, db_user.hashed_password):
+    
+    if is_demo and not db_user:
+        auto_seed_if_needed()
+        db_user = db.query(models.User).filter(models.User.email == clean_email).first()
+        if not db_user and user.email:
+            db_user = db.query(models.User).filter(models.User.email == user.email.strip()).first()
+            
+    if not db_user:
+        if is_demo:
+            is_clinician = (clean_email == "riyamehta55@gmail.com" or "supervisor" in clean_email or "doctor" in clean_email or "dr." in clean_email)
+            db_user = models.User(
+                name="Dr. Riya Mehta" if clean_email == "riyamehta55@gmail.com" else clean_email.split('@')[0].capitalize(),
+                email=clean_email,
+                hashed_password=auth.get_password_hash("demo1234"),
+                age=38 if is_clinician else 68,
+                gender="Female" if clean_email in ["riyamehta55@gmail.com", "meena@demo.com"] else "Male",
+                role="clinician" if is_clinician else "patient",
+                is_caregiver=is_clinician,
+                consent_granted=True,
+                baseline_status="completed",
+                level2_status="not_collected"
+            )
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+        else:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+            
+    # For demo users, authentication passes through directly without requiring password matching
+    if not is_demo and not auth.verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     if not hasattr(db_user, 'role') or not db_user.role:
