@@ -103,6 +103,23 @@ export const sendChatMessage = (question) => API.post('/chat', { question });
 // Ping backend endpoint
 export const pingBackend = () => API.get('/');
 
+// Automated Cognitive Assessment Session APIs
+export const startAssessmentSession = (patientId = null, battery = null) => 
+  API.post('/api/assessment-sessions/start', { patient_id: patientId, battery });
+export const getAssessmentSession = (sessionUuid) => 
+  API.get(`/api/assessment-sessions/${sessionUuid}`);
+export const submitAssessmentTest = (sessionUuid, payload) => 
+  API.post(`/api/assessment-sessions/${sessionUuid}/submit-test`, payload);
+export const pauseAssessmentSession = (sessionUuid) => 
+  API.post(`/api/assessment-sessions/${sessionUuid}/pause`);
+export const resumeAssessmentSession = (sessionUuid) => 
+  API.post(`/api/assessment-sessions/${sessionUuid}/resume`);
+export const cancelAssessmentSession = (sessionUuid) => 
+  API.post(`/api/assessment-sessions/${sessionUuid}/cancel`);
+export const getActivePatientAssessment = (patientId) => 
+  API.get(`/api/clinician/patients/${patientId}/active-assessment`);
+
+
 
 
 

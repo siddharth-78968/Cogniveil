@@ -43,6 +43,15 @@ def run_direct_tests():
             db.add(patient)
             db.commit()
             db.refresh(patient)
+        
+        # Ensure patient has at least one test score for referral PDF generation
+        has_score = db.query(models.CogniScore).filter(models.CogniScore.user_id == patient.id).first()
+        if not has_score:
+            db.add(models.CogniScore(
+                user_id=patient.id, score=64.2, active_score=60.0, passive_score=68.0,
+                risk_level="Moderate", is_deviating=True
+            ))
+            db.commit()
         print(f"[PASS] 2. Patient User Verified (ID: {patient.id}, Name: {patient.name})")
 
         # 2. Test PDF Report Generation Directly

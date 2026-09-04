@@ -69,10 +69,13 @@ class TestResultCreate(BaseModel):
 class CogniScoreOut(BaseModel):
     id: int
     user_id: int
-    score: float
-    active_score: float
-    passive_score: float
-    risk_level: str
+    score: Optional[float] = None
+    active_score: Optional[float] = None
+    passive_score: Optional[float] = None
+    risk_level: Optional[str] = "Unassessed"
+    evidence_quality: Optional[str] = None
+    evidence_reason: Optional[str] = None
+    can_calculate_risk: Optional[bool] = True
     ewma_score: Optional[float] = 0.0
     cusum_value: Optional[float] = 0.0
     baseline_mean: Optional[float] = 0.0
@@ -310,5 +313,36 @@ class ClinicianPatientUpdate(BaseModel):
     gender: Optional[str] = None
     risk_level: Optional[str] = None
     score: Optional[float] = None
+
+class AssessmentSessionCreate(BaseModel):
+    patient_id: Optional[int] = None
+    battery: Optional[List[str]] = None
+
+class AssessmentTestSubmit(BaseModel):
+    test_type: str
+    score: Optional[float] = None
+    duration_seconds: float
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    completion_status: Optional[str] = "COMPLETED"  # COMPLETED, TIMEOUT, INCOMPLETE, SKIPPED, INVALID, ERROR
+    raw_response: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+class AssessmentSessionOut(BaseModel):
+    session_uuid: str
+    user_id: int
+    clinician_id: Optional[int] = None
+    status: str
+    current_test_index: int
+    battery_config: List[str]
+    results_summary: Dict[str, Any]
+    current_test: Optional[str] = None
+    total_tests: int
+    is_completed: bool
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    created_at: datetime
+    latest_score: Optional[Dict[str, Any]] = None
+
 
 

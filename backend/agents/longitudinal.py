@@ -41,7 +41,27 @@ class LongitudinalTrendAgent:
         past_values = [
             float(s.score if hasattr(s, "score") else (s.get("score") if isinstance(s, dict) else s))
             for s in historical_scores
+            if (s.score if hasattr(s, "score") else (s.get("score") if isinstance(s, dict) else s)) is not None
         ] if historical_scores else []
+
+        if current_score is None:
+            baseline_mean = sum(past_values) / len(past_values) if past_values else 0.0
+            return {
+                "agent": self.AGENT_NAME,
+                "version": self.VERSION,
+                "baseline_status": "collecting" if len(past_values) < 7 else "established",
+                "sessions_collected": len(past_values),
+                "target_sessions": 7,
+                "baseline_mean": round(baseline_mean, 1),
+                "ewma_score": round(baseline_mean, 1) if past_values else 0.0,
+                "cusum_value": 0.0,
+                "is_deviating": False,
+                "deviation_magnitude": 0.0,
+                "trend": "unassessed",
+                "explanation": "Insufficient valid assessment evidence today; longitudinal drift alarms suppressed.",
+                "history_length": len(past_values),
+                "suppress_drift_alarms": True
+            }
 
         all_values = past_values + [float(current_score)]
         n_sessions = len(all_values)

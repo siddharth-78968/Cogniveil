@@ -87,61 +87,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
       ? (isDark ? '#c8dbbf' : '#1e331b')
       : (isDark ? '#7a9175' : '#576f53');
 
-<<<<<<< HEAD
-=======
-  const sidebarTheme = isDark
-    ? {
-        bg: '#111A12', // Deep Olive Green
-        border: 'rgba(255, 255, 255, 0.08)',
-        brandText: '#F1F5EE',
-        brandSub: '#8FA876', // Olive accent
-        brandIconBg: 'rgba(143, 168, 118, 0.16)',
-        brandIconStroke: '#8FA876',
-        groupHeader: '#788F63',
-        navText: '#D8E2D4',
-        navIcon: '#859D70',
-        navActiveBg: 'rgba(143, 168, 118, 0.18)',
-        navActiveText: '#F1F5EE',
-        navActiveIcon: '#A3B18A',
-        navActiveBorder: '#8FA876',
-        navHoverBg: 'rgba(143, 168, 118, 0.10)',
-        aiDot: '#8FA876',
-        userCardBorder: 'rgba(255, 255, 255, 0.08)',
-        avatarBg: '#4D6840',
-        avatarText: '#F1F5EE',
-        userName: '#F1F5EE',
-        userRole: '#788F63',
-        logoutBtn: '#788F63',
-        logoutHover: '#F1F5EE',
-      }
-    : {
-        bg: '#203625', // Hazel Green (rich earthy hazel green)
-        border: 'rgba(255, 255, 255, 0.10)',
-        brandText: '#FFFFFF',
-        brandSub: '#A7C4A0', // Hazel-sage accent
-        brandIconBg: 'rgba(167, 196, 160, 0.18)',
-        brandIconStroke: '#A7C4A0',
-        groupHeader: '#9CB495',
-        navText: '#E6EFE4',
-        navIcon: '#A7C4A0',
-        navActiveBg: 'rgba(167, 196, 160, 0.22)',
-        navActiveText: '#FFFFFF',
-        navActiveIcon: '#CDE2C8',
-        navActiveBorder: '#A7C4A0',
-        navHoverBg: 'rgba(167, 196, 160, 0.12)',
-        aiDot: '#A7C4A0',
-        userCardBorder: 'rgba(255, 255, 255, 0.10)',
-        avatarBg: '#A7C4A0',
-        avatarText: '#182C1C',
-        userName: '#FFFFFF',
-        userRole: '#A7C4A0',
-        logoutBtn: '#A7C4A0',
-        logoutHover: '#FFFFFF',
-      };
-
-  // 1.5px single-weight stroke outline pictogram system inside 24x24 viewBox
-  const renderIcon = (type, isAi) => {
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
     return (
       <div
         style={{
@@ -274,21 +219,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
               return null;
           }
         })()}
-<<<<<<< HEAD
-=======
-        {/* Subtle status indicator dot */}
-        {isAi && (
-          <span style={{
-            position: 'absolute',
-            top: '-2px',
-            right: '-2px',
-            width: '4px',
-            height: '4px',
-            borderRadius: '50%',
-            backgroundColor: sidebarTheme.aiDot
-          }} />
-        )}
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
       </div>
     );
   };
@@ -306,7 +236,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
   };
 
   return (
-<<<<<<< HEAD
     <aside
       style={{
         ...styles.sidebar,
@@ -380,22 +309,11 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
           }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a3b18a' : '#273822'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-=======
-    <aside style={{ ...styles.sidebar, backgroundColor: sidebarTheme.bg, borderRight: `1px solid ${sidebarTheme.border}` }}>
-      {/* Brand Header */}
-      <div 
-        style={{ ...styles.brandBox, borderBottom: `1px solid ${sidebarTheme.border}` }} 
-        onClick={() => navigate('/dashboard')}
-      >
-        <div style={{ ...styles.brandIconWrapper, backgroundColor: sidebarTheme.brandIconBg }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={sidebarTheme.brandIconStroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
             <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"></path>
             <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"></path>
           </svg>
         </div>
         <div style={styles.brandTextGroup}>
-<<<<<<< HEAD
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ ...styles.brandTitle, color: isDark ? '#f1f5ee' : '#111d10' }}>
               CogniVeil
@@ -419,10 +337,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
           <span style={{ ...styles.brandSub, color: isDark ? '#8fa68c' : '#496345' }}>
             Clinical Intelligence
           </span>
-=======
-          <span style={{ ...styles.brandTitle, color: sidebarTheme.brandText }}>COGNIVEIL</span>
-          <span style={{ ...styles.brandSub, color: sidebarTheme.brandSub }}>Clinical Intelligence</span>
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
         </div>
       </div>
 
@@ -430,13 +344,9 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
       <div className="cogniveil-sidebar-scroll" style={styles.navScrollArea}>
         {navGroups.map((group, gIdx) => (
           <div key={gIdx} style={styles.groupContainer}>
-<<<<<<< HEAD
             <div style={{ ...styles.groupHeader, color: isDark ? '#6e876a' : '#576f53' }}>
               {group.group}
             </div>
-=======
-            <div style={{ ...styles.groupHeader, color: sidebarTheme.groupHeader }}>{group.group}</div>
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
             <nav style={styles.navLinks}>
               {group.items.map((item, iIdx) => {
                 const active = item.path ? isActive(item.path) : false;
@@ -444,7 +354,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                   <button
                     key={iIdx}
                     onClick={() => handleItemClick(item)}
-<<<<<<< HEAD
                     className={`cogniveil-nav-btn ${active ? 'active' : ''}`}
                     style={{
                       color: active
@@ -485,23 +394,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                       }}
                     >
                       {item.label}
-=======
-                    onMouseEnter={(e) => {
-                      if (!active) e.currentTarget.style.backgroundColor = sidebarTheme.navHoverBg;
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!active) e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                    style={{
-                      ...styles.navItem,
-                      backgroundColor: active ? sidebarTheme.navActiveBg : 'transparent',
-                      color: active ? sidebarTheme.navActiveText : sidebarTheme.navText,
-                      borderLeft: active ? `3px solid ${sidebarTheme.navActiveBorder}` : '3px solid transparent',
-                    }}
-                  >
-                    <span style={{ ...styles.iconSpan, color: active ? sidebarTheme.navActiveIcon : sidebarTheme.navIcon }}>
-                      {renderIcon(item.icon, item.isAi)}
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
                     </span>
 
                     {/* AI / Modality Tag */}
@@ -540,7 +432,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
         ))}
       </div>
 
-<<<<<<< HEAD
       {/* User Profile & Sign Out Footer */}
       <div
         style={{
@@ -557,11 +448,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
           }}
         >
           {/* User Identification Block */}
-=======
-      {/* User Profile & Sign Out */}
-      <div style={{ ...styles.userSection, borderTop: `1px solid ${sidebarTheme.userCardBorder}` }}>
-        <div style={styles.userCard}>
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
           <div
             onClick={() => setIsProfileModalOpen(true)}
             style={{
@@ -576,7 +462,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
             }}
             title="Click to edit clinical account profile"
           >
-<<<<<<< HEAD
             {/* Clinician Initial Avatar with Active Surveillance Beacon */}
             <div
               style={{
@@ -602,34 +487,10 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
                 }}
                 title="Clinical Surveillance Active"
               />
-=======
-            <div style={{ ...styles.userAvatar, backgroundColor: sidebarTheme.avatarBg, color: sidebarTheme.avatarText, position: 'relative' }}>
-              {(user?.name || user?.email || 'U')[0].toUpperCase()}
-              <span style={{
-                position: 'absolute',
-                bottom: '-2px',
-                right: '-2px',
-                width: '13px',
-                height: '13px',
-                borderRadius: '50%',
-                backgroundColor: isDark ? '#273822' : '#182C1C',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1.5px solid #ffffff',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-              }} title="Edit profile">
-                <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
-                  <path d="M12 20h9"></path>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                </svg>
-              </span>
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
             </div>
 
             {/* Name & Role Info */}
             <div style={styles.userInfo}>
-<<<<<<< HEAD
               <span style={{ ...styles.userName, color: isDark ? '#f1f5ee' : '#111e10' }}>
                 {user?.name || user?.email?.split('@')[0]}
               </span>
@@ -671,28 +532,6 @@ const Sidebar = ({ onOpenReferral, onOpenEvidenceGraph, onOpenAgentPipeline }) =
               </svg>
             </button>
           </div>
-=======
-              <span style={{ ...styles.userName, color: sidebarTheme.userName }}>{user?.name || user?.email?.split('@')[0]}</span>
-              <span style={{ ...styles.userRole, color: sidebarTheme.userRole, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>{isClinician ? 'Clinician / Neurologist' : 'Monitored Patient'}</span>
-                <span style={{ opacity: 0.6 }}>· Edit</span>
-              </span>
-            </div>
-          </div>
-          <button 
-            onClick={handleLogout} 
-            style={{ ...styles.logoutBtn, color: sidebarTheme.logoutBtn }} 
-            onMouseEnter={(e) => e.currentTarget.style.color = sidebarTheme.logoutHover}
-            onMouseLeave={(e) => e.currentTarget.style.color = sidebarTheme.logoutBtn}
-            title="Sign Out"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-          </button>
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
         </div>
       </div>
 
@@ -712,17 +551,11 @@ const styles = {
     flexDirection: 'column',
     position: 'fixed',
     top: 0,
-<<<<<<< HEAD
+    left: 0,
     zIndex: 50,
     fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     boxShadow: '1px 0 3px rgba(0, 0, 0, 0.02)',
     flexShrink: 0,
-=======
-    left: 0,
-    bottom: 0,
-    zIndex: 50,
-    boxSizing: 'border-box',
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
   },
   brandBox: {
     display: 'flex',
@@ -748,7 +581,6 @@ const styles = {
     minWidth: 0,
   },
   brandTitle: {
-<<<<<<< HEAD
     fontSize: '15px',
     fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     fontWeight: '700',
@@ -762,16 +594,6 @@ const styles = {
     letterSpacing: '0.01em',
     lineHeight: '15px',
     marginTop: '1px',
-=======
-    fontSize: '1rem',
-    fontWeight: '900',
-    letterSpacing: '0.08em',
-  },
-  brandSub: {
-    fontSize: '0.68rem',
-    fontWeight: '600',
-    letterSpacing: '0.02em',
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
   },
   navScrollArea: {
     flex: 1,
@@ -787,14 +609,9 @@ const styles = {
     gap: '4px',
   },
   groupHeader: {
-<<<<<<< HEAD
     fontSize: '10px',
     fontWeight: '700',
     fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-=======
-    fontSize: '0.65rem',
-    fontWeight: '800',
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
     letterSpacing: '0.08em',
     padding: '4px 10px 4px 10px',
     textTransform: 'uppercase',
@@ -805,11 +622,7 @@ const styles = {
     gap: '2px',
   },
   userSection: {
-<<<<<<< HEAD
     padding: '12px 12px 14px 12px',
-=======
-    padding: '0.85rem 1.25rem',
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
     flexShrink: 0,
   },
   userCard: {
@@ -820,20 +633,12 @@ const styles = {
     gap: '8px',
   },
   userAvatar: {
-<<<<<<< HEAD
     width: '35px',
     height: '35px',
     borderRadius: '9px',
     fontWeight: '600',
     fontSize: '13px',
     color: '#ffffff',
-=======
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    fontWeight: '800',
-    fontSize: '0.82rem',
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -848,13 +653,8 @@ const styles = {
     minWidth: 0,
   },
   userName: {
-<<<<<<< HEAD
     fontSize: '13px',
     fontWeight: '600',
-=======
-    fontSize: '0.78rem',
-    fontWeight: '700',
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -862,7 +662,6 @@ const styles = {
     lineHeight: '16px',
   },
   userRole: {
-<<<<<<< HEAD
     fontSize: '11px',
     fontWeight: '500',
     whiteSpace: 'nowrap',
@@ -871,31 +670,19 @@ const styles = {
     fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     lineHeight: '14px',
     marginTop: '1px',
-=======
-    fontSize: '0.68rem',
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
   },
   iconActionBtn: {
     width: '28px',
     height: '28px',
     borderRadius: '6px',
     border: 'none',
-<<<<<<< HEAD
     background: 'transparent',
-=======
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-<<<<<<< HEAD
     transition: 'all 0.15s ease',
   },
-=======
-    transition: 'color 0.15s ease',
-  }
->>>>>>> 8e3acaf (fix(voice-pipeline): resolve speech ML probability UI fallback, connect waveform acoustic extractor, and add debug telemetry)
 };
 
 export default Sidebar;
-

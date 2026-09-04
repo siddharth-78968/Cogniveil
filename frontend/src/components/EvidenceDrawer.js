@@ -146,7 +146,23 @@ const EvidenceDrawer = ({ isOpen, onClose, evidenceId, evidenceData }) => {
 
         {/* Source & Provenance Metadata */}
         <div style={{ ...styles.sectionBox, backgroundColor: theme.statBoxBg, border: `1px solid ${theme.border}`, marginTop: '1rem' }}>
-          <h4 style={{ ...styles.boxHeader, color: theme.text }}>PROVENANCE & AGENT ATTRIBUTION</h4>
+          <h4 style={{ ...styles.boxHeader, color: theme.text }}>PROVENANCE & CLINICAL EVIDENCE VALIDATION</h4>
+          <div style={styles.metaRow}>
+            <span style={styles.metaLabel}>Evidence Quality:</span>
+            <span style={{
+              ...styles.metaVal,
+              fontWeight: '800',
+              color: item.evidence_quality === 'INSUFFICIENT' ? '#8E6E53' : (item.evidence_quality === 'ERROR' ? '#C94C4C' : (item.evidence_quality === 'LIMITED' ? '#D97745' : '#2F7D5B'))
+            }}>
+              {item.evidence_quality || 'GOOD'}
+            </span>
+          </div>
+          <div style={styles.metaRow}>
+            <span style={styles.metaLabel}>Validation Reason:</span>
+            <span style={{ ...styles.metaVal, color: theme.text }}>
+              {item.reason || item.validation_reason || 'Signal parameters meet clinical evidence quality criteria.'}
+            </span>
+          </div>
           <div style={styles.metaRow}>
             <span style={styles.metaLabel}>Telemetry Source:</span>
             <span style={{ ...styles.metaVal, color: theme.text }}>{item.source}</span>
@@ -156,8 +172,10 @@ const EvidenceDrawer = ({ isOpen, onClose, evidenceId, evidenceData }) => {
             <span style={{ ...styles.metaVal, color: '#0F4C4A' }}>{item.agent}</span>
           </div>
           <div style={styles.metaRow}>
-            <span style={styles.metaLabel}>Data Integrity:</span>
-            <span style={{ ...styles.metaVal, color: '#2F7D5B' }}>Passed DataQualityAgent v2026.1</span>
+            <span style={styles.metaLabel}>Risk Calculation:</span>
+            <span style={{ ...styles.metaVal, color: (item.evidence_quality === 'INSUFFICIENT' || item.evidence_quality === 'ERROR') ? '#8E6E53' : '#2F7D5B' }}>
+              {(item.evidence_quality === 'INSUFFICIENT' || item.evidence_quality === 'ERROR') ? 'Not calculated (insufficient evidence)' : 'Permitted & Validated'}
+            </span>
           </div>
         </div>
 

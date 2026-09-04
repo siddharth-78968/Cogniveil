@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import DoctorLayout from '../components/DoctorLayout';
-import { getClinicianPatients, getClinicianPatientOverview, getClinicianPatientDementiaProfile } from '../utils/api';
+import { 
+  getClinicianPatients, 
+  getClinicianPatientOverview, 
+  getClinicianPatientDementiaProfile,
+  startAssessmentSession 
+} from '../utils/api';
 
 
 const Patients = () => {
@@ -92,7 +97,15 @@ const Patients = () => {
   const getRiskColor = (risk) => {
     if (risk === 'High') return '#C94C4C';
     if (risk === 'Moderate') return '#D97745';
+    if (risk === 'Unassessed') return '#8E6E53';
     return '#2F7D5B';
+  };
+
+  const getEvidenceColor = (eq) => {
+    if (eq === 'GOOD') return '#2F7D5B';
+    if (eq === 'LIMITED') return '#D97745';
+    if (eq === 'ERROR') return '#C94C4C';
+    return '#8E6E53'; // INSUFFICIENT
   };
 
   return (
@@ -299,9 +312,28 @@ const Patients = () => {
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button
-                      onClick={() => navigate('/tests')}
+                      onClick={async () => {
+                        try {
+                          const res = await startAssessmentSession(selectedPatientId);
+                          navigate(`/tests?session_id=${res.data.session_uuid}&patient_id=${selectedPatientId}`);
+                        } catch {
+                          navigate(`/tests?patient_id=${selectedPatientId}`);
+                        }
+                      }}
+                      style={{ 
+                        ...styles.navActionBtn, 
+                        backgroundColor: '#16a34a', 
+                        color: '#FFFFFF',
+                        border: '1px solid #22c55e',
+                        fontWeight: '800'
+                      }}
+                    >
+                      ⚡ Start Cognitive Assessment
+                    </button>
+                    <button
+                      onClick={() => navigate(`/tests?patient_id=${selectedPatientId}`)}
                       style={{ ...styles.navActionBtn, backgroundColor: '#273822', color: '#FFFFFF' }}
                     >
                       Cognitive Tests
@@ -327,8 +359,67 @@ const Patients = () => {
                   </div>
                 </div>
 
+                {/* Evidence Quality & Input Validation Card */}
+                {(() => {
+                  const evSummary = patientDetail.evidence_summary || {};
+                  const eq = evSummary.evidence_quality || patientDetail.latest_score?.evidence_quality || (patientDetail.latest_score?.score != null ? 'GOOD' : 'INSUFFICIENT');
+                  const eqReason = evSummary.reason || patientDetail.latest_score?.evidence_reason || (patientDetail.latest_score?.score != null ? 'Acoustic signal and psychometric battery meet sufficiency criteria.' : 'Insufficient usable assessment evidence. Risk not calculated.');
+                  const canCalc = evSummary.can_calculate_risk !== undefined ? evSummary.can_calculate_risk : (patientDetail.latest_score?.score != null);
+                  const riskProb = evSummary.risk_probability || (patientDetail.latest_score?.score != null ? `${patientDetail.latest_score.score}%` : 'Not calculated');
+
+                  return (
+                    <div style={{
+                      backgroundColor: isDark ? '#141c15' : '#f8faf7',
+                      border: `1px solid ${theme.borderSubtle}`,
+                      borderRadius: '10px',
+                      padding: '14px 18px',
+                      marginBottom: '16px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '16px'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.subtext }}>
+                            Evidence Quality:
+                          </span>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: getEvidenceColor(eq),
+                            color: '#FFFFFF',
+                            letterSpacing: '0.05em'
+                          }}>
+                            {eq}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '12px', lineHeight: '18px', color: theme.text }}>
+                          <strong>Reason:</strong> {eqReason}
+                        </p>
+                      </div>
+
+                      <div style={{ textAlign: 'right', minWidth: '160px', borderLeft: `1px solid ${theme.borderSubtle}`, paddingLeft: '16px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: theme.subtext, textTransform: 'uppercase', display: 'block' }}>
+                          Risk Probability
+                        </span>
+                        <span style={{
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          color: canCalc ? getRiskColor(patientDetail.latest_score?.risk_level) : theme.subtext,
+                          fontFamily: canCalc ? "var(--cv-font-mono, monospace)" : "Inter, system-ui, sans-serif"
+                        }}>
+                          {canCalc ? riskProb : 'Not calculated'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Patient CogniScore Overview Banner */}
-                {patientDetail.latest_score ? (
+                {patientDetail.latest_score && patientDetail.latest_score.score != null ? (
                   <div style={{ ...styles.cogniBanner, backgroundColor: isDark ? '#162018' : '#eaf1e8', borderColor: theme.borderSubtle }}>
                     <div>
                       <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', color: theme.subtext, textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>Current CogniScore</span>
@@ -357,10 +448,10 @@ const Patients = () => {
                     <div>
                       <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', color: theme.subtext, textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>Current CogniScore</span>
                       <div style={{ fontSize: '20px', fontWeight: 600, color: theme.subtext, lineHeight: 1.2, marginTop: '4px', fontFamily: "Inter, system-ui, sans-serif" }}>
-                        Not available
+                        Not calculated
                       </div>
                       <span style={{ fontSize: '12px', color: theme.subtext, fontWeight: 500, fontFamily: "Inter, system-ui, sans-serif" }}>
-                        Awaiting initial cognitive battery
+                        {patientDetail.evidence_summary?.reason || 'Awaiting sufficient assessment evidence'}
                       </span>
                     </div>
 
@@ -369,10 +460,10 @@ const Patients = () => {
                     <div>
                       <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', color: theme.subtext, textTransform: 'uppercase', fontFamily: "Inter, system-ui, sans-serif" }}>Surveillance Status</span>
                       <div style={{ fontSize: '14px', fontWeight: 600, color: theme.text, marginTop: '2px', fontFamily: "Inter, system-ui, sans-serif" }}>
-                        Enrolled in Active Cohort
+                        {patientDetail.latest_score ? 'Assessment Incomplete / Suspended' : 'Enrolled in Active Cohort'}
                       </div>
                       <span style={{ fontSize: '12px', lineHeight: '18px', color: theme.subtext, fontFamily: "Inter, system-ui, sans-serif" }}>
-                        Baseline surveillance calibration collecting (0 of 7 sessions)
+                        {patientDetail.latest_score ? 'Risk probability suppressed until sufficient valid data is submitted' : 'Baseline surveillance calibration collecting (0 of 7 sessions)'}
                       </span>
                     </div>
                   </div>

@@ -145,3 +145,19 @@ class Notification(Base):
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class AssessmentSession(Base):
+    __tablename__ = "assessment_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_uuid = Column(String, unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # Patient ID
+    clinician_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Initiating Clinician ID
+    status = Column(String, default="NOT_STARTED", nullable=False)  # NOT_STARTED, IN_PROGRESS, PAUSED, COMPLETED, CANCELLED
+    current_test_index = Column(Integer, default=0, nullable=False)
+    battery_config_json = Column(Text, nullable=True)  # JSON list of test IDs in order
+    results_summary_json = Column(Text, nullable=True)  # JSON mapping of test_type -> {score, status, duration, ...}
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+

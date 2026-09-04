@@ -12,6 +12,9 @@ import re
 from typing import Any, Dict, List, Optional
 
 
+from assessment_validation import EvidenceQuality, validate_voice_assessment
+
+
 def evaluate_evidence_quality(
     features: Optional[Dict[str, Any]] = None,
     transcript: str = "",
@@ -20,40 +23,25 @@ def evaluate_evidence_quality(
     activity_ratio: Optional[float] = None,
     transcription_conf: Optional[float] = None,
 ) -> str:
-    """Evaluates biometric evidence quality into 4 standardized clinical tiers:
-    - GOOD: Recording >= 15.0s, active speech >= 6.0s, >= 12 words, normal RMS energy (0.012 - 0.75),
-            confident transcription, stable acoustic signal.
-    - MODERATE: Recording >= 10.0s, active speech >= 3.5s, >= 6 words, acceptable energy & audio telemetry.
-    - LIMITED: Recording >= 5.0s, active speech >= 2.0s, >= 3 words, but low volume, clipping,
-               or missing/empty transcript.
-    - INSUFFICIENT: Recording < 5.0s, active speech < 2.0s, < 3 words detected, silent / near-zero RMS,
-                    or corrupted signal.
+    """Evaluates biometric evidence quality into 4 controlled clinical tiers:
+    - GOOD: Recording >= 10.0s, active speech >= 3.5s, >= 6 words, confident transcription, stable acoustic signal.
+    - LIMITED: Recording >= 5.0s, active speech >= 2.0s, >= 3 words, but brief sample or low SNR.
+    - INSUFFICIENT: Recording < 5.0s, active speech < 2.0s, < 3 words detected, or near-zero RMS silence.
+    - ERROR: Data corrupted or unparseable.
     """
-    feats = features or {}
-    dur = float(duration_seconds if duration_seconds is not None else feats.get("duration_seconds", 0.0))
-    rms = float(mean_rms if mean_rms is not None else feats.get("mean_rms", 0.045))
-    act = float(activity_ratio if activity_ratio is not None else feats.get("speech_activity_ratio", 0.65))
-    tconf = float(transcription_conf if transcription_conf is not None else feats.get("transcription_confidence", 0.90))
-    
-    words = re.findall(r"\b[\w']+\b", transcript or "", flags=re.UNICODE)
-    word_count = len(words)
-    has_text = bool(word_count > 0)
-    active_speech = dur * act
+    feats = dict(features or {})
+    if duration_seconds is not None:
+        feats["duration_seconds"] = duration_seconds
+    if mean_rms is not None:
+        feats["mean_rms"] = mean_rms
+    if activity_ratio is not None:
+        feats["speech_activity_ratio"] = activity_ratio
+    if transcription_conf is not None:
+        feats["transcription_confidence"] = transcription_conf
 
-    # 1. Insufficient tier: very short duration, near silence, or insufficient speech (< 3 words)
-    if dur < 5.0 or active_speech < 2.0 or (rms < 0.003 and not has_text) or word_count < 3:
-        return "INSUFFICIENT"
+    val = validate_voice_assessment(feats, transcript=transcript)
+    return val["evidence_quality"]
 
-    # 2. Limited tier: short recording, low word volume, or questionable SNR/confidence
-    if dur < 10.0 or active_speech < 3.5 or word_count < 6 or rms < 0.008 or rms > 0.85 or tconf < 0.50:
-        return "LIMITED"
-
-    # 3. Moderate tier: acceptable recording length with partial linguistic content
-    if dur < 15.0 or active_speech < 6.0 or word_count < 12 or tconf < 0.80 or rms < 0.012:
-        return "MODERATE"
-
-    # 4. Good tier
-    return "GOOD"
 
 
 def validate_audio_quality(
@@ -62,93 +50,47 @@ def validate_audio_quality(
     min_duration: float = 5.0,
     min_speech_duration: float = 2.0,
 ) -> Dict[str, Any]:
-    """Validates raw audio characteristics and returns structured quality status.
-    
-    Detects:
-    - very short recording (< 5.0s)
-    - silence / no speech detected (mean_rms < 0.003 or speech_activity_ratio < 0.05)
-    - insufficient speech duration (< 2.0s active speech)
-    - audio clipping / excessive amplitude distortion (mean_rms > 0.95 or max_rms > 0.98)
-    - extremely low volume (mean_rms < 0.005)
-    - empty/corrupted data
-    """
-    issues: List[str] = []
-    warnings: List[str] = []
-
-    duration = float(features.get("duration_seconds", 0.0))
-    mean_rms = float(features.get("mean_rms", 0.0))
-    max_rms = float(features.get("max_rms", mean_rms * 1.5))
-    activity_ratio = float(features.get("speech_activity_ratio", 0.65))
-    transcription_conf = float(features.get("transcription_confidence", 0.90))
-
-    active_speech_sec = duration * activity_ratio
-
-    # 1. Critical Rejections (insufficient audio)
-    if duration <= 0.0:
-        issues.append("No audio data received or recording failed to capture.")
-    elif duration < min_duration:
-        issues.append(f"Recording duration ({duration:.1f}s) is shorter than minimum required ({min_duration:.1f}s).")
-
-    if mean_rms < 0.003 and not transcript.strip():
-        issues.append("Complete silence detected. Microphone input was silent or disconnected.")
-    elif active_speech_sec < min_speech_duration and not transcript.strip():
-        issues.append(f"Insufficient speech detected ({active_speech_sec:.1f}s active speech < {min_speech_duration:.1f}s required).")
-
-    # 2. Quality Warnings
-    if mean_rms < 0.008 and len(issues) == 0:
-        warnings.append("Low microphone volume detected. Please speak closer to the microphone.")
-
-    if mean_rms > 0.85 or max_rms > 0.95:
-        warnings.append("Microphone audio clipping or excessive input gain detected.")
-
-    if transcription_conf < 0.50 and transcript.strip():
-        warnings.append("Low speech recognition confidence score for the recorded audio.")
-
-    is_sufficient = len(issues) == 0
-
-    evidence_quality = evaluate_evidence_quality(
+    """Validates raw audio characteristics and returns structured quality status."""
+    val = validate_voice_assessment(
         features=features,
         transcript=transcript,
-        duration_seconds=duration,
-        mean_rms=mean_rms,
-        activity_ratio=activity_ratio,
-        transcription_conf=transcription_conf,
+        min_duration_seconds=min_duration,
+        min_active_speech_seconds=min_speech_duration,
     )
 
-    # Categorize audio quality
-    if not is_sufficient:
+    evidence_quality = val["evidence_quality"]
+    is_sufficient = val["is_sufficient"]
+    issues = val["issues"]
+    warnings = val["warnings"]
+    metrics = val["metrics"]
+
+    if evidence_quality == EvidenceQuality.INSUFFICIENT:
         quality_level = "Poor"
         quality_score = 0.25
         status = "insufficient_audio"
-        reason = issues[0] if issues else "Audio quality insufficient for reliable analysis."
-    elif len(warnings) >= 2:
-        quality_level = "Fair"
-        quality_score = 0.70
-        status = "sufficient"
-        reason = "Audio acceptable with minor quality warnings."
-    elif len(warnings) == 1:
-        quality_level = "Good"
-        quality_score = 0.85
-        status = "sufficient"
-        reason = "Audio quality acceptable for analysis."
+    elif evidence_quality == EvidenceQuality.LIMITED:
+        quality_level = "Fair" if len(warnings) >= 2 else "Good"
+        quality_score = 0.70 if len(warnings) >= 2 else 0.85
+        status = "limited_evidence"
     else:
         quality_level = "Excellent"
         quality_score = 0.98
         status = "sufficient"
-        reason = "Clear acoustic telemetry with high signal-to-noise ratio."
 
     return {
         "is_sufficient": is_sufficient,
+        "can_calculate_risk": val["can_calculate_risk"],
         "status": status,
-        "reason": reason,
+        "reason": val["reason"],
         "quality_level": quality_level,
         "quality_score": round(quality_score, 2),
         "evidence_quality": evidence_quality,
-        "active_speech_duration_sec": round(active_speech_sec, 2),
+        "active_speech_duration_sec": metrics["active_speech_duration_sec"],
         "issues": issues,
         "warnings": warnings,
-        "recommendation": "Audio validated for analysis." if is_sufficient else "Please record again in a quiet room and speak clearly for at least 10 seconds."
+        "recommendation": val["recommendation"],
     }
+
 
 
 def analyze_detailed_pauses(

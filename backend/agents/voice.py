@@ -160,7 +160,7 @@ class VoiceAnalysisAgent:
             "transcription_confidence": float(feats.get("transcription_confidence", 0.90)),
         }
         speech_ml_prediction = speech_model.predict(speech_ml_input, transcript=transcript)
-        evidence_quality = speech_ml_prediction.get("evidence_quality") or quality_eval.get("evidence_quality", "GOOD")
+        evidence_quality = quality_eval.get("evidence_quality") or speech_ml_prediction.get("evidence_quality", "GOOD")
 
         # Explicit speech characteristics & voice stability (from waveform decoding or computed telemetry)
         sp_dict = feats.get("speech_characteristics") if isinstance(feats.get("speech_characteristics"), dict) else {
@@ -180,23 +180,6 @@ class VoiceAnalysisAgent:
             "hnr_db": feats.get("hnr_db", "16.5 dB"),
             "audio_quality_snr": feats.get("audio_quality_snr", "22.0 dB"),
         }
-
-        # Structured Debug Logging (Required by Voice Pipeline Audit)
-        print("VOICE DEBUG")
-        print(f"duration: {duration:.2f}s")
-        print(f"speech_duration: {sp_dict.get('speech_duration_sec')}s")
-        print(f"pause_count: {pause_count}")
-        print(f"pause_to_speech_ratio: {pause_analysis['pause_to_speech_ratio']:.3f}")
-        print(f"mean_pause: {mean_pause_duration:.3f}s")
-        print(f"longest_pause: {sp_dict.get('longest_pause_sec')}s")
-        print(f"word_count: {word_count}")
-        print(f"words_per_minute: {wpm:.1f}")
-        print(f"ttr: {ling_metrics.get('ttr', 0.0):.3f}")
-        print(f"jitter: {st_dict.get('jitter_percent')}")
-        print(f"shimmer: {st_dict.get('shimmer_percent')}")
-        print(f"energy: {mean_rms:.4f}")
-        print(f"pitch: {pitch_variability:.1f}Hz")
-        print(f"model_probability: {speech_ml_prediction.get('probability')}")
 
         # Subdomain Metrics Table
         metrics_table = {
@@ -222,23 +205,37 @@ class VoiceAnalysisAgent:
             }
         }
 
-        # Non-diagnostic Reasoning
-        if speech_status == "elevated_concern":
-            reasoning = (
-                f"Speech rate ({metrics_table['speech_rate']['interpretation']}) and pause frequency "
-                f"({metrics_table['pause_pattern']['interpretation']}) have shifted from baseline, "
-                f"while semantic coherence remains relatively stable ({coherence_score}/100). "
-                f"The resulting voice score ({voice_score}/100) indicates elevated acoustic deviation without representing an isolated diagnosis."
-            )
-        elif speech_status == "mild_concern":
-            reasoning = (
-                f"Speech biomarkers show subtle conversational variation (Voice Score: {voice_score}/100), "
-                f"with mild pause elongation while speech cadence remains functional."
-            )
+        # Data Confidence & Clinical Sufficiency Handling
+        if evidence_quality in ("INSUFFICIENT", "ERROR") or not quality_eval.get("is_sufficient", True):
+            voice_score = None
+            risk_level = "Unassessed"
+            risk_probability = None
+            speech_status = "insufficient_evidence"
+            confidence = 0.0
+            if evidence_quality == "ERROR":
+                reasoning = f"Voice processing error ({quality_eval['reason']}). Risk probability not calculated."
+            else:
+                reasoning = f"Insufficient usable speech ({quality_eval['reason']}) for reliable voice analysis. Risk probability not calculated."
         else:
-            reasoning = (
-                f"Conversational speech rate ({wpm:.1f} WPM) and acoustic pause patterns remain well aligned with personal baseline norms."
-            )
+            confidence = data_conf["confidence_score"]
+            risk_level = "Low" if voice_score >= 65 else "Moderate" if voice_score >= 40 else "High"
+            risk_probability = speech_ml_prediction.get("risk_probability")
+            if speech_status == "elevated_concern":
+                reasoning = (
+                    f"Speech rate ({metrics_table['speech_rate']['interpretation']}) and pause frequency "
+                    f"({metrics_table['pause_pattern']['interpretation']}) have shifted from baseline, "
+                    f"while semantic coherence remains relatively stable ({coherence_score}/100). "
+                    f"The resulting voice score ({voice_score}/100) indicates elevated acoustic deviation without representing an isolated diagnosis."
+                )
+            elif speech_status == "mild_concern":
+                reasoning = (
+                    f"Speech biomarkers show subtle conversational variation (Voice Score: {voice_score}/100), "
+                    f"with mild pause elongation while speech cadence remains functional."
+                )
+            else:
+                reasoning = (
+                    f"Conversational speech rate ({wpm:.1f} WPM) and acoustic pause patterns remain well aligned with personal baseline norms."
+                )
 
         return {
             "agent": self.AGENT_NAME,
@@ -251,7 +248,9 @@ class VoiceAnalysisAgent:
             "trajectory": trajectory,
             "confidence": confidence,
             "risk_level": risk_level,
+            "risk_probability": risk_probability,
             "evidence_quality": evidence_quality,
+            "reason": quality_eval.get("reason", reasoning),
             "speech_ml_model": speech_ml_prediction,
             "ml_prediction": speech_ml_prediction,
             "speech_characteristics": sp_dict,

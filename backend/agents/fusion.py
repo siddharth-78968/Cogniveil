@@ -27,7 +27,36 @@ class SignalFusionEngine:
             Structured fusion dictionary with component scores, numeric contributions,
             primary contributors list, and risk-stratified reasoning.
         """
-        cog_score = float(cognitive_out.get("score", cognitive_out.get("cognitive_score", 50.0)))
+        cog_eq = cognitive_out.get("evidence_quality", "GOOD")
+        raw_cog = cognitive_out.get("score", cognitive_out.get("cognitive_score"))
+        if cog_eq in ("INSUFFICIENT", "ERROR") or raw_cog is None:
+            return {
+                "agent": self.AGENT_NAME,
+                "version": self.VERSION,
+                "cogni_score": None,
+                "score": None,
+                "risk_level": "Unassessed",
+                "risk_label": "EVIDENCE INSUFFICIENT",
+                "risk_probability": None,
+                "evidence_quality": cog_eq if cog_eq in ("INSUFFICIENT", "ERROR") else "INSUFFICIENT",
+                "reason": cognitive_out.get("reason") or cognitive_out.get("explanation") or "Insufficient valid cognitive assessment data to calculate CogniScore. Risk not calculated.",
+                "overall_confidence": 0.0,
+                "fusion_mode": "unassessed",
+                "component_scores": {
+                    "cognitive": None,
+                    "behavioral": float(behavior_out.get("score", behavior_out.get("behavior_score", 50.0))),
+                    "typing": float(behavior_out.get("typing", {}).get("score", behavior_out.get("score", 50.0))),
+                    "scrolling": float(behavior_out.get("scrolling", {}).get("score", behavior_out.get("score", 50.0))),
+                    "voice": float(voice_out.get("voice_score")) if voice_out and voice_out.get("voice_score") is not None else None
+                },
+                "numeric_contributions": {"cognitive": 0.0, "behavioral": 0.0, "voice": 0.0},
+                "fusion_weights": {"cognitive": 0.60, "behavioral": 0.20, "voice": 0.20},
+                "primary_contributors": [],
+                "clinical_reasoning": "Assessment data was insufficient to calculate a reliable composite CogniScore. Risk probability is not calculated.",
+                "actionable_insight": "Complete the full cognitive screening battery to establish a baseline.",
+            }
+
+        cog_score = float(raw_cog)
         cog_conf = float(cognitive_out.get("confidence", 0.85))
 
         beh_score = float(behavior_out.get("score", behavior_out.get("behavior_score", 50.0)))

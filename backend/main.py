@@ -8,6 +8,7 @@ import json
 import os
 import io
 import re
+import uuid
 import requests
 import logging
 logger = logging.getLogger("cogniveil")
@@ -155,6 +156,10 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {"message": "CogniVeil API is running with 10 MCP tools and EWMA baseline deviation engine"}
+
+@app.get("/api/health")
+def api_health():
+    return {"status": "ok", "service": "CogniVeil API", "version": "2026.1"}
 
 @app.post("/api/auth/demo", response_model=schemas.Token)
 def demo_login_endpoint(email: str = "arjun@demo.com", db: Session = Depends(get_db)):
@@ -751,6 +756,11 @@ def calculate_score(db: Session = Depends(get_db), current_user: models.User = D
         "level2_status": current_user.level2_status
     }, {**tier1_res, "trigger_level2": trigger_level2}, pipeline_state=pipeline_state)
     
+    fusion_info = tier1_res.get("fusion_details", {})
+    evidence_quality = fusion_info.get("evidence_quality", "GOOD" if score_record.score is not None else "INSUFFICIENT")
+    evidence_reason = fusion_info.get("reason", "Assessment data validated.")
+    can_calculate_risk = score_record.score is not None
+
     return {
         "id": score_record.id,
         "user_id": score_record.user_id,
@@ -758,6 +768,9 @@ def calculate_score(db: Session = Depends(get_db), current_user: models.User = D
         "active_score": score_record.active_score,
         "passive_score": score_record.passive_score,
         "risk_level": score_record.risk_level,
+        "evidence_quality": evidence_quality,
+        "evidence_reason": evidence_reason,
+        "can_calculate_risk": can_calculate_risk,
         "ewma_score": score_record.ewma_score,
         "cusum_value": score_record.cusum_value,
         "baseline_mean": score_record.baseline_mean,
@@ -2138,6 +2151,11 @@ def get_clinician_patient_overview(
         except Exception:
             t2_res = None
 
+    from assessment_validation import validate_cognitive_battery, validate_voice_assessment, EvidenceQuality
+    cog_val_summary = validate_cognitive_battery(recent_tests)
+    overall_eq = cog_val_summary["evidence_quality"] if latest_score else EvidenceQuality.INSUFFICIENT
+    overall_reason = cog_val_summary["reason"] if latest_score else "Awaiting initial cognitive battery"
+
     return {
         "patient": {
             "id": patient.id,
@@ -2149,11 +2167,22 @@ def get_clinician_patient_overview(
             "level2_status": patient.level2_status,
             "created_at": patient.created_at
         },
+        "evidence_summary": {
+            "evidence_quality": overall_eq,
+            "reason": overall_reason,
+            "can_calculate_risk": latest_score is not None and latest_score.score is not None and cog_val_summary["can_calculate_score"],
+            "risk_probability": f"{latest_score.score:.1f}%" if latest_score and latest_score.score is not None else "Not calculated",
+            "completed_domains": cog_val_summary.get("completed_domains", []),
+            "missing_domains": cog_val_summary.get("missing_domains", []),
+        },
         "latest_score": {
             "score": latest_score.score,
             "active_score": latest_score.active_score,
             "passive_score": latest_score.passive_score,
-            "risk_level": latest_score.risk_level,
+            "risk_level": latest_score.risk_level if (latest_score and latest_score.score is not None) else "Unassessed",
+            "evidence_quality": overall_eq,
+            "evidence_reason": overall_reason,
+            "can_calculate_risk": latest_score.score is not None,
             "is_deviating": bool(latest_score.is_deviating),
             "ewma_score": latest_score.ewma_score,
             "cusum_value": latest_score.cusum_value,
@@ -2213,6 +2242,9 @@ def get_clinician_patient_tests(
         models.TestResult.user_id == patient.id
     ).order_by(models.TestResult.created_at.desc()).all()
 
+    from assessment_validation import validate_cognitive_battery, validate_cognitive_test_item, EvidenceQuality
+    battery_val = validate_cognitive_battery(tests)
+
     # Psychometric domains mapping
     domains = {
         "trail_making": {"name": "Trail Making Test (Parts A & B)", "domain": "Executive Function / Cognitive Flexibility", "normative_mean": 78.0, "weight": "20%"},
@@ -2234,10 +2266,14 @@ def get_clinician_patient_tests(
                 meta = json.loads(t.metadata_json)
             except Exception:
                 pass
+        t_val = validate_cognitive_test_item(t)
         history_by_type[t.test_type].append({
             "id": t.id,
             "score": t.score,
             "duration_seconds": t.duration_seconds,
+            "is_valid": t_val["is_valid"],
+            "evidence_quality": t_val["evidence_quality"],
+            "validation_reason": t_val["reason"],
             "metadata": meta,
             "created_at": t.created_at
         })
@@ -2245,8 +2281,9 @@ def get_clinician_patient_tests(
     domain_cards = []
     for k, meta in domains.items():
         recs = history_by_type.get(k, [])
-        if recs:
-            scores = [r["score"] for r in recs]
+        valid_recs = [r for r in recs if r.get("is_valid", True) and r.get("score") is not None]
+        if valid_recs:
+            scores = [r["score"] for r in valid_recs]
             avg = round(sum(scores) / len(scores), 1)
             z_score = round((avg - meta["normative_mean"]) / 10.0, 2)
             status = "Normative" if z_score >= -1.0 else ("Mild Impairment" if z_score >= -2.0 else "Significant Impairment")
@@ -2264,7 +2301,7 @@ def get_clinician_patient_tests(
             "normative_mean": meta["normative_mean"],
             "z_score": z_score,
             "status": status,
-            "sessions_count": len(recs),
+            "sessions_count": len(valid_recs),
             "recent_records": recs[:5]
         })
 
@@ -2272,6 +2309,11 @@ def get_clinician_patient_tests(
         "patient_id": patient.id,
         "patient_name": patient.name,
         "total_test_sessions": len(tests),
+        "evidence_quality": battery_val["evidence_quality"],
+        "evidence_reason": battery_val["reason"],
+        "can_calculate_score": battery_val["can_calculate_score"],
+        "completed_domains": battery_val["completed_domains"],
+        "missing_domains": battery_val["missing_domains"],
         "domain_breakdown": domain_cards,
         "all_tests": [
             {
@@ -2373,9 +2415,23 @@ def get_clinician_patient_voice(
             "trajectory": m.get("trajectory", trajectory)
         })
 
+    from assessment_validation import validate_voice_assessment, EvidenceQuality
+    latest_voice_val = validate_voice_assessment(
+        latest_meta.get("acoustic_biomarkers") or latest_meta,
+        transcript=latest_meta.get("transcript", "")
+    ) if parsed_sessions else None
+
+    voice_eq = latest_voice_val["evidence_quality"] if latest_voice_val else EvidenceQuality.INSUFFICIENT
+    voice_reason = latest_voice_val["reason"] if latest_voice_val else "No voice assessments recorded yet"
+    can_calc_voice_risk = latest_voice_val["can_calculate_risk"] if latest_voice_val else False
+
     # Acoustic Biomarker Profile with personal baseline
     acoustic_profile = {
-        "overall_voice_score": avg_score,
+        "overall_voice_score": avg_score if can_calc_voice_risk else None,
+        "evidence_quality": voice_eq,
+        "evidence_reason": voice_reason,
+        "can_calculate_risk": can_calc_voice_risk,
+        "risk_probability": "Not calculated" if not can_calc_voice_risk else f"{round(100.0 - (avg_score or 70.0), 1)}%",
         "mean_pause_duration_ms": mean_pause_ms,
         "pause_to_speech_ratio": mean_pause_ratio,
         "speech_rate_wpm": mean_wpm,
@@ -2396,6 +2452,9 @@ def get_clinician_patient_voice(
     return {
         "patient_id": patient.id,
         "patient_name": patient.name,
+        "evidence_quality": voice_eq,
+        "evidence_reason": voice_reason,
+        "can_calculate_risk": can_calc_voice_risk,
         "acoustic_profile": acoustic_profile,
         "sessions_recorded": len(voice_tests),
         "status": "Active surveillance"
@@ -2705,8 +2764,415 @@ def setup_demo(db: Session = Depends(get_db)):
     
     return {"status": "Demo users & appointments seeded successfully with verified patient-clinician foreign keys!"}
 
+
+# =============================================================================
+# Automated Cognitive Assessment Session Endpoints
+# =============================================================================
+DEFAULT_COGNITIVE_BATTERY = [
+    "pattern_recall",
+    "digit_span",
+    "word_recall",
+    "stroop",
+    "trail_making",
+    "reaction_time"
+]
+
+@app.post("/api/assessment-sessions/start", response_model=schemas.AssessmentSessionOut)
+def start_assessment_session(
+    payload: schemas.AssessmentSessionCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Initiates an automated timed cognitive screening session for a patient."""
+    target_user_id = current_user.id
+    clinician_id = None
+
+    if current_user.is_caregiver or current_user.role == "clinician":
+        clinician_id = current_user.id
+        if payload.patient_id:
+            target_patient = db.query(models.User).filter(models.User.id == payload.patient_id).first()
+            if not target_patient:
+                raise HTTPException(status_code=404, detail="Target patient not found.")
+            target_user_id = target_patient.id
+        else:
+            raise HTTPException(status_code=400, detail="Clinician must specify patient_id to start assessment.")
+    else:
+        # Patient self-initiated assessment
+        if payload.patient_id and payload.patient_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Patients cannot start assessments for other users.")
+
+    battery = payload.battery if payload.battery and len(payload.battery) > 0 else DEFAULT_COGNITIVE_BATTERY
+
+    # Create new session UUID
+    session_uuid = str(uuid.uuid4())
+    now = datetime.utcnow()
+
+    session_record = models.AssessmentSession(
+        session_uuid=session_uuid,
+        user_id=target_user_id,
+        clinician_id=clinician_id,
+        status="IN_PROGRESS",
+        current_test_index=0,
+        battery_config_json=json.dumps(battery),
+        results_summary_json=json.dumps({}),
+        started_at=now,
+        created_at=now
+    )
+    db.add(session_record)
+    db.commit()
+    db.refresh(session_record)
+
+    # Log audit event
+    mcp_tools.log_audit(db, target_user_id, "start_assessment_session", {
+        "session_uuid": session_uuid,
+        "clinician_id": clinician_id,
+        "battery": battery,
+        "total_tests": len(battery)
+    }, {"status": "IN_PROGRESS", "started_at": now.isoformat()}, pipeline_state="assessment_in_progress")
+
+    return schemas.AssessmentSessionOut(
+        session_uuid=session_record.session_uuid,
+        user_id=session_record.user_id,
+        clinician_id=session_record.clinician_id,
+        status=session_record.status,
+        current_test_index=session_record.current_test_index,
+        battery_config=battery,
+        results_summary={},
+        current_test=battery[0] if len(battery) > 0 else None,
+        total_tests=len(battery),
+        is_completed=False,
+        started_at=session_record.started_at,
+        completed_at=session_record.completed_at,
+        created_at=session_record.created_at,
+        latest_score=None
+    )
+
+
+@app.get("/api/assessment-sessions/{session_uuid}", response_model=schemas.AssessmentSessionOut)
+def get_assessment_session(
+    session_uuid: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Fetches real-time assessment session status and completed progress."""
+    session_record = db.query(models.AssessmentSession).filter(
+        models.AssessmentSession.session_uuid == session_uuid
+    ).first()
+    if not session_record:
+        raise HTTPException(status_code=404, detail="Assessment session not found.")
+
+    # Access control: patient themselves or clinician
+    if not (current_user.is_caregiver or current_user.role == "clinician" or current_user.id == session_record.user_id):
+        raise HTTPException(status_code=403, detail="Access denied to this assessment session.")
+
+    battery = json.loads(session_record.battery_config_json) if session_record.battery_config_json else DEFAULT_COGNITIVE_BATTERY
+    results = json.loads(session_record.results_summary_json) if session_record.results_summary_json else {}
+    current_test = battery[session_record.current_test_index] if session_record.current_test_index < len(battery) else None
+    is_completed = session_record.status == "COMPLETED" or session_record.current_test_index >= len(battery)
+
+    latest_score_data = None
+    if is_completed:
+        latest_sc = db.query(models.CogniScore).filter(
+            models.CogniScore.user_id == session_record.user_id
+        ).order_by(models.CogniScore.created_at.desc()).first()
+        if latest_sc:
+            latest_score_data = {
+                "score": latest_sc.score,
+                "active_score": latest_sc.active_score,
+                "passive_score": latest_sc.passive_score,
+                "risk_level": latest_sc.risk_level,
+                "is_deviating": latest_sc.is_deviating
+            }
+
+    return schemas.AssessmentSessionOut(
+        session_uuid=session_record.session_uuid,
+        user_id=session_record.user_id,
+        clinician_id=session_record.clinician_id,
+        status=session_record.status,
+        current_test_index=session_record.current_test_index,
+        battery_config=battery,
+        results_summary=results,
+        current_test=current_test,
+        total_tests=len(battery),
+        is_completed=is_completed,
+        started_at=session_record.started_at,
+        completed_at=session_record.completed_at,
+        created_at=session_record.created_at,
+        latest_score=latest_score_data
+    )
+
+
+@app.post("/api/assessment-sessions/{session_uuid}/submit-test", response_model=schemas.AssessmentSessionOut)
+def submit_assessment_test(
+    session_uuid: str,
+    payload: schemas.AssessmentTestSubmit,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Receives an automatically administered test result, runs backend validation/scoring, and advances the session."""
+    session_record = db.query(models.AssessmentSession).filter(
+        models.AssessmentSession.session_uuid == session_uuid
+    ).first()
+    if not session_record:
+        raise HTTPException(status_code=404, detail="Assessment session not found.")
+
+    if not (current_user.is_caregiver or current_user.role == "clinician" or current_user.id == session_record.user_id):
+        raise HTTPException(status_code=403, detail="Access denied to submit test for this session.")
+
+    battery = json.loads(session_record.battery_config_json) if session_record.battery_config_json else DEFAULT_COGNITIVE_BATTERY
+    results = json.loads(session_record.results_summary_json) if session_record.results_summary_json else {}
+
+    # Validate test type
+    test_type = payload.test_type.strip().lower()
+    if test_type not in battery:
+        raise HTTPException(status_code=400, detail=f"Test '{test_type}' is not part of this session's battery.")
+
+    # Authoritative scoring & completion status evaluation
+    completion_status = payload.completion_status or "COMPLETED"
+    final_score = payload.score
+
+    # Clinical validation: Never convert missing/timeout to an arbitrary high/normal score
+    if completion_status in ["TIMEOUT", "INCOMPLETE"] and final_score is None:
+        final_score = 0.0
+    elif completion_status == "SKIPPED":
+        final_score = None
+    elif final_score is not None:
+        final_score = max(0.0, min(100.0, float(final_score)))
+
+    duration_sec = max(0.1, float(payload.duration_seconds))
+
+    meta = payload.metadata or {}
+    meta["session_uuid"] = session_uuid
+    meta["completion_status"] = completion_status
+    if payload.raw_response:
+        meta["raw_response"] = payload.raw_response
+    if payload.started_at:
+        meta["test_started_at"] = payload.started_at.isoformat()
+    if payload.completed_at:
+        meta["test_completed_at"] = payload.completed_at.isoformat()
+
+    # Save authentic TestResult in database
+    if final_score is not None:
+        test_result = models.TestResult(
+            user_id=session_record.user_id,
+            test_type=test_type,
+            score=round(final_score, 2),
+            duration_seconds=round(duration_sec, 2),
+            metadata_json=json.dumps(meta)
+        )
+        db.add(test_result)
+        db.commit()
+
+    # Update session results summary
+    results[test_type] = {
+        "score": round(final_score, 2) if final_score is not None else None,
+        "completion_status": completion_status,
+        "duration_seconds": round(duration_sec, 2),
+        "submitted_at": datetime.utcnow().isoformat(),
+        "metadata": meta
+    }
+    session_record.results_summary_json = json.dumps(results)
+
+    # Advance current_test_index if this was the current expected test
+    if session_record.current_test_index < len(battery) and battery[session_record.current_test_index] == test_type:
+        session_record.current_test_index += 1
+    elif test_type in battery:
+        # If submitted out of order, ensure index advances past all completed tests
+        next_idx = 0
+        while next_idx < len(battery) and battery[next_idx] in results:
+            next_idx += 1
+        session_record.current_test_index = next_idx
+
+    is_completed = session_record.current_test_index >= len(battery)
+    latest_score_data = None
+
+    if is_completed:
+        session_record.status = "COMPLETED"
+        session_record.completed_at = datetime.utcnow()
+        db.commit()
+
+        # Run automated CogniScore calculation for today's session
+        target_patient = db.query(models.User).filter(models.User.id == session_record.user_id).first()
+        if target_patient:
+            session_start = datetime.combine(date.today(), datetime.min.time())
+            session_end = session_start + timedelta(days=1)
+            tests = db.query(models.TestResult).filter(
+                models.TestResult.user_id == target_patient.id,
+                models.TestResult.created_at >= session_start,
+                models.TestResult.created_at < session_end
+            ).all()
+            signals = db.query(models.PassiveSignal).filter(
+                models.PassiveSignal.user_id == target_patient.id,
+                models.PassiveSignal.created_at >= session_start,
+                models.PassiveSignal.created_at < session_end
+            ).all()
+            history = db.query(models.CogniScore).filter(
+                models.CogniScore.user_id == target_patient.id,
+                models.CogniScore.created_at < session_start
+            ).order_by(models.CogniScore.created_at.asc()).all()
+
+            tier1_res = mcp_tools.score_tier1(tests, signals, history)
+            baseline_status = tier1_res.get("baseline_status", "collecting")
+            is_deviating = tier1_res.get("is_deviating", False)
+
+            target_patient.baseline_status = baseline_status
+
+            score_record = db.query(models.CogniScore).filter(
+                models.CogniScore.user_id == target_patient.id,
+                models.CogniScore.created_at >= session_start,
+                models.CogniScore.created_at < session_end
+            ).first()
+            if not score_record:
+                score_record = models.CogniScore(user_id=target_patient.id)
+                db.add(score_record)
+
+            score_record.score = tier1_res["score"]
+            score_record.active_score = tier1_res["active_score"]
+            score_record.passive_score = tier1_res["passive_score"]
+            score_record.risk_level = tier1_res["risk_level"]
+            score_record.ewma_score = tier1_res["ewma_score"]
+            score_record.cusum_value = tier1_res["cusum_value"]
+            score_record.baseline_mean = tier1_res["baseline_mean"]
+            score_record.baseline_status = baseline_status
+            score_record.level2_status = target_patient.level2_status
+            score_record.is_deviating = is_deviating
+            score_record.combined_risk_score = target_patient.combined_risk_score
+            db.commit()
+            db.refresh(score_record)
+
+            latest_score_data = {
+                "score": score_record.score,
+                "active_score": score_record.active_score,
+                "passive_score": score_record.passive_score,
+                "risk_level": score_record.risk_level,
+                "is_deviating": score_record.is_deviating,
+                "evidence_quality": tier1_res.get("fusion_details", {}).get("evidence_quality", "GOOD" if score_record.score is not None else "INSUFFICIENT"),
+                "reason": tier1_res.get("fusion_details", {}).get("reason", "Automated cognitive battery completed.")
+            }
+    else:
+        db.commit()
+
+    current_test = battery[session_record.current_test_index] if session_record.current_test_index < len(battery) else None
+
+    return schemas.AssessmentSessionOut(
+        session_uuid=session_record.session_uuid,
+        user_id=session_record.user_id,
+        clinician_id=session_record.clinician_id,
+        status=session_record.status,
+        current_test_index=session_record.current_test_index,
+        battery_config=battery,
+        results_summary=results,
+        current_test=current_test,
+        total_tests=len(battery),
+        is_completed=is_completed,
+        started_at=session_record.started_at,
+        completed_at=session_record.completed_at,
+        created_at=session_record.created_at,
+        latest_score=latest_score_data
+    )
+
+
+@app.post("/api/assessment-sessions/{session_uuid}/pause", response_model=schemas.AssessmentSessionOut)
+def pause_assessment_session(
+    session_uuid: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    session_record = db.query(models.AssessmentSession).filter(
+        models.AssessmentSession.session_uuid == session_uuid
+    ).first()
+    if not session_record:
+        raise HTTPException(status_code=404, detail="Assessment session not found.")
+    if not (current_user.is_caregiver or current_user.role == "clinician" or current_user.id == session_record.user_id):
+        raise HTTPException(status_code=403, detail="Access denied.")
+    
+    if session_record.status == "IN_PROGRESS":
+        session_record.status = "PAUSED"
+        db.commit()
+    
+    return get_assessment_session(session_uuid, db, current_user)
+
+
+@app.post("/api/assessment-sessions/{session_uuid}/resume", response_model=schemas.AssessmentSessionOut)
+def resume_assessment_session(
+    session_uuid: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    session_record = db.query(models.AssessmentSession).filter(
+        models.AssessmentSession.session_uuid == session_uuid
+    ).first()
+    if not session_record:
+        raise HTTPException(status_code=404, detail="Assessment session not found.")
+    if not (current_user.is_caregiver or current_user.role == "clinician" or current_user.id == session_record.user_id):
+        raise HTTPException(status_code=403, detail="Access denied.")
+    
+    if session_record.status == "PAUSED":
+        session_record.status = "IN_PROGRESS"
+        db.commit()
+    
+    return get_assessment_session(session_uuid, db, current_user)
+
+
+@app.post("/api/assessment-sessions/{session_uuid}/cancel", response_model=schemas.AssessmentSessionOut)
+def cancel_assessment_session(
+    session_uuid: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    session_record = db.query(models.AssessmentSession).filter(
+        models.AssessmentSession.session_uuid == session_uuid
+    ).first()
+    if not session_record:
+        raise HTTPException(status_code=404, detail="Assessment session not found.")
+    if not (current_user.is_caregiver or current_user.role == "clinician" or current_user.id == session_record.user_id):
+        raise HTTPException(status_code=403, detail="Access denied.")
+    
+    session_record.status = "CANCELLED"
+    db.commit()
+    return get_assessment_session(session_uuid, db, current_user)
+
+
+@app.get("/api/clinician/patients/{patient_id}/active-assessment")
+def get_clinician_patient_active_assessment(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Allows clinician to monitor active or most recent assessment session for a patient."""
+    if not (current_user.is_caregiver or current_user.role == "clinician"):
+        raise HTTPException(status_code=403, detail="Clinician access required.")
+    
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    session_record = db.query(models.AssessmentSession).filter(
+        models.AssessmentSession.user_id == patient_id,
+        models.AssessmentSession.created_at >= today_start
+    ).order_by(models.AssessmentSession.created_at.desc()).first()
+
+    if not session_record:
+        return {"has_active_session": False, "session": None}
+
+    battery = json.loads(session_record.battery_config_json) if session_record.battery_config_json else DEFAULT_COGNITIVE_BATTERY
+    results = json.loads(session_record.results_summary_json) if session_record.results_summary_json else {}
+
+    return {
+        "has_active_session": session_record.status == "IN_PROGRESS",
+        "session": {
+            "session_uuid": session_record.session_uuid,
+            "status": session_record.status,
+            "current_test_index": session_record.current_test_index,
+            "total_tests": len(battery),
+            "completed_count": len(results),
+            "battery": battery,
+            "started_at": session_record.started_at.isoformat() if session_record.started_at else None,
+            "completed_at": session_record.completed_at.isoformat() if session_record.completed_at else None
+        }
+    }
+
+
 import os
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+

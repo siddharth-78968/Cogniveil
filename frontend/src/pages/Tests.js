@@ -1,6 +1,15 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { saveTestResult, calculateScore } from '../utils/api';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { 
+  saveTestResult, 
+  calculateScore,
+  startAssessmentSession,
+  getAssessmentSession,
+  submitAssessmentTest,
+  pauseAssessmentSession,
+  resumeAssessmentSession,
+  cancelAssessmentSession
+} from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
 import VoiceGuideBar from '../components/VoiceGuideBar';
 import DoctorLayout from '../components/DoctorLayout';
@@ -13,7 +22,10 @@ const tests = [
     domain: 'Visuospatial Memory',
     description: 'Memorize an illuminated matrix grid, then reproduce spatial coordinates from working memory.',
     target: 'Evaluates hippocampal spatial encoding & working memory coordinate fidelity.',
-    duration: '~2 min', 
+    instructions: 'You will see a 4×4 grid with 6 illuminated cells. Memorize their spatial locations. When recall begins, tap all 6 locations from memory before the timer runs out.',
+    timeLimit: 30, // seconds for recall phase
+    memorizeLimit: 8, // seconds for memorize phase
+    duration: '~1.5 min', 
     color: '#3d5236',
     accentColor: '#526e49',
     badge: 'Spatial Grid Matrix',
@@ -25,6 +37,8 @@ const tests = [
     domain: 'Working Memory Capacity',
     description: 'Encode, retain, and repeat sequences of numbers of progressively increasing digit lengths.',
     target: 'Evaluates phonological loop capacity & auditory-verbal attention buffer.',
+    instructions: 'You will see a sequence of numbers. Retain the numbers in your memory, then type them in the exact same order before the timer expires.',
+    timeLimit: 20, // seconds per sequence
     duration: '~1 min', 
     color: '#3b5a70',
     accentColor: '#4a6b82',
@@ -37,6 +51,10 @@ const tests = [
     domain: 'Episodic Memory',
     description: 'Memorize target words, complete an interfering mental task, then recall the lexical list.',
     target: 'Evaluates delayed episodic verbal retrieval & resistance to retroactive distraction.',
+    instructions: 'Memorize 5 clinical target words. Next, you will perform a brief mental calculation to clear working memory cache, followed by delayed retrieval of the words.',
+    memorizeLimit: 10,
+    distractLimit: 8,
+    timeLimit: 35, // seconds for delayed recall
     duration: '~2 min', 
     color: '#705c30',
     accentColor: '#9c6d3b',
@@ -49,6 +67,8 @@ const tests = [
     domain: 'Executive Inhibition',
     description: 'Identify the visual ink font color of conflicting words while suppressing the reading reflex.',
     target: 'Evaluates prefrontal executive interference resistance & cognitive flexibility.',
+    instructions: 'Tap the button matching the VISUAL INK COLOR of the word. Suppress the automatic urge to read the word text.',
+    timeLimit: 30, // seconds for 8 trials
     duration: '~1 min', 
     color: '#7a3b3b',
     accentColor: '#a84848',
@@ -61,6 +81,8 @@ const tests = [
     domain: 'Executive Function',
     description: 'Connect numbers and letters in sequence: Part A (1→2→3→...) and Part B (1→A→2→B→3→C→...) as quickly and accurately as possible.',
     target: 'Evaluates prefrontal cognitive flexibility, set-shifting, mental sequencing, and motor coordination.',
+    instructions: 'Part A: Connect numbers in numerical order (1 to 8). Part B: Alternate between numbers and letters (1 to A, 2 to B, 3 to C, 4 to D) as quickly and accurately as possible.',
+    timeLimit: 60, // seconds Part A (Part B is 90)
     duration: '~2 min', 
     color: '#4c3568',
     accentColor: '#6d4c94',
@@ -73,6 +95,8 @@ const tests = [
     domain: 'Psychomotor Speed',
     description: 'Tap the target instantaneously upon signal illumination to measure baseline reflex latency.',
     target: 'Evaluates central nervous system latency & visual-motor reflex threshold.',
+    instructions: 'A high-contrast sensory target will illuminate after a randomized interval. Tap the sensor instantaneously upon illumination across 5 reflex trials.',
+    timeLimit: 25,
     duration: '~1 min', 
     color: '#286068',
     accentColor: '#3a8088',
@@ -149,202 +173,270 @@ const renderTestIcon = (iconType) => {
   }
 };
 
-// ── Reusable Clinical Evaluation & Paced Score Reveal ────────────────────────
-const TestEvaluatingScreen = ({ testName, domain }) => {
-  const [step, setStep] = useState(0);
-  const [progress, setProgress] = useState(18);
+// ── Top Automated HUD Component with Authoritative Timer ─────────────────────
+const AutoRunnerHUD = ({ 
+  testIndex, 
+  totalTests, 
+  testName, 
+  timeRemaining, 
+  isPaused,
+  onPause, 
+  onExit 
+}) => {
+  const formatTime = (secs) => {
+    if (secs == null) return '--:--';
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
-  const stages = [
-    { label: 'CALIBRATING LATENCY', desc: 'Analyzing response latencies, temporal variance & working memory buffer...' },
-    { label: 'BENCHMARKING COHORT', desc: 'Cross-referencing metrics against normative clinical dataset (N=14,200)...' },
-    { label: 'SYNTHESIZING TELEMETRY', desc: `Generating longitudinal ${domain?.toLowerCase() || 'cognitive'} stability index...` }
-  ];
-
-  React.useEffect(() => {
-    const t1 = setTimeout(() => { setStep(1); setProgress(58); }, 800);
-    const t2 = setTimeout(() => { setStep(2); setProgress(90); }, 1650);
-    const t3 = setTimeout(() => { setProgress(100); }, 2250);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, []);
+  const isWarning = timeRemaining != null && timeRemaining <= 10 && timeRemaining > 5;
+  const isDanger = timeRemaining != null && timeRemaining <= 5;
 
   return (
-    <div className="cv-evaluating-box">
-      <div className="cv-eval-spinner-wrap">
-        <div className="cv-eval-pulse-ring" />
-        <div className="cv-eval-icon">🧠</div>
-      </div>
-      <div className="cv-eval-text-group">
-        <div className="cv-eval-badge">
-          <span className="cv-pulse-dot" />
-          <span>{stages[step].label}</span>
+    <div className="cv-auto-runner-hud">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div className="cv-auto-progress-pills">
+          {Array.from({ length: totalTests }).map((_, i) => (
+            <div 
+              key={i} 
+              className={`cv-auto-pill ${i < testIndex ? 'completed' : i === testIndex ? 'active' : ''}`}
+            />
+          ))}
         </div>
-        <h3 className="cv-eval-title">Calibrating {testName}</h3>
-        <p className="cv-eval-subtitle">{stages[step].desc}</p>
+        <div>
+          <span style={{ fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0.06em', color: '#a3b18a', textTransform: 'uppercase', display: 'block' }}>
+            COGNITIVE SCREENING · {testIndex + 1} OF {totalTests}
+          </span>
+          <span style={{ fontSize: '0.95rem', fontWeight: '800', color: '#ffffff' }}>
+            {testName}
+          </span>
+        </div>
       </div>
-      <div className="cv-eval-bar-track">
-        <div className="cv-eval-bar-fill" style={{ width: `${progress}%`, transition: 'width 0.75s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        {timeRemaining != null && (
+          <div className={`cv-auto-timer-badge ${isDanger ? 'danger' : isWarning ? 'warning' : ''}`}>
+            <span className="cv-auto-timer-label">TIME REMAINING</span>
+            <span className="cv-auto-timer-val">{formatTime(timeRemaining)}</span>
+          </div>
+        )}
+
+        <button 
+          onClick={onPause} 
+          style={{
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(163, 177, 138, 0.3)',
+            borderRadius: '8px',
+            color: '#ffffff',
+            padding: '0.45rem 0.85rem',
+            fontSize: '0.78rem',
+            fontWeight: '700',
+            cursor: 'pointer'
+          }}
+        >
+          {isPaused ? '▶ Resume' : '⏸ Pause'}
+        </button>
+
+        <button 
+          onClick={onExit} 
+          style={{
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: '8px',
+            color: '#f87171',
+            padding: '0.45rem 0.85rem',
+            fontSize: '0.78rem',
+            fontWeight: '700',
+            cursor: 'pointer'
+          }}
+        >
+          ✕ Exit
+        </button>
       </div>
-      <span style={{ fontSize: '0.72rem', fontFamily: 'JetBrains Mono, monospace', color: '#a3b18a', letterSpacing: '0.04em' }}>
-        CLINICAL SYNTHESIS: {progress}% COMPLETE
-      </span>
     </div>
   );
 };
 
-const TestResultCard = ({ score, domain, testName, metrics = [], onContinue }) => {
-  const [displayScore, setDisplayScore] = useState(0);
+// ── Pre-Test Instructions & Animated 3-2-1 Countdown ─────────────────────────
+const PreTestInstructionStage = ({ test, onStart }) => {
+  const [countdown, setCountdown] = useState(null); // null | 3 | 2 | 1 | 'START'
 
-  React.useEffect(() => {
-    let start = 0;
-    const target = Math.max(0, Math.min(100, Math.round(score || 0)));
-    const duration = 1200;
-    const stepTime = 25;
-    const steps = duration / stepTime;
-    const increment = target / steps;
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= target) {
-        setDisplayScore(target);
-        clearInterval(timer);
-      } else {
-        setDisplayScore(Math.round(start));
-      }
-    }, stepTime);
-    return () => clearInterval(timer);
-  }, [score]);
+  const handleBeginCountdown = () => {
+    setCountdown(3);
+  };
 
-  const isOptimal = score >= 70;
-  const isModerate = score >= 40 && score < 70;
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown === 3) {
+      const t = setTimeout(() => setCountdown(2), 900);
+      return () => clearTimeout(t);
+    }
+    if (countdown === 2) {
+      const t = setTimeout(() => setCountdown(1), 900);
+      return () => clearTimeout(t);
+    }
+    if (countdown === 1) {
+      const t = setTimeout(() => setCountdown('START'), 900);
+      return () => clearTimeout(t);
+    }
+    if (countdown === 'START') {
+      const t = setTimeout(() => onStart(), 600);
+      return () => clearTimeout(t);
+    }
+  }, [countdown, onStart]);
 
-  const statusColor = isOptimal ? '#4ade80' : isModerate ? '#f59e0b' : '#ef4444';
-  const statusBg = isOptimal ? 'rgba(74, 222, 128, 0.12)' : isModerate ? 'rgba(245, 158, 11, 0.12)' : 'rgba(239, 68, 68, 0.12)';
-  const statusText = isOptimal ? 'Optimal Cognitive Performance' : isModerate ? 'Moderate Performance / Baseline' : 'Sub-Baseline Drift Detected';
-
-  // SVG circular arc: radius 52, circumference = 2 * PI * 52 ≈ 326.7
-  const circumference = 326.7;
-  const strokeDashoffset = circumference - (circumference * (displayScore / 100));
+  if (countdown !== null) {
+    return (
+      <div className="cv-countdown-box">
+        <span style={{ fontSize: '1rem', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a3b18a' }}>
+          READY FOR {test.name.toUpperCase()}?
+        </span>
+        <div className="cv-countdown-num">
+          {countdown}
+        </div>
+        <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0 }}>
+          The assessment will begin automatically.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="cv-result-card">
-      <div className="cv-result-badge" style={{ color: statusColor, borderColor: statusColor, backgroundColor: statusBg }}>
-        <span>●</span> {statusText}
+    <div className="cv-auto-instruction-card">
+      <div style={{
+        width: '56px',
+        height: '56px',
+        borderRadius: '14px',
+        backgroundColor: 'rgba(163, 177, 138, 0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#a3b18a'
+      }}>
+        {renderTestIcon(test.iconType)}
       </div>
 
-      <div className="cv-gauge-wrap">
-        <svg className="cv-gauge-svg" viewBox="0 0 120 120">
-          <circle className="cv-gauge-track" cx="60" cy="60" r="52" />
-          <circle
-            className="cv-gauge-fill"
-            cx="60"
-            cy="60"
-            r="52"
-            style={{
-              stroke: statusColor,
-              strokeDasharray: circumference,
-              strokeDashoffset: strokeDashoffset,
-              filter: `drop-shadow(0 0 8px ${statusColor}60)`
-            }}
-          />
-        </svg>
-        <div className="cv-gauge-center-content">
-          <span className="cv-result-score-num" style={{ color: statusColor }}>{displayScore}</span>
-          <span className="cv-result-score-den">/ 100 PTS</span>
-        </div>
+      <div>
+        <span style={{ fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.08em', color: '#a3b18a', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+          STANDARDIZED PROTOCOL · {test.domain}
+        </span>
+        <h2 style={{ fontSize: '1.6rem', fontWeight: '800', margin: '0 0 0.5rem 0', color: '#ffffff' }}>
+          {test.name}
+        </h2>
+        <p style={{ fontSize: '0.92rem', color: '#cbd5e1', lineHeight: '1.5', margin: 0 }}>
+          {test.instructions}
+        </p>
       </div>
 
-      <h3 className="cv-result-title">{testName} Evaluation Complete</h3>
-      <p className="cv-result-subtitle">
-        Your longitudinal {domain?.toLowerCase() || 'cognitive'} index has been calibrated against clinical normative baselines.
-      </p>
+      <div style={{
+        padding: '0.6rem 1.2rem',
+        borderRadius: '10px',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        fontSize: '0.78rem',
+        color: '#94a3b8'
+      }}>
+        ⏱️ Allocated Timing: <strong>{test.timeLimit}s countdown</strong> · Zero clinician intervention required
+      </div>
 
-      {metrics.length > 0 && (
-        <div className="cv-result-metrics-grid">
-          {metrics.map((m, i) => (
-            <div key={i} className="cv-result-metric-item" style={{ animation: `cvScoreReveal 0.3s cubic-bezier(0.16, 1, 0.3, 1) ${0.1 * i}s both` }}>
-              <span className="cv-metric-label">{m.label}</span>
-              <strong className="cv-metric-value">{m.value}</strong>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <button className="cv-continue-btn cv-tactile-btn" onClick={onContinue}>
-        <span>Confirm & Continue</span>
+      <button
+        className="cv-action-btn cv-tactile-btn"
+        style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)', minWidth: '220px' }}
+        onClick={handleBeginCountdown}
+      >
+        <span>Ready — Begin Test</span>
         <span>→</span>
       </button>
     </div>
   );
 };
 
-// ── 1. Pattern Recall ────────────────────────────────────────────────────────
-const PatternRecall = ({ onComplete }) => {
+// ── 1. Automated Pattern Recall ──────────────────────────────────────────────
+const AutomatedPatternRecall = ({ test, onFinish, onTickTimer, isPaused }) => {
   const size = 4;
   const totalCells = size * size;
-  const pattern = React.useMemo(() => {
+  const pattern = useMemo(() => {
     const all = Array.from({ length: 16 }, (_, i) => i);
     const shuffled = all.sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 6);
   }, []);
-  const [phase, setPhase] = useState('memorise'); // 'memorise' | 'recall' | 'evaluating' | 'done'
+
+  const [phase, setPhase] = useState('memorise'); // 'memorise' | 'recall'
   const [selected, setSelected] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resultData, setResultData] = useState(null);
-  const startTime = React.useRef(Date.now());
+  const [memRemaining, setMemRemaining] = useState(test.memorizeLimit || 8);
+  const [recallRemaining, setRecallRemaining] = useState(test.timeLimit || 30);
+  const startTimeRef = useRef(Date.now());
+  const finishedRef = useRef(false);
+
+  // Memorize Timer
+  useEffect(() => {
+    if (phase !== 'memorise' || isPaused) return;
+    const targetEnd = Date.now() + memRemaining * 1000;
+    const interval = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((targetEnd - Date.now()) / 1000));
+      setMemRemaining(rem);
+      onTickTimer(rem);
+      if (rem <= 0) {
+        clearInterval(interval);
+        setPhase('recall');
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [phase, isPaused, memRemaining, onTickTimer]);
+
+  // Recall Timer
+  useEffect(() => {
+    if (phase !== 'recall' || isPaused) return;
+    const targetEnd = Date.now() + recallRemaining * 1000;
+    const interval = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((targetEnd - Date.now()) / 1000));
+      setRecallRemaining(rem);
+      onTickTimer(rem);
+      if (rem <= 0) {
+        clearInterval(interval);
+        handleAutoSubmit(true);
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [phase, isPaused, recallRemaining, onTickTimer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCellClick = (i) => {
-    if (phase !== 'recall' || isSubmitting) return;
+    if (phase !== 'recall' || isPaused) return;
     setSelected(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
   };
 
   const handleProceedToRecall = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setPhase('recall');
-      setIsSubmitting(false);
-    }, 280);
+    setPhase('recall');
   };
 
-  const handleSubmit = () => {
-    setIsSubmitting(true);
+  const handleAutoSubmit = useCallback((isTimeout = false) => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
     const correct = pattern.filter(p => selected.includes(p)).length;
     const score = Math.round((correct / pattern.length) * 100);
-    const duration = (Date.now() - startTime.current) / 1000;
-    
-    setTimeout(() => {
-      setPhase('evaluating');
-      setIsSubmitting(false);
-      setTimeout(() => {
-        setResultData({ score, correct, total: pattern.length, duration });
-        setPhase('done');
-      }, 2400);
-    }, 380);
-  };
+    const duration = (Date.now() - startTimeRef.current) / 1000;
+    const status = isTimeout ? (selected.length === 0 ? 'TIMEOUT' : 'COMPLETED') : 'COMPLETED';
 
-  if (phase === 'evaluating') {
-    return <TestEvaluatingScreen testName="Pattern Recall" domain="Visuospatial Memory" />;
-  }
-
-  if (phase === 'done' && resultData) {
-    return (
-      <TestResultCard
-        testName="Pattern Recall"
-        domain="Visuospatial Memory"
-        score={resultData.score}
-        metrics={[
-          { label: 'Recalled Cells', value: `${resultData.correct} / ${resultData.total}` },
-          { label: 'Grid Fidelity', value: `${resultData.score}%` },
-          { label: 'Response Time', value: `${resultData.duration.toFixed(1)}s` },
-        ]}
-        onContinue={() => onComplete(resultData.score, resultData.duration)}
-      />
-    );
-  }
+    onFinish({
+      test_type: 'pattern_recall',
+      score,
+      duration_seconds: duration,
+      completion_status: status,
+      raw_response: { selected, pattern, correct_count: correct },
+      metadata: {
+        recalled_cells: `${correct} / ${pattern.length}`,
+        grid_fidelity: `${score}%`,
+        is_timeout: isTimeout
+      }
+    });
+  }, [pattern, selected, onFinish]);
 
   return (
     <div className="cv-test-runner-box">
       <div className="cv-runner-meta">
         <span className="cv-runner-step-pill">
-          {phase === 'memorise' ? 'Phase 1: Spatial Encoding' : 'Phase 2: Spatial Recall'}
+          {phase === 'memorise' ? `Phase 1: Spatial Encoding (${memRemaining}s)` : `Phase 2: Spatial Recall (${recallRemaining}s)`}
         </span>
         <h3 className="cv-runner-instruction">
           {phase === 'memorise' 
@@ -353,8 +445,8 @@ const PatternRecall = ({ onComplete }) => {
         </h3>
         <p className="cv-runner-subtext">
           {phase === 'memorise'
-            ? 'Observe the spatial matrix coordinates carefully before proceeding.'
-            : 'Reproduce the exact spatial pattern from working memory.'}
+            ? 'System will advance to recall automatically in a few seconds.'
+            : 'Select the 6 matrix coordinates before time expires.'}
         </p>
       </div>
 
@@ -374,54 +466,32 @@ const PatternRecall = ({ onComplete }) => {
         })}
       </div>
 
-      {phase === 'memorise' && (
+      {phase === 'memorise' ? (
         <button
           className="cv-action-btn cv-tactile-btn"
           style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
           onClick={handleProceedToRecall}
-          disabled={isSubmitting}
         >
-          {isSubmitting ? (
-            <>
-              <span className="cv-spinner-mini" />
-              <span>Locking Spatial Pattern...</span>
-            </>
-          ) : (
-            <>
-              <span>I've Memorized It — Begin Recall</span>
-              <span>→</span>
-            </>
-          )}
+          <span>I've Memorized It — Begin Recall Immediately ({memRemaining}s)</span>
+          <span>→</span>
         </button>
-      )}
-
-      {phase === 'recall' && (
+      ) : (
         <button
           className="cv-action-btn cv-tactile-btn"
           style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-          onClick={handleSubmit}
-          disabled={isSubmitting || selected.length === 0}
+          onClick={() => handleAutoSubmit(false)}
         >
-          {isSubmitting ? (
-            <>
-              <span className="cv-spinner-mini" />
-              <span>Evaluating Spatial Coordinates...</span>
-            </>
-          ) : (
-            <>
-              <span>Submit Answer ({selected.length}/6)</span>
-              <span>→</span>
-            </>
-          )}
+          <span>Submit Answer ({selected.length}/6)</span>
+          <span>→</span>
         </button>
       )}
     </div>
   );
 };
 
-// ── 2. Digit Span ────────────────────────────────────────────────────────────
-const DigitSpan = ({ onComplete }) => {
-  const sequences = React.useMemo(() => {
+// ── 2. Automated Digit Span ──────────────────────────────────────────────────
+const AutomatedDigitSpan = ({ test, onFinish, onTickTimer, isPaused }) => {
+  const sequences = useMemo(() => {
     const rand = () => Math.floor(Math.random() * 9) + 1;
     return [
       [rand(), rand(), rand()],
@@ -429,76 +499,80 @@ const DigitSpan = ({ onComplete }) => {
       [rand(), rand(), rand(), rand(), rand()],
     ];
   }, []);
+
   const [seqIndex, setSeqIndex] = useState(0);
-  const [phase, setPhase] = useState('show'); // 'show' | 'recall' | 'evaluating' | 'done'
+  const [phase, setPhase] = useState('show'); // 'show' | 'recall'
   const [input, setInput] = useState('');
-  const [correct, setCorrect] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState(null);
-  const [resultData, setResultData] = useState(null);
-  const startTime = React.useRef(Date.now());
+  const [correctCount, setCorrectCount] = useState(0);
+  const [showRemaining, setShowRemaining] = useState(4);
+  const [recallRemaining, setRecallRemaining] = useState(test.timeLimit || 20);
+  const startTimeRef = useRef(Date.now());
+  const finishedRef = useRef(false);
 
-  const handleStartRecall = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setPhase('recall');
-      setIsSubmitting(false);
-    }, 280);
-  };
+  // Show Timer
+  useEffect(() => {
+    if (phase !== 'show' || isPaused) return;
+    const targetEnd = Date.now() + showRemaining * 1000;
+    const interval = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((targetEnd - Date.now()) / 1000));
+      setShowRemaining(rem);
+      onTickTimer(rem);
+      if (rem <= 0) {
+        clearInterval(interval);
+        setPhase('recall');
+        setShowRemaining(4);
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [phase, isPaused, showRemaining, onTickTimer]);
 
-  const handleCheck = () => {
-    if (!input.trim() || isSubmitting) return;
-    setIsSubmitting(true);
+  // Recall Timer
+  useEffect(() => {
+    if (phase !== 'recall' || isPaused) return;
+    const targetEnd = Date.now() + recallRemaining * 1000;
+    const interval = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((targetEnd - Date.now()) / 1000));
+      setRecallRemaining(rem);
+      onTickTimer(rem);
+      if (rem <= 0) {
+        clearInterval(interval);
+        handleCheck(true);
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [phase, isPaused, recallRemaining, onTickTimer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCheck = (isTimeout = false) => {
     const answer = input.replace(/\s/g, '').split('').map(Number);
     const seq = sequences[seqIndex];
-    const isCorrect = seq.every((n, i) => n === answer[i]) && answer.length === seq.length;
-    const newCorrect = isCorrect ? correct + 1 : correct;
-    setCorrect(newCorrect);
+    const isCorrect = !isTimeout && seq.every((n, i) => n === answer[i]) && answer.length === seq.length;
+    const updatedCorrect = isCorrect ? correctCount + 1 : correctCount;
+    setCorrectCount(updatedCorrect);
 
-    setFeedback({
-      isCorrect,
-      text: isCorrect ? `✓ Sequence ${seqIndex + 1} Recorded Accurately` : `✓ Sequence ${seqIndex + 1} Recorded`
-    });
-
-    setTimeout(() => {
-      setInput('');
-      setFeedback(null);
-      setIsSubmitting(false);
-
-      if (seqIndex + 1 >= sequences.length) {
-        const score = Math.round((newCorrect / sequences.length) * 100);
-        const duration = (Date.now() - startTime.current) / 1000;
-        setPhase('evaluating');
-        setTimeout(() => {
-          setResultData({ score, correct: newCorrect, total: sequences.length, duration });
-          setPhase('done');
-        }, 2400);
-      } else {
-        setSeqIndex(prev => prev + 1);
-        setPhase('show');
-      }
-    }, 650);
+    setInput('');
+    if (seqIndex + 1 >= sequences.length) {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      const score = Math.round((updatedCorrect / sequences.length) * 100);
+      const duration = (Date.now() - startTimeRef.current) / 1000;
+      onFinish({
+        test_type: 'digit_span',
+        score,
+        duration_seconds: duration,
+        completion_status: 'COMPLETED',
+        raw_response: { sequences, correct_count: updatedCorrect },
+        metadata: {
+          sequences_correct: `${updatedCorrect} / ${sequences.length}`,
+          max_span: `${sequences[sequences.length - 1].length} Digits`
+        }
+      });
+    } else {
+      setSeqIndex(prev => prev + 1);
+      setPhase('show');
+      setShowRemaining(4);
+      setRecallRemaining(test.timeLimit || 20);
+    }
   };
-
-  if (phase === 'evaluating') {
-    return <TestEvaluatingScreen testName="Digit Span" domain="Working Memory Capacity" />;
-  }
-
-  if (phase === 'done' && resultData) {
-    return (
-      <TestResultCard
-        testName="Digit Span"
-        domain="Working Memory Capacity"
-        score={resultData.score}
-        metrics={[
-          { label: 'Sequences Correct', value: `${resultData.correct} / ${resultData.total}` },
-          { label: 'Max Span Tested', value: `${sequences[sequences.length - 1].length} Digits` },
-          { label: 'Response Latency', value: `${resultData.duration.toFixed(1)}s` },
-        ]}
-        onContinue={() => onComplete(resultData.score, resultData.duration)}
-      />
-    );
-  }
 
   return (
     <div className="cv-test-runner-box">
@@ -523,87 +597,46 @@ const DigitSpan = ({ onComplete }) => {
         </h3>
         <p className="cv-runner-subtext">
           {phase === 'show'
-            ? 'Retain the digits in your phonological working memory buffer.'
+            ? 'Retain the digits in your phonological buffer before recall begins.'
             : 'Type the exact numbers into the sequence field below.'}
         </p>
       </div>
 
-      {phase === 'show' && (
-        <>
-          <div className="cv-digit-row">
-            {sequences[seqIndex].map((d, i) => (
-              <span key={i} className="cv-digit-card" style={{ animationDelay: `${i * 0.08}s` }}>
-                {d}
-              </span>
-            ))}
-          </div>
-
+      {phase === 'show' ? (
+        <div className="cv-digit-row">
+          {sequences[seqIndex].map((d, i) => (
+            <span key={i} className="cv-digit-card" style={{ animationDelay: `${i * 0.08}s` }}>
+              {d}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="cv-test-input-wrap">
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleCheck(false)}
+            className="cv-test-input"
+            placeholder="e.g. 482"
+            autoFocus
+            disabled={isPaused}
+          />
           <button
             className="cv-action-btn cv-tactile-btn"
             style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-            onClick={handleStartRecall}
-            disabled={isSubmitting}
+            onClick={() => handleCheck(false)}
           >
-            {isSubmitting ? (
-              <>
-                <span className="cv-spinner-mini" />
-                <span>Preparing Buffer...</span>
-              </>
-            ) : (
-              <>
-                <span>I've Memorized It — Enter Sequence</span>
-                <span>→</span>
-              </>
-            )}
+            <span>Submit Sequence</span>
+            <span>→</span>
           </button>
-        </>
-      )}
-
-      {phase === 'recall' && (
-        <>
-          <div className="cv-test-input-wrap">
-            <input
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleCheck()}
-              className="cv-test-input"
-              placeholder="e.g. 482"
-              autoFocus
-              disabled={isSubmitting}
-            />
-            {feedback && (
-              <div className="cv-seq-feedback-banner success">
-                <span>{feedback.text}</span>
-              </div>
-            )}
-          </div>
-
-          <button
-            className="cv-action-btn cv-tactile-btn"
-            style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-            onClick={handleCheck}
-            disabled={isSubmitting || !input.trim()}
-          >
-            {isSubmitting ? (
-              <>
-                <span className="cv-spinner-mini" />
-                <span>Validating Sequence...</span>
-              </>
-            ) : (
-              <>
-                <span>Check Sequence</span>
-                <span>→</span>
-              </>
-            )}
-          </button>
-        </>
+        </div>
       )}
     </div>
   );
 };
 
-// ── 3. Word Recall ───────────────────────────────────────────────────────────
+// ── 3. Automated Word Recall (Delayed Retrieval) ──────────────────────────────
 const WORD_BANK = [
   'Apple', 'River', 'Candle', 'Bridge', 'Mirror',
   'Castle', 'Jungle', 'Pencil', 'Flower', 'Guitar',
@@ -611,78 +644,98 @@ const WORD_BANK = [
   'Lantern', 'Feather', 'Compass', 'Whisper', 'Thunder',
 ];
 
-const WordRecall = ({ onComplete }) => {
-  const words = React.useMemo(() => {
+const AutomatedWordRecall = ({ test, onFinish, onTickTimer, isPaused }) => {
+  const words = useMemo(() => {
     const shuffled = [...WORD_BANK].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 5);
   }, []);
-  const [phase, setPhase] = useState('memorise'); // 'memorise' | 'distract' | 'recall' | 'evaluating' | 'done'
+
+  const [phase, setPhase] = useState('memorise'); // 'memorise' | 'distract' | 'recall'
   const [input, setInput] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resultData, setResultData] = useState(null);
-  const startTime = React.useRef(Date.now());
+  const [memRemaining, setMemRemaining] = useState(test.memorizeLimit || 10);
+  const [distractRemaining, setDistractRemaining] = useState(test.distractLimit || 8);
+  const [recallRemaining, setRecallRemaining] = useState(test.timeLimit || 35);
+  const startTimeRef = useRef(Date.now());
+  const finishedRef = useRef(false);
 
-  const handleProceedToDistract = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setPhase('distract');
-      setIsSubmitting(false);
-    }, 280);
-  };
+  // Memorize Phase Timer
+  useEffect(() => {
+    if (phase !== 'memorise' || isPaused) return;
+    const targetEnd = Date.now() + memRemaining * 1000;
+    const interval = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((targetEnd - Date.now()) / 1000));
+      setMemRemaining(rem);
+      onTickTimer(rem);
+      if (rem <= 0) {
+        clearInterval(interval);
+        setPhase('distract');
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [phase, isPaused, memRemaining, onTickTimer]);
 
-  const handleProceedToRecall = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setPhase('recall');
-      setIsSubmitting(false);
-    }, 280);
-  };
+  // Distract Phase Timer
+  useEffect(() => {
+    if (phase !== 'distract' || isPaused) return;
+    const targetEnd = Date.now() + distractRemaining * 1000;
+    const interval = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((targetEnd - Date.now()) / 1000));
+      setDistractRemaining(rem);
+      onTickTimer(rem);
+      if (rem <= 0) {
+        clearInterval(interval);
+        setPhase('recall');
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [phase, isPaused, distractRemaining, onTickTimer]);
 
-  const handleSubmit = () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
+  // Recall Phase Timer
+  useEffect(() => {
+    if (phase !== 'recall' || isPaused) return;
+    const targetEnd = Date.now() + recallRemaining * 1000;
+    const interval = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((targetEnd - Date.now()) / 1000));
+      setRecallRemaining(rem);
+      onTickTimer(rem);
+      if (rem <= 0) {
+        clearInterval(interval);
+        handleSubmit(true);
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [phase, isPaused, recallRemaining, onTickTimer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSubmit = useCallback((isTimeout = false) => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
     const answered = input.toLowerCase().split(/[\s,]+/).filter(Boolean);
     const correct = words.filter(w => answered.includes(w.toLowerCase())).length;
     const score = Math.round((correct / words.length) * 100);
-    const duration = (Date.now() - startTime.current) / 1000;
-    
-    setTimeout(() => {
-      setPhase('evaluating');
-      setIsSubmitting(false);
-      setTimeout(() => {
-        setResultData({ score, correct, total: words.length, duration });
-        setPhase('done');
-      }, 2400);
-    }, 380);
-  };
+    const duration = (Date.now() - startTimeRef.current) / 1000;
+    const status = isTimeout ? (answered.length === 0 ? 'TIMEOUT' : 'COMPLETED') : 'COMPLETED';
 
-  if (phase === 'evaluating') {
-    return <TestEvaluatingScreen testName="Word Recall" domain="Episodic Memory" />;
-  }
-
-  if (phase === 'done' && resultData) {
-    return (
-      <TestResultCard
-        testName="Word Recall"
-        domain="Episodic Memory"
-        score={resultData.score}
-        metrics={[
-          { label: 'Words Recalled', value: `${resultData.correct} / ${resultData.total}` },
-          { label: 'Distractor Resistance', value: 'Verified' },
-          { label: 'Retrieval Latency', value: `${resultData.duration.toFixed(1)}s` },
-        ]}
-        onContinue={() => onComplete(resultData.score, resultData.duration)}
-      />
-    );
-  }
+    onFinish({
+      test_type: 'word_recall',
+      score,
+      duration_seconds: duration,
+      completion_status: status,
+      raw_response: { target_words: words, user_input: input, correct_count: correct },
+      metadata: {
+        words_recalled: `${correct} / ${words.length}`,
+        distractor_completed: true,
+        is_timeout: isTimeout
+      }
+    });
+  }, [words, input, onFinish]);
 
   return (
     <div className="cv-test-runner-box">
       <div className="cv-runner-meta">
         <span className="cv-runner-step-pill">
-          {phase === 'memorise' && 'Phase 1: Lexical Encoding'}
-          {phase === 'distract' && 'Phase 2: Retroactive Distractor'}
-          {phase === 'recall' && 'Phase 3: Delayed Verbal Retrieval'}
+          {phase === 'memorise' && `Phase 1: Lexical Encoding (${memRemaining}s)`}
+          {phase === 'distract' && `Phase 2: Retroactive Distractor (${distractRemaining}s)`}
+          {phase === 'recall' && `Phase 3: Delayed Verbal Retrieval (${recallRemaining}s)`}
         </span>
         <h3 className="cv-runner-instruction">
           {phase === 'memorise' && 'Memorize these 5 clinical target words'}
@@ -691,119 +744,65 @@ const WordRecall = ({ onComplete }) => {
         </h3>
         <p className="cv-runner-subtext">
           {phase === 'memorise' && 'Store these semantic representations in your episodic memory ledger.'}
-          {phase === 'distract' && 'Solve this equation mentally to clear working memory cache.'}
+          {phase === 'distract' && 'Solve this equation mentally to clear working memory buffer.'}
           {phase === 'recall' && 'Separate recalled words with commas or spaces.'}
         </p>
       </div>
 
       {phase === 'memorise' && (
-        <>
-          <div className="cv-words-container">
-            {words.map((w, i) => (
-              <span key={i} className="cv-word-chip" style={{ animationDelay: `${i * 0.08}s` }}>
-                {w}
-              </span>
-            ))}
-          </div>
-
-          <button
-            className="cv-action-btn cv-tactile-btn"
-            style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-            onClick={handleProceedToDistract}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <span className="cv-spinner-mini" />
-                <span>Preparing Distractor Task...</span>
-              </>
-            ) : (
-              <>
-                <span>I've Memorized Words — Proceed</span>
-                <span>→</span>
-              </>
-            )}
-          </button>
-        </>
+        <div className="cv-words-container">
+          {words.map((w, i) => (
+            <span key={i} className="cv-word-chip" style={{ animationDelay: `${i * 0.08}s` }}>
+              {w}
+            </span>
+          ))}
+        </div>
       )}
 
       {phase === 'distract' && (
-        <>
-          <div style={{
-            fontSize: '2.8rem',
-            fontWeight: '900',
-            fontFamily: 'JetBrains Mono, monospace',
-            color: '#a3b18a',
-            padding: '1.2rem 2.5rem',
-            borderRadius: '16px',
-            background: 'rgba(0, 0, 0, 0.25)',
-            border: '2px solid rgba(163, 177, 138, 0.3)',
-            userSelect: 'none'
-          }}>
-            47 + 36 = ?
-          </div>
-
-          <button
-            className="cv-action-btn cv-tactile-btn"
-            style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-            onClick={handleProceedToRecall}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <span className="cv-spinner-mini" />
-                <span>Opening Retrieval Buffer...</span>
-              </>
-            ) : (
-              <>
-                <span>83 — Now Recall Words</span>
-                <span>→</span>
-              </>
-            )}
-          </button>
-        </>
+        <div style={{
+          fontSize: '2.8rem',
+          fontWeight: '900',
+          fontFamily: 'JetBrains Mono, monospace',
+          color: '#a3b18a',
+          padding: '1.2rem 2.5rem',
+          borderRadius: '16px',
+          background: 'rgba(0, 0, 0, 0.25)',
+          border: '2px solid rgba(163, 177, 138, 0.3)',
+          userSelect: 'none',
+          textAlign: 'center'
+        }}>
+          47 + 36 = ?
+        </div>
       )}
 
       {phase === 'recall' && (
-        <>
-          <div className="cv-test-input-wrap">
-            <input
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              className="cv-test-input"
-              placeholder="e.g. Apple, River, ..."
-              autoFocus
-              disabled={isSubmitting}
-            />
-          </div>
-
+        <div className="cv-test-input-wrap">
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSubmit(false)}
+            className="cv-test-input"
+            placeholder="e.g. Apple, River, ..."
+            autoFocus
+            disabled={isPaused}
+          />
           <button
             className="cv-action-btn cv-tactile-btn"
             style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-            onClick={handleSubmit}
-            disabled={isSubmitting || !input.trim()}
+            onClick={() => handleSubmit(false)}
           >
-            {isSubmitting ? (
-              <>
-                <span className="cv-spinner-mini" />
-                <span>Evaluating Lexical Retrieval Matrix...</span>
-              </>
-            ) : (
-              <>
-                <span>Submit Word Recall</span>
-                <span>→</span>
-              </>
-            )}
+            <span>Submit Word Recall</span>
+            <span>→</span>
           </button>
-        </>
+        </div>
       )}
     </div>
   );
 };
 
-// ── 4. Stroop Test ───────────────────────────────────────────────────────────
+// ── 4. Automated Stroop Test ─────────────────────────────────────────────────
 const ALL_COLOR_WORDS = [
   { word: 'RED', ink: '#3b82f6', correct: 'Blue' },
   { word: 'BLUE', ink: '#22c55e', correct: 'Green' },
@@ -813,69 +812,70 @@ const ALL_COLOR_WORDS = [
   { word: 'RED', ink: '#22c55e', correct: 'Green' },
   { word: 'BLUE', ink: '#ef4444', correct: 'Red' },
   { word: 'GREEN', ink: '#3b82f6', correct: 'Blue' },
-  { word: 'YELLOW', ink: '#ef4444', correct: 'Red' },
-  { word: 'PURPLE', ink: '#22c55e', correct: 'Green' },
-  { word: 'RED', ink: '#a78bfa', correct: 'Purple' },
-  { word: 'BLUE', ink: '#f59e0b', correct: 'Yellow' },
 ];
 
-const StroopTest = ({ onComplete }) => {
-  const colorWords = React.useMemo(() => {
-    const shuffled = [...ALL_COLOR_WORDS].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 8);
+const AutomatedStroop = ({ test, onFinish, onTickTimer, isPaused }) => {
+  const colorWords = useMemo(() => {
+    return [...ALL_COLOR_WORDS].sort(() => Math.random() - 0.5).slice(0, 8);
   }, []);
 
   const colorOptions = ['Red', 'Blue', 'Green', 'Yellow', 'Purple'];
   const [current, setCurrent] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [feedback, setFeedback] = useState(null);
-  const [phase, setPhase] = useState('playing'); // 'playing' | 'evaluating' | 'done'
-  const [resultData, setResultData] = useState(null);
-  const startTime = React.useRef(Date.now());
+  const [timeRemaining, setTimeRemaining] = useState(test.timeLimit || 30);
+  const startTimeRef = useRef(Date.now());
+  const finishedRef = useRef(false);
+
+  useEffect(() => {
+    if (isPaused) return;
+    const targetEnd = Date.now() + timeRemaining * 1000;
+    const interval = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((targetEnd - Date.now()) / 1000));
+      setTimeRemaining(rem);
+      onTickTimer(rem);
+      if (rem <= 0) {
+        clearInterval(interval);
+        finishStroop(correct, true);
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [isPaused, timeRemaining, correct, onTickTimer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const finishStroop = useCallback((finalCorrect, isTimeout = false) => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    const score = Math.round((finalCorrect / colorWords.length) * 100);
+    const duration = (Date.now() - startTimeRef.current) / 1000;
+    onFinish({
+      test_type: 'stroop',
+      score,
+      duration_seconds: duration,
+      completion_status: isTimeout ? 'TIMEOUT' : 'COMPLETED',
+      raw_response: { trials_count: colorWords.length, correct_count: finalCorrect },
+      metadata: {
+        interference_accuracy: `${finalCorrect} / ${colorWords.length}`,
+        is_timeout: isTimeout
+      }
+    });
+  }, [colorWords, onFinish]);
 
   const handleAnswer = (answer) => {
-    if (feedback !== null) return;
+    if (feedback !== null || isPaused) return;
     const isCorrect = answer === colorWords[current].correct;
-    if (isCorrect) setCorrect(prev => prev + 1);
+    const newCorrect = isCorrect ? correct + 1 : correct;
+    setCorrect(newCorrect);
     setFeedback(isCorrect ? 'correct' : 'wrong');
 
     setTimeout(() => {
       setFeedback(null);
       if (current + 1 >= colorWords.length) {
-        const totalCorrect = isCorrect ? correct + 1 : correct;
-        const score = Math.round((totalCorrect / colorWords.length) * 100);
-        const duration = (Date.now() - startTime.current) / 1000;
-        
-        setPhase('evaluating');
-        setTimeout(() => {
-          setResultData({ score, correct: totalCorrect, total: colorWords.length, duration });
-          setPhase('done');
-        }, 2400);
+        finishStroop(newCorrect, false);
       } else {
         setCurrent(prev => prev + 1);
       }
-    }, 600);
+    }, 450);
   };
-
-  if (phase === 'evaluating') {
-    return <TestEvaluatingScreen testName="Stroop Test" domain="Executive Inhibition" />;
-  }
-
-  if (phase === 'done' && resultData) {
-    return (
-      <TestResultCard
-        testName="Stroop Test"
-        domain="Executive Inhibition"
-        score={resultData.score}
-        metrics={[
-          { label: 'Interference Accuracy', value: `${resultData.correct} / ${resultData.total}` },
-          { label: 'Interference Control', value: resultData.score >= 70 ? 'High' : 'Moderate' },
-          { label: 'Total Duration', value: `${resultData.duration.toFixed(1)}s` },
-        ]}
-        onContinue={() => onComplete(resultData.score, resultData.duration)}
-      />
-    );
-  }
 
   return (
     <div className="cv-test-runner-box">
@@ -910,19 +910,13 @@ const StroopTest = ({ onComplete }) => {
         {colorWords[current].word}
       </div>
 
-      {feedback && (
-        <div className={`cv-seq-feedback-banner ${feedback === 'correct' ? 'success' : 'evaluating'}`} style={{ color: feedback === 'correct' ? '#4ade80' : '#ef4444' }}>
-          <span>{feedback === 'correct' ? '✓ Correct Target Matched' : '✗ Automatic Reading Interference'}</span>
-        </div>
-      )}
-
       <div className="cv-stroop-options-grid">
         {colorOptions.map((c) => (
           <button
             key={c}
             className="cv-stroop-btn cv-tactile-btn"
             onClick={() => handleAnswer(c)}
-            disabled={feedback !== null}
+            disabled={feedback !== null || isPaused}
           >
             {c}
           </button>
@@ -932,226 +926,7 @@ const StroopTest = ({ onComplete }) => {
   );
 };
 
-// ── 5. Reaction Time Test ────────────────────────────────────────────────────
-const ReactionTimeTest = ({ onComplete }) => {
-  const ROUNDS = 5;
-  const [phase, setPhase] = useState('intro'); // 'intro' | 'waiting' | 'ready' | 'result' | 'evaluating' | 'done'
-  const [round, setRound] = useState(0);
-  const [reactionTimes, setReactionTimes] = useState([]);
-  const [appearTime, setAppearTime] = useState(null);
-  const [lastRT, setLastRT] = useState(null);
-  const [tooEarly, setTooEarly] = useState(false);
-  const [resultData, setResultData] = useState(null);
-  const timerRef = React.useRef(null);
-  const startTime = React.useRef(Date.now());
-
-  const startRound = () => {
-    setPhase('waiting');
-    setTooEarly(false);
-    setLastRT(null);
-    const delay = 1400 + Math.random() * 2600;
-    timerRef.current = setTimeout(() => {
-      setAppearTime(Date.now());
-      setPhase('ready');
-    }, delay);
-  };
-
-  const handleTap = () => {
-    if (phase === 'waiting') {
-      clearTimeout(timerRef.current);
-      setTooEarly(true);
-      setPhase('result');
-      return;
-    }
-    if (phase === 'ready') {
-      const rt = Date.now() - appearTime;
-      setLastRT(rt);
-      const newTimes = [...reactionTimes, rt];
-      setReactionTimes(newTimes);
-      setPhase('result');
-
-      if (round + 1 >= ROUNDS) {
-        const avg = newTimes.reduce((a, b) => a + b, 0) / newTimes.length;
-        const score = Math.max(0, Math.min(100, Math.round(((700 - avg) / 450) * 100)));
-        const duration = (Date.now() - startTime.current) / 1000;
-        
-        setTimeout(() => {
-          setPhase('evaluating');
-          setTimeout(() => {
-            setResultData({ score, avgRT: Math.round(avg), duration });
-            setPhase('done');
-          }, 2400);
-        }, 700);
-      }
-    }
-  };
-
-  React.useEffect(() => {
-    return () => clearTimeout(timerRef.current);
-  }, []);
-
-  const avgRT = reactionTimes.length > 0
-    ? Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length)
-    : null;
-
-  const getRTColor = (rt) => rt < 300 ? '#4ade80' : rt < 500 ? '#f59e0b' : '#ef4444';
-
-  if (phase === 'evaluating') {
-    return <TestEvaluatingScreen testName="Reaction Time" domain="Psychomotor Speed" />;
-  }
-
-  if (phase === 'done' && resultData) {
-    return (
-      <TestResultCard
-        testName="Reaction Time"
-        domain="Psychomotor Speed"
-        score={resultData.score}
-        metrics={[
-          { label: 'Average Latency', value: `${resultData.avgRT} ms` },
-          { label: 'Clinical Target', value: '< 300 ms' },
-          { label: 'Neural Agility', value: resultData.avgRT < 300 ? 'Exceptional' : resultData.avgRT < 500 ? 'Normal' : 'Sub-Baseline' },
-        ]}
-        onContinue={() => onComplete(resultData.score, resultData.duration)}
-      />
-    );
-  }
-
-  return (
-    <div className="cv-test-runner-box">
-      {phase === 'intro' && (
-        <>
-          <div className="cv-runner-meta">
-            <span className="cv-runner-step-pill">Psychomotor Reflex Evaluation</span>
-            <h3 className="cv-runner-instruction">Visual-Motor Latency Calibration</h3>
-            <p className="cv-runner-subtext">
-              A high-contrast target will illuminate after a randomized interval.<br />
-              Tap or click the sensor as quickly as possible upon illumination.
-            </p>
-          </div>
-
-          <button
-            className="cv-action-btn cv-tactile-btn"
-            style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-            onClick={() => { startTime.current = Date.now(); startRound(); setRound(0); }}
-          >
-            <span>Begin Reflex Trials (5 Rounds)</span>
-            <span>→</span>
-          </button>
-        </>
-      )}
-
-      {(phase === 'waiting' || phase === 'ready') && (
-        <>
-          <div className="cv-runner-meta">
-            <div className="cv-step-dots-row">
-              {Array.from({ length: ROUNDS }).map((_, i) => (
-                <div
-                  key={i}
-                  className="cv-step-dot"
-                  style={{
-                    width: i === round ? '26px' : '9px',
-                    backgroundColor: i < round ? '#4ade80' : i === round ? '#a3b18a' : 'rgba(255, 255, 255, 0.15)'
-                  }}
-                />
-              ))}
-            </div>
-            <span className="cv-runner-step-pill">Round {round + 1} of {ROUNDS}</span>
-            <h3 className="cv-runner-instruction">{phase === 'ready' ? 'CLICK / TAP SENSOR NOW!' : 'Stand by...'}</h3>
-            <p className="cv-runner-subtext">{phase === 'ready' ? 'Reflex signal active!' : 'Sensor is calibrating. Do not tap prematurely.'}</p>
-          </div>
-
-          <div
-            onClick={handleTap}
-            className="cv-tactile-btn"
-            style={{
-              width: '180px',
-              height: '180px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              userSelect: 'none',
-              transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
-              backgroundColor: phase === 'ready' ? '#4ade80' : 'rgba(0, 0, 0, 0.35)',
-              border: phase === 'ready' ? '4px solid #4ade80' : '3px dashed rgba(163, 177, 138, 0.35)',
-              boxShadow: phase === 'ready' ? '0 0 50px rgba(74, 222, 128, 0.6)' : 'none',
-            }}
-          >
-            <span style={{
-              fontSize: phase === 'ready' ? '1.5rem' : '1.1rem',
-              color: phase === 'ready' ? '#080c14' : 'rgba(255, 255, 255, 0.4)',
-              fontWeight: '900',
-              fontFamily: 'JetBrains Mono, monospace',
-              letterSpacing: '0.06em'
-            }}>
-              {phase === 'ready' ? 'TAP!' : 'WAIT'}
-            </span>
-          </div>
-        </>
-      )}
-
-      {phase === 'result' && (
-        <>
-          <div className="cv-runner-meta">
-            <div className="cv-step-dots-row">
-              {Array.from({ length: ROUNDS }).map((_, i) => (
-                <div
-                  key={i}
-                  className="cv-step-dot"
-                  style={{
-                    width: i === round ? '26px' : '9px',
-                    backgroundColor: i <= round ? '#4ade80' : 'rgba(255, 255, 255, 0.15)'
-                  }}
-                />
-              ))}
-            </div>
-            <span className="cv-runner-step-pill">Round {round + 1} of {ROUNDS} Complete</span>
-          </div>
-
-          {tooEarly ? (
-            <div className="cv-seq-feedback-banner evaluating" style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.4)' }}>
-              <span>Premature Tap Detected — Wait for the signal before tapping.</span>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-              <span style={{ color: getRTColor(lastRT), fontSize: '2.8rem', fontWeight: '800', fontFamily: 'JetBrains Mono, monospace' }}>
-                {lastRT} ms
-              </span>
-              <span className="cv-runner-subtext">
-                {lastRT < 280 ? 'Exceptional Reflex Speed' : lastRT < 450 ? 'Optimal Clinical Baseline' : 'Slight Reflex Latency'}
-              </span>
-              {avgRT && <span style={{ fontSize: '0.75rem', fontFamily: 'JetBrains Mono, monospace', color: '#a3b18a' }}>Rolling Avg: {avgRT}ms</span>}
-            </div>
-          )}
-
-          {round + 1 < ROUNDS && (
-            <button
-              className="cv-action-btn cv-tactile-btn"
-              style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-              onClick={() => { setRound(r => r + 1); startRound(); }}
-            >
-              <span>Proceed to Round {round + 2}</span>
-              <span>→</span>
-            </button>
-          )}
-
-          {tooEarly && (
-            <button
-              className="cv-action-btn cv-tactile-btn"
-              style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-              onClick={() => startRound()}
-            >
-              <span>Retry Trial</span>
-              <span>→</span>
-            </button>
-          )}
-        </>
-      )}
-    </div>
-  );
-};
-// ── 6. Trail Making Test (Executive Function / Cognitive Flexibility) ─────────
+// ── 5. Automated Trail Making Test (Set-Shifting) ─────────────────────────────
 const PART_A_NODES = [
   { id: '1', label: '1', x: 22, y: 32 },
   { id: '2', label: '2', x: 52, y: 20 },
@@ -1177,82 +952,85 @@ const PART_B_NODES = [
 const SEQ_A = ['1', '2', '3', '4', '5', '6', '7', '8'];
 const SEQ_B = ['1', 'A', '2', 'B', '3', 'C', '4', 'D'];
 
-const TrailMakingTest = ({ onComplete }) => {
-  const [phase, setPhase] = useState('intro_a'); // 'intro_a' | 'part_a' | 'intro_b' | 'part_b' | 'evaluating' | 'done'
+const AutomatedTrailMaking = ({ test, onFinish, onTickTimer, isPaused }) => {
+  const [phase, setPhase] = useState('part_a'); // 'part_a' | 'part_b'
   const [pathA, setPathA] = useState([]);
   const [pathB, setPathB] = useState([]);
   const [targetIndex, setTargetIndex] = useState(0);
   const [partATime, setPartATime] = useState(0);
   const [partAErrors, setPartAErrors] = useState(0);
   const [partBErrors, setPartBErrors] = useState(0);
-  const [partACorrections, setPartACorrections] = useState(0);
-  const [partBCorrections, setPartBCorrections] = useState(0);
   const [errorFlash, setErrorFlash] = useState(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [resultData, setResultData] = useState(null);
-  const [stepLatencies, setStepLatencies] = useState([]);
+  const [timeRemaining, setTimeRemaining] = useState(test.timeLimit || 60);
 
-  const startTimeRef = React.useRef(Date.now());
-  const timerIntervalRef = React.useRef(null);
-  const lastStepTimeRef = React.useRef(Date.now());
+  const startTimeRef = useRef(Date.now());
+  const finishedRef = useRef(false);
 
-  const startPartA = () => {
-    setPathA([]);
-    setTargetIndex(0);
-    setPartAErrors(0);
-    setPartACorrections(0);
-    setElapsed(0);
-    startTimeRef.current = Date.now();
-    lastStepTimeRef.current = Date.now();
-    setPhase('part_a');
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    timerIntervalRef.current = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+  useEffect(() => {
+    if (isPaused) return;
+    const targetEnd = Date.now() + timeRemaining * 1000;
+    const interval = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((targetEnd - Date.now()) / 1000));
+      setTimeRemaining(rem);
+      onTickTimer(rem);
+      if (rem <= 0) {
+        clearInterval(interval);
+        if (phase === 'part_a') {
+          setPartATime(test.timeLimit || 60);
+          setPhase('part_b');
+          setTargetIndex(0);
+          setTimeRemaining(90);
+        } else {
+          finishTrail(partATime, 90, partAErrors, partBErrors, true);
+        }
+      }
     }, 250);
-  };
+    return () => clearInterval(interval);
+  }, [phase, isPaused, timeRemaining, partATime, partAErrors, partBErrors, test.timeLimit, onTickTimer]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const startPartB = () => {
-    setPathB([]);
-    setTargetIndex(0);
-    setPartBErrors(0);
-    setPartBCorrections(0);
-    setElapsed(0);
-    startTimeRef.current = Date.now();
-    lastStepTimeRef.current = Date.now();
-    setPhase('part_b');
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    timerIntervalRef.current = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
-    }, 250);
-  };
+  const finishTrail = useCallback((durA, durB, errA, errB, isTimeout = false) => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    const totalDuration = durA + durB;
+    const totalErrors = errA + errB;
 
-  React.useEffect(() => {
-    return () => {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    };
-  }, []);
+    const timeScore = Math.max(0, Math.min(100, 100 - Math.max(0, durB - 35.0) * 0.9 - Math.max(0, durA - 15.0) * 0.6));
+    const errorPenalty = Math.min(45, errB * 8.0 + errA * 4.0);
+    const score = !isTimeout
+      ? Math.round(Math.max(15.0, Math.min(100.0, timeScore - errorPenalty)))
+      : Math.round(Math.max(10.0, Math.min(45.0, 45.0 - totalErrors * 5.0)));
+
+    onFinish({
+      test_type: 'trail_making',
+      score,
+      duration_seconds: totalDuration,
+      completion_status: isTimeout ? 'TIMEOUT' : 'COMPLETED',
+      raw_response: { part_a_duration: durA, part_b_duration: durB, errors_a: errA, errors_b: errB },
+      metadata: {
+        part_a_time: `${durA.toFixed(1)}s`,
+        part_b_time: `${durB.toFixed(1)}s`,
+        total_errors: totalErrors,
+        is_timeout: isTimeout
+      }
+    });
+  }, [onFinish]);
 
   const handleNodeClick = (nodeId) => {
+    if (isPaused) return;
     const isPartA = phase === 'part_a';
     const activeSeq = isPartA ? SEQ_A : SEQ_B;
     const expectedTarget = activeSeq[targetIndex];
 
-    const now = Date.now();
-    const stepLatency = now - lastStepTimeRef.current;
-
     if (nodeId === expectedTarget) {
-      // Correct selection
-      setStepLatencies(prev => [...prev, stepLatency]);
-      lastStepTimeRef.current = now;
-
       if (isPartA) {
         const newPath = [...pathA, nodeId];
         setPathA(newPath);
         if (targetIndex + 1 >= activeSeq.length) {
-          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-          const durationA = (now - startTimeRef.current) / 1000;
+          const durationA = (Date.now() - startTimeRef.current) / 1000;
           setPartATime(durationA);
-          setPhase('intro_b');
+          setPhase('part_b');
+          setTargetIndex(0);
+          setTimeRemaining(90);
         } else {
           setTargetIndex(prev => prev + 1);
         }
@@ -1260,278 +1038,232 @@ const TrailMakingTest = ({ onComplete }) => {
         const newPath = [...pathB, nodeId];
         setPathB(newPath);
         if (targetIndex + 1 >= activeSeq.length) {
-          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-          const durationB = (now - startTimeRef.current) / 1000;
-          finishTest(partATime, durationB, partAErrors, partBErrors, partACorrections, partBCorrections);
+          const durationB = (Date.now() - startTimeRef.current) / 1000 - partATime;
+          finishTrail(partATime, durationB, partAErrors, partBErrors, false);
         } else {
           setTargetIndex(prev => prev + 1);
         }
       }
     } else {
-      // Incorrect selection
       setErrorFlash(nodeId);
       setTimeout(() => setErrorFlash(null), 400);
-
-      if (isPartA) {
-        setPartAErrors(prev => prev + 1);
-        setPartACorrections(prev => prev + 1);
-      } else {
-        setPartBErrors(prev => prev + 1);
-        setPartBCorrections(prev => prev + 1);
-      }
+      if (isPartA) setPartAErrors(prev => prev + 1);
+      else setPartBErrors(prev => prev + 1);
     }
   };
-
-  const finishTest = (durA, durB, errA, errB, corrA, corrB, isCompleted = true) => {
-    const totalDuration = durA + durB;
-    const totalErrors = errA + errB;
-    const totalCorrections = corrA + corrB;
-
-    // Standardized Executive Function score calculation (0-100 scale)
-    // Part B (set-shifting) is primary, Part A (baseline motor sequencing) is baseline reference
-    const timeScore = Math.max(0, Math.min(100, 100 - Math.max(0, durB - 35.0) * 0.9 - Math.max(0, durA - 15.0) * 0.6));
-    const errorPenalty = Math.min(45, errB * 8.0 + errA * 4.0);
-    const score = isCompleted 
-      ? Math.round(Math.max(15.0, Math.min(100.0, timeScore - errorPenalty)))
-      : Math.round(Math.max(10.0, Math.min(45.0, 45.0 - totalErrors * 5.0)));
-
-    const setShiftingCost = Math.max(0, parseFloat((durB - durA).toFixed(1)));
-    const avgLatency = stepLatencies.length > 0 
-      ? Math.round(stepLatencies.reduce((a, b) => a + b, 0) / stepLatencies.length) 
-      : 850;
-
-    const metadata = {
-      test_name: "Trail Making Test",
-      domain: "Executive Function / Cognitive Flexibility",
-      part_a_duration_seconds: parseFloat(durA.toFixed(1)),
-      part_b_duration_seconds: parseFloat(durB.toFixed(1)),
-      total_duration_seconds: parseFloat(totalDuration.toFixed(1)),
-      part_a_errors: errA,
-      part_b_errors: errB,
-      total_errors: totalErrors,
-      incorrect_selections: totalErrors,
-      correction_count: totalCorrections,
-      mean_step_latency_ms: avgLatency,
-      set_shifting_cost_seconds: setShiftingCost,
-      completed: isCompleted,
-      executive_function_score: score
-    };
-
-    setPhase('evaluating');
-    setTimeout(() => {
-      setResultData({
-        score,
-        duration: totalDuration,
-        durA,
-        durB,
-        errA,
-        errB,
-        totalErrors,
-        totalCorrections,
-        setShiftingCost,
-        avgLatency,
-        metadata
-      });
-      setPhase('done');
-    }, 2400);
-  };
-
-  const handleAbandon = () => {
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    const durA = partATime || (phase === 'part_a' ? elapsed : 20.0);
-    const durB = phase === 'part_b' ? elapsed : 40.0;
-    finishTest(durA, durB, partAErrors + 1, partBErrors + 2, partACorrections, partBCorrections, false);
-  };
-
-  if (phase === 'evaluating') {
-    return <TestEvaluatingScreen testName="Trail Making Test" domain="Executive Function" />;
-  }
-
-  if (phase === 'done' && resultData) {
-    return (
-      <TestResultCard
-        testName="Trail Making Test"
-        domain="Executive Function"
-        score={resultData.score}
-        metrics={[
-          { label: 'Part A Sequencing', value: `${resultData.durA.toFixed(1)}s` },
-          { label: 'Part B Set-Shifting', value: `${resultData.durB.toFixed(1)}s` },
-          { label: 'Total Errors', value: `${resultData.totalErrors} (${resultData.totalCorrections} self-corrected)` },
-          { label: 'Set-Shifting Cost', value: `+${resultData.setShiftingCost}s` },
-          { label: 'Step Latency', value: `${resultData.avgLatency} ms` },
-        ]}
-        onContinue={() => onComplete(resultData.score, resultData.duration, resultData.metadata)}
-      />
-    );
-  }
 
   return (
     <div className="cv-test-runner-box">
       <div className="cv-runner-meta">
         <span className="cv-runner-step-pill">
-          {phase.startsWith('intro') ? 'Task Instructions' : phase === 'part_a' ? 'Part A: Numeric Sequencing' : 'Part B: Alternating Set-Shifting'}
+          {phase === 'part_a' ? 'Part A: Numeric Sequencing (1 to 8)' : 'Part B: Alternating Set-Shifting (1-A-2-B-3-C-4-D)'}
         </span>
         <h3 className="cv-runner-instruction">
-          {phase === 'intro_a' && 'Part A: Connect the numbers in order'}
-          {phase === 'part_a' && `Connect: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8`}
-          {phase === 'intro_b' && 'Part B: Alternate numbers and letters'}
-          {phase === 'part_b' && `Alternate: 1 → A → 2 → B → 3 → C → 4 → D`}
+          {phase === 'part_a' ? 'Connect: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8' : 'Alternate: 1 → A → 2 → B → 3 → C → 4 → D'}
         </h3>
         <p className="cv-runner-subtext">
-          {phase === 'intro_a' && 'Tap the circles in numerical order (1 to 8) as quickly and accurately as possible.'}
-          {phase === 'part_a' && `Next target: [ ${SEQ_A[targetIndex]} ] • Errors: ${partAErrors}`}
-          {phase === 'intro_b' && 'Switch back and forth between numbers and letters (1 to A, 2 to B, 3 to C, 4 to D) as quickly and accurately as possible.'}
-          {phase === 'part_b' && `Next target: [ ${SEQ_B[targetIndex]} ] • Errors: ${partBErrors}`}
+          Target: <strong>[ {phase === 'part_a' ? SEQ_A[targetIndex] : SEQ_B[targetIndex]} ]</strong> · Errors: {phase === 'part_a' ? partAErrors : partBErrors}
         </p>
       </div>
 
-      {/* Part A Intro Screen */}
-      {phase === 'intro_a' && (
-        <div className="cv-trail-instructions-card">
-          <div className="cv-trail-demo-pill">
-            <span>Part A Goal:</span>
-            <span>1 → 2 → 3 → 4 → 5 → 6 → 7 → 8</span>
-          </div>
-          <p style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.5', margin: '0.5rem 0' }}>
-            When you press start, tap circle <strong>1</strong>, then <strong>2</strong>, then <strong>3</strong>, all the way to <strong>8</strong>.
-            Connect the items in the correct order as quickly and accurately as possible.
-          </p>
-          <button
-            className="cv-action-btn cv-tactile-btn"
-            style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
-            onClick={startPartA}
-          >
-            <span>Begin Part A (Numbers)</span>
-            <span>→</span>
-          </button>
-        </div>
-      )}
+      <div className="cv-trail-canvas-wrapper">
+        <svg className="cv-trail-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+          {(phase === 'part_a' ? pathA : pathB).map((nodeId, idx, arr) => {
+            if (idx === 0) return null;
+            const activeNodes = phase === 'part_a' ? PART_A_NODES : PART_B_NODES;
+            const prevNode = activeNodes.find(n => n.id === arr[idx - 1]);
+            const currNode = activeNodes.find(n => n.id === nodeId);
+            if (!prevNode || !currNode) return null;
+            return (
+              <line
+                key={`${prevNode.id}-${currNode.id}`}
+                x1={`${prevNode.x}%`}
+                y1={`${prevNode.y}%`}
+                x2={`${currNode.x}%`}
+                y2={`${currNode.y}%`}
+                className="cv-trail-line"
+              />
+            );
+          })}
+        </svg>
 
-      {/* Part B Intro Screen */}
-      {phase === 'intro_b' && (
-        <div className="cv-trail-instructions-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4ade80', fontSize: '0.85rem', fontWeight: '800' }}>
-            <span>✓ Part A Completed in {partATime.toFixed(1)}s!</span>
-          </div>
-          <div className="cv-trail-demo-pill" style={{ color: '#a78bfa', borderColor: 'rgba(167, 139, 250, 0.4)' }}>
-            <span>Part B Goal:</span>
-            <span>1 → A → 2 → B → 3 → C → 4 → D</span>
-          </div>
-          <p style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.5', margin: '0.5rem 0' }}>
-            Now comes the cognitive flexibility challenge. Alternate between numbers and letters in order:
-            from <strong>1</strong> to <strong>A</strong>, then <strong>2</strong> to <strong>B</strong>, then <strong>3</strong> to <strong>C</strong>, then <strong>4</strong> to <strong>D</strong>.
-          </p>
-          <button
-            className="cv-action-btn cv-tactile-btn"
-            style={{ backgroundColor: '#382245', color: '#ffffff', border: '1px solid rgba(167, 139, 250, 0.4)' }}
-            onClick={startPartB}
-          >
-            <span>Begin Part B (Set-Shifting)</span>
-            <span>→</span>
-          </button>
-        </div>
-      )}
+        {(phase === 'part_a' ? PART_A_NODES : PART_B_NODES).map(node => {
+          const activePath = phase === 'part_a' ? pathA : pathB;
+          const activeSeq = phase === 'part_a' ? SEQ_A : SEQ_B;
+          const isConnected = activePath.includes(node.id);
+          const isNextTarget = activeSeq[targetIndex] === node.id;
+          const isShaking = errorFlash === node.id;
 
-      {/* Interactive Canvas for Part A & Part B */}
-      {(phase === 'part_a' || phase === 'part_b') && (
-        <>
-          <div className="cv-trail-hud-strip">
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>⏱ Elapsed:</span>
-              <strong style={{ color: '#4ade80' }}>{elapsed}s</strong>
-            </span>
-
-            <div className="cv-trail-target-badge">
-              <span>TARGET:</span>
-              <span>{phase === 'part_a' ? SEQ_A[targetIndex] : SEQ_B[targetIndex]}</span>
-            </div>
-
-            <span style={{ color: (phase === 'part_a' ? partAErrors : partBErrors) > 0 ? '#f87171' : '#a3b18a' }}>
-              Errors: {phase === 'part_a' ? partAErrors : partBErrors}
-            </span>
-          </div>
-
-          <div className="cv-trail-canvas-wrapper">
-            {/* SVG Connecting Lines */}
-            <svg className="cv-trail-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
-              {(phase === 'part_a' ? pathA : pathB).map((nodeId, idx, arr) => {
-                if (idx === 0) return null;
-                const activeNodes = phase === 'part_a' ? PART_A_NODES : PART_B_NODES;
-                const prevNode = activeNodes.find(n => n.id === arr[idx - 1]);
-                const currNode = activeNodes.find(n => n.id === nodeId);
-                if (!prevNode || !currNode) return null;
-                return (
-                  <line
-                    key={`${prevNode.id}-${currNode.id}`}
-                    x1={`${prevNode.x}%`}
-                    y1={`${prevNode.y}%`}
-                    x2={`${currNode.x}%`}
-                    y2={`${currNode.y}%`}
-                    className="cv-trail-line"
-                  />
-                );
-              })}
-            </svg>
-
-            {/* Interactive Node Circles */}
-            {(phase === 'part_a' ? PART_A_NODES : PART_B_NODES).map(node => {
-              const activePath = phase === 'part_a' ? pathA : pathB;
-              const activeSeq = phase === 'part_a' ? SEQ_A : SEQ_B;
-              const isConnected = activePath.includes(node.id);
-              const isNextTarget = activeSeq[targetIndex] === node.id;
-              const isShaking = errorFlash === node.id;
-
-              return (
-                <button
-                  key={node.id}
-                  type="button"
-                  onClick={() => handleNodeClick(node.id)}
-                  className={`cv-trail-node ${isConnected ? 'connected' : ''} ${isNextTarget ? 'active-target' : ''} ${isShaking ? 'error-shake' : ''}`}
-                  style={{ left: `${node.x}%`, top: `${node.y}%` }}
-                >
-                  {node.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+          return (
             <button
+              key={node.id}
               type="button"
-              onClick={handleAbandon}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#94a3b8',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                padding: '0.25rem 0.5rem'
-              }}
+              onClick={() => handleNodeClick(node.id)}
+              className={`cv-trail-node ${isConnected ? 'connected' : ''} ${isNextTarget ? 'active-target' : ''} ${isShaking ? 'error-shake' : ''}`}
+              style={{ left: `${node.x}%`, top: `${node.y}%` }}
+              disabled={isPaused}
             >
-              Finish / End Assessment Early
+              {node.label}
             </button>
-          </div>
-        </>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ── 6. Automated Reaction Time ───────────────────────────────────────────────
+const AutomatedReactionTime = ({ test, onFinish, onTickTimer, isPaused }) => {
+  const ROUNDS = 5;
+  const [phase, setPhase] = useState('waiting'); // 'waiting' | 'ready' | 'result'
+  const [round, setRound] = useState(0);
+  const [reactionTimes, setReactionTimes] = useState([]);
+  const [appearTime, setAppearTime] = useState(null);
+  const [lastRT, setLastRT] = useState(null);
+  const [tooEarly, setTooEarly] = useState(false);
+  const timerRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
+  const finishedRef = useRef(false);
+
+  const startNextRound = useCallback(() => {
+    setPhase('waiting');
+    setTooEarly(false);
+    setLastRT(null);
+    const delay = 1400 + Math.random() * 2400;
+    timerRef.current = setTimeout(() => {
+      setAppearTime(Date.now());
+      setPhase('ready');
+    }, delay);
+  }, []);
+
+  useEffect(() => {
+    startNextRound();
+    return () => clearTimeout(timerRef.current);
+  }, [startNextRound]);
+
+  const handleTap = () => {
+    if (isPaused) return;
+    if (phase === 'waiting') {
+      clearTimeout(timerRef.current);
+      setTooEarly(true);
+      setPhase('result');
+      setTimeout(() => startNextRound(), 1200);
+      return;
+    }
+    if (phase === 'ready') {
+      const rt = Date.now() - appearTime;
+      setLastRT(rt);
+      const updatedTimes = [...reactionTimes, rt];
+      setReactionTimes(updatedTimes);
+      setPhase('result');
+
+      if (round + 1 >= ROUNDS) {
+        if (finishedRef.current) return;
+        finishedRef.current = true;
+        const avg = updatedTimes.reduce((a, b) => a + b, 0) / updatedTimes.length;
+        const score = Math.max(0, Math.min(100, Math.round(((700 - avg) / 450) * 100)));
+        const duration = (Date.now() - startTimeRef.current) / 1000;
+        onFinish({
+          test_type: 'reaction_time',
+          score,
+          duration_seconds: duration,
+          completion_status: 'COMPLETED',
+          raw_response: { reaction_times: updatedTimes, mean_rt_ms: avg },
+          metadata: {
+            average_latency: `${Math.round(avg)} ms`,
+            neural_agility: avg < 300 ? 'Exceptional' : avg < 500 ? 'Normal' : 'Sub-Baseline'
+          }
+        });
+      } else {
+        setRound(r => r + 1);
+        setTimeout(() => startNextRound(), 800);
+      }
+    }
+  };
+
+  return (
+    <div className="cv-test-runner-box">
+      <div className="cv-runner-meta">
+        <div className="cv-step-dots-row">
+          {Array.from({ length: ROUNDS }).map((_, i) => (
+            <div
+              key={i}
+              className="cv-step-dot"
+              style={{
+                width: i === round ? '26px' : '9px',
+                backgroundColor: i < round ? '#4ade80' : i === round ? '#a3b18a' : 'rgba(255, 255, 255, 0.15)'
+              }}
+            />
+          ))}
+        </div>
+        <span className="cv-runner-step-pill">Round {round + 1} of {ROUNDS}</span>
+        <h3 className="cv-runner-instruction">{phase === 'ready' ? 'CLICK / TAP SENSOR NOW!' : 'Stand by for stimulus...'}</h3>
+        <p className="cv-runner-subtext">
+          {phase === 'ready' ? 'Sensory signal active!' : tooEarly ? 'Premature tap detected! Stand by for next round...' : 'Sensor calibrating. Do not tap prematurely.'}
+        </p>
+      </div>
+
+      <div
+        onClick={handleTap}
+        className="cv-tactile-btn"
+        style={{
+          width: '180px',
+          height: '180px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          userSelect: 'none',
+          margin: '1.5rem auto',
+          transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
+          backgroundColor: phase === 'ready' ? '#4ade80' : 'rgba(0, 0, 0, 0.35)',
+          border: phase === 'ready' ? '4px solid #4ade80' : '3px dashed rgba(163, 177, 138, 0.35)',
+          boxShadow: phase === 'ready' ? '0 0 50px rgba(74, 222, 128, 0.6)' : 'none',
+        }}
+      >
+        <span style={{
+          fontSize: phase === 'ready' ? '1.5rem' : '1.1rem',
+          color: phase === 'ready' ? '#080c14' : 'rgba(255, 255, 255, 0.4)',
+          fontWeight: '900',
+          fontFamily: 'JetBrains Mono, monospace',
+          letterSpacing: '0.06em'
+        }}>
+          {phase === 'ready' ? 'TAP!' : 'WAIT'}
+        </span>
+      </div>
+
+      {lastRT && (
+        <div style={{ textAlign: 'center', color: '#a3b18a', fontSize: '1.2rem', fontWeight: '800' }}>
+          Latency: {lastRT} ms
+        </div>
       )}
     </div>
   );
 };
-// ────────────────────────────────────────────────────────────────────────────
 
+// ── Automated Workflow Engine ────────────────────────────────────────────────
 const Tests = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { theme, isDark } = useTheme();
-  const [activeTest, setActiveTest] = useState(null);
-  const [simulateMode, setSimulateMode] = useState(false);
 
-  // Clinician Inspection State
-  const [patients, setPatients] = useState([]);
-  const [selectedPatientId, setSelectedPatientId] = useState(null);
-  const [clinicianTestsData, setClinicianTestsData] = useState(null);
-  const [loadingClinician, setLoadingClinician] = useState(false);
+  const urlSessionId = searchParams.get('session_id');
+  const urlPatientId = searchParams.get('patient_id');
 
-  const currentUser = React.useMemo(() => {
+  // Automated session state
+  const [sessionUuid, setSessionUuid] = useState(urlSessionId || null);
+  const [sessionState, setSessionState] = useState(null);
+  const [activeTestIndex, setActiveTestIndex] = useState(0);
+  const [workflowStage, setWorkflowStage] = useState('NOT_STARTED'); 
+  // 'NOT_STARTED' | 'INSTRUCTIONS' | 'COUNTDOWN' | 'ACTIVE_TEST' | 'TRANSITION' | 'PAUSED' | 'COMPLETED'
+  
+  const [timeRemaining, setTimeRemaining] = useState(null);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [finalSummary, setFinalSummary] = useState(null);
+
+  // Clinician view state
+  const currentUser = useMemo(() => {
     try {
       const u = localStorage.getItem('user');
       return u ? JSON.parse(u) : null;
@@ -1540,583 +1272,451 @@ const Tests = () => {
     }
   }, []);
 
-  const isClinician = currentUser?.is_caregiver === true;
+  const isClinician = currentUser?.is_caregiver === true || currentUser?.role === 'clinician';
 
-  const userEmail = localStorage.getItem('userEmail') || 'default';
-  const today = new Date().toDateString();
-  const sessionKey = `testSession_${userEmail}_${today}`;
-
-  const [completed, setCompleted] = useState(() => {
-    try {
-      const key = `testSession_${localStorage.getItem('userEmail') || 'default'}_${new Date().toDateString()}`;
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-  const [allDone, setAllDone] = useState(false);
-  const [alreadyDone, setAlreadyDone] = useState(false);
-
-  // Fetch patient list and cognitive results when in clinician mode
-  React.useEffect(() => {
-    if (isClinician) {
-      fetchClinicianData();
-    } else {
-      const uEmail = localStorage.getItem('userEmail') || 'default';
-      const lastDate = localStorage.getItem(`lastTestDate_${uEmail}`);
-      const tDay = new Date().toDateString();
-      if (lastDate === tDay) {
-        setAlreadyDone(true);
-      }
+  // Load existing session if URL provided
+  useEffect(() => {
+    if (urlSessionId) {
+      loadSession(urlSessionId);
     }
-  }, [isClinician]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [urlSessionId]);
 
-
-  const fetchClinicianData = async () => {
+  const loadSession = async (uuid) => {
     try {
-      setLoadingClinician(true);
-      const { getClinicianPatients } = await import('../utils/api');
-      const res = await getClinicianPatients();
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        setPatients(res.data);
-        const pId = res.data[0].id;
-        setSelectedPatientId(pId);
-        loadPatientTests(pId);
+      const res = await getAssessmentSession(uuid);
+      setSessionState(res.data);
+      setSessionUuid(uuid);
+      setActiveTestIndex(res.data.current_test_index || 0);
+      if (res.data.is_completed) {
+        setFinalSummary(res.data);
+        setWorkflowStage('COMPLETED');
+      } else {
+        setWorkflowStage('INSTRUCTIONS');
       }
     } catch (err) {
-      console.log('Error loading clinician patients:', err.message);
-    } finally {
-      setLoadingClinician(false);
+      console.log('Error loading assessment session:', err.message);
     }
   };
 
-  const loadPatientTests = async (patientId) => {
+  const handleStartWorkflow = async (patientId = null) => {
     try {
-      setSelectedPatientId(patientId);
-      setLoadingClinician(true);
-      const { getClinicianPatientTests } = await import('../utils/api');
-      const res = await getClinicianPatientTests(patientId);
-      setClinicianTestsData(res.data);
+      const targetId = patientId || (urlPatientId ? parseInt(urlPatientId) : null);
+      const res = await startAssessmentSession(targetId);
+      setSessionUuid(res.data.session_uuid);
+      setSessionState(res.data);
+      setActiveTestIndex(0);
+      setWorkflowStage('INSTRUCTIONS');
     } catch (err) {
-      console.log('Error loading patient tests:', err.message);
-    } finally {
-      setLoadingClinician(false);
+      console.log('Error starting assessment session:', err.message);
+      // Fallback local start
+      setWorkflowStage('INSTRUCTIONS');
     }
   };
 
-  const handleComplete = async (testId, score, duration, metadata = null) => {
-    try { await saveTestResult({ test_type: testId, score, duration_seconds: duration, metadata }); }
-    catch (err) { console.log('Could not save'); }
-    const newCompleted = [...completed, testId];
-    setCompleted(newCompleted);
-    localStorage.setItem(sessionKey, JSON.stringify(newCompleted));
-    if (newCompleted.length === tests.length) {
-      try { await calculateScore(); } catch (err) { }
-      const uEmail = localStorage.getItem('userEmail') || 'default';
-      localStorage.setItem(`lastTestDate_${uEmail}`, new Date().toDateString());
-      setTimeout(() => setAllDone(true), 300);
+  const activeTestObj = tests[activeTestIndex] || tests[0];
+
+  const handleTestFinish = async (resultPayload) => {
+    try {
+      if (sessionUuid) {
+        const res = await submitAssessmentTest(sessionUuid, resultPayload);
+        setSessionState(res.data);
+        if (res.data.is_completed) {
+          setFinalSummary(res.data);
+          setWorkflowStage('COMPLETED');
+          return;
+        }
+      } else {
+        await saveTestResult(resultPayload);
+      }
+    } catch (err) {
+      console.log('Could not submit automated test result:', err.message);
+    }
+
+    if (activeTestIndex + 1 >= tests.length) {
+      try {
+        const sc = await calculateScore();
+        setFinalSummary(sc.data);
+      } catch (err) {}
+      setWorkflowStage('COMPLETED');
     } else {
-      setTimeout(() => setActiveTest(null), 200);
+      setWorkflowStage('TRANSITION');
     }
   };
 
-  // ── CLINICIAN VIEWPORT: Review Mode ─────────────────────────────────────────
-  if (isClinician && !simulateMode) {
+  const handlePause = async () => {
+    if (workflowStage === 'PAUSED') {
+      if (sessionUuid) {
+        try { await resumeAssessmentSession(sessionUuid); } catch {}
+      }
+      setWorkflowStage('ACTIVE_TEST');
+    } else {
+      if (sessionUuid) {
+        try { await pauseAssessmentSession(sessionUuid); } catch {}
+      }
+      setWorkflowStage('PAUSED');
+    }
+  };
+
+  const handleExit = async () => {
+    if (sessionUuid) {
+      try { await cancelAssessmentSession(sessionUuid); } catch {}
+    }
+    setShowExitModal(false);
+    navigate(isClinician ? '/patients' : '/dashboard');
+  };
+
+  // Transition auto-advance timer
+  useEffect(() => {
+    if (workflowStage !== 'TRANSITION') return;
+    const t = setTimeout(() => {
+      setActiveTestIndex(prev => prev + 1);
+      setWorkflowStage('INSTRUCTIONS');
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [workflowStage]);
+
+  // ── 1. COMPLETED SUMMARY VIEWPORT ──────────────────────────────────────────
+  if (workflowStage === 'COMPLETED') {
+    const sc = finalSummary?.latest_score || {};
+    const scoreVal = sc.score != null ? sc.score : (finalSummary?.score != null ? finalSummary.score : 'Unassessed');
+    const eq = sc.evidence_quality || finalSummary?.evidence_quality || 'GOOD';
+    const reason = sc.reason || finalSummary?.evidence_reason || 'Automated cognitive screening battery finalized.';
+
     return (
-      <DoctorLayout activeTitle="Daily Cognitive Battery">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <DoctorLayout activeTitle="Assessment Completed">
+        <div className="cv-tests-hero" style={{ backgroundColor: theme.cardBg, borderColor: theme.border, maxWidth: '680px', margin: '2.5rem auto' }}>
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#4ade80' }}>
+              ✓
+            </div>
+            <h1 style={{ fontSize: '1.8rem', fontWeight: '800', margin: 0, color: theme.text }}>
+              Cognitive Assessment Complete
+            </h1>
+            <p style={{ fontSize: '0.9rem', color: theme.subtext, margin: 0, maxWidth: '520px' }}>
+              Standardized multi-domain screening telemetry has been calibrated and saved to the patient clinical record.
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '1rem',
+            margin: '1.5rem 0',
+            padding: '1.25rem',
+            borderRadius: '12px',
+            backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : '#f8faf7',
+            border: `1px solid ${theme.borderSubtle}`
+          }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.25rem' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#0F4C4A' }} />
-                <span style={{ fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.08em', color: '#287C78' }}>
-                  CLINICIAN WORKSPACE · ACTIVE PSYCHOMETRICS
-                </span>
+              <span style={{ fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0.06em', color: theme.subtext, textTransform: 'uppercase', display: 'block' }}>
+                Overall CogniScore
+              </span>
+              <div style={{ fontSize: '2.4rem', fontWeight: '900', color: theme.text, fontFamily: 'JetBrains Mono, monospace' }}>
+                {scoreVal} {typeof scoreVal === 'number' && <span style={{ fontSize: '1rem', color: theme.subtext }}>/ 100</span>}
               </div>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0 0 0.35rem 0' }}>
-                Patient Cognitive Battery Review
-              </h1>
-              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
-                Review objective psychometric results across working memory, episodic recall, Stroop executive interference, and reaction latencies.
+              <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#22c55e' }}>
+                {sc.risk_level || 'Evaluated'}
+              </span>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0.06em', color: theme.subtext, textTransform: 'uppercase', display: 'block' }}>
+                Evidence Quality
+              </span>
+              <div style={{ display: 'inline-block', padding: '0.3rem 0.8rem', borderRadius: '6px', backgroundColor: eq === 'GOOD' ? '#16a34a' : '#d97706', color: '#ffffff', fontWeight: '800', fontSize: '0.85rem', marginTop: '6px' }}>
+                {eq}
+              </div>
+              <p style={{ fontSize: '0.75rem', color: theme.subtext, margin: '6px 0 0 0' }}>
+                {reason}
               </p>
             </div>
+          </div>
 
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button
-              onClick={() => setSimulateMode(true)}
-              style={{
-                backgroundColor: '#162B3D',
-                color: '#53B7C5',
-                border: '1px solid #53B7C5',
-                borderRadius: '8px',
-                padding: '0.5rem 1rem',
-                fontSize: '0.8rem',
-                fontWeight: '700',
-                cursor: 'pointer'
-              }}
+              className="cv-action-btn cv-tactile-btn"
+              style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
+              onClick={() => navigate(isClinician ? '/patients' : '/dashboard')}
             >
-              🎮 Preview / Demo Battery →
+              <span>{isClinician ? 'Return to Clinician Directory' : 'View Clinical Dashboard'}</span>
+              <span>→</span>
             </button>
           </div>
+        </div>
+      </DoctorLayout>
+    );
+  }
 
-          {/* Patient Selector Strip */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
-              Select Monitored Patient:
-            </span>
-            {patients.map((p) => (
+  // ── 2. ACTIVE TEST RUNNER VIEWPORT ──────────────────────────────────────────
+  if (workflowStage === 'INSTRUCTIONS' || workflowStage === 'ACTIVE_TEST' || workflowStage === 'TRANSITION' || workflowStage === 'PAUSED') {
+    return (
+      <DoctorLayout activeTitle={`Cognitive Screening · Test ${activeTestIndex + 1}`}>
+        <div className="cv-tests-container">
+          <AutoRunnerHUD
+            testIndex={activeTestIndex}
+            totalTests={tests.length}
+            testName={activeTestObj.name}
+            timeRemaining={workflowStage === 'ACTIVE_TEST' ? timeRemaining : null}
+            isPaused={workflowStage === 'PAUSED'}
+            onPause={handlePause}
+            onExit={() => setShowExitModal(true)}
+          />
+
+          {workflowStage === 'INSTRUCTIONS' && (
+            <PreTestInstructionStage
+              test={activeTestObj}
+              onStart={() => setWorkflowStage('ACTIVE_TEST')}
+            />
+          )}
+
+          {workflowStage === 'TRANSITION' && (
+            <div className="cv-auto-transition-card">
+              <span style={{ fontSize: '2rem' }}>🎉</span>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: '800', margin: 0, color: '#ffffff' }}>
+                {activeTestObj.name} Completed!
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0 }}>
+                Responses securely stored. Advancing to next evaluation in 3 seconds...
+              </p>
               <button
-                key={p.id}
-                onClick={() => loadPatientTests(p.id)}
-                style={{
-                  border: '1px solid',
-                  borderColor: selectedPatientId === p.id ? '#0F4C4A' : '#e2e8f0',
-                  backgroundColor: selectedPatientId === p.id ? '#E8F5EE' : 'transparent',
-                  color: selectedPatientId === p.id ? '#0F4C4A' : '#1e293b',
-                  borderRadius: '8px',
-                  padding: '0.4rem 0.85rem',
-                  fontSize: '0.78rem',
-                  fontWeight: '700',
-                  cursor: 'pointer'
+                className="cv-action-btn cv-tactile-btn"
+                style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)' }}
+                onClick={() => {
+                  setActiveTestIndex(prev => prev + 1);
+                  setWorkflowStage('INSTRUCTIONS');
                 }}
               >
-                {p.name} {p.is_deviating ? '(Drift)' : '(Calibrated)'}
+                <span>Proceed Now</span>
+                <span>→</span>
               </button>
-            ))}
-          </div>
+            </div>
+          )}
 
-          {/* Domain Breakdown Cards */}
-          {loadingClinician ? (
-            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>Loading patient psychometrics...</div>
-          ) : clinicianTestsData ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
-                  <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b' }}>TOTAL RECORDED SESSIONS</span>
-                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#1e293b' }}>{clinicianTestsData.total_test_sessions}</div>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Across 5 validated screening batteries</span>
+          {workflowStage === 'ACTIVE_TEST' && (
+            <>
+              {activeTestObj.id === 'pattern_recall' && (
+                <AutomatedPatternRecall
+                  test={activeTestObj}
+                  onFinish={handleTestFinish}
+                  onTickTimer={setTimeRemaining}
+                  isPaused={workflowStage === 'PAUSED'}
+                />
+              )}
+              {activeTestObj.id === 'digit_span' && (
+                <AutomatedDigitSpan
+                  test={activeTestObj}
+                  onFinish={handleTestFinish}
+                  onTickTimer={setTimeRemaining}
+                  isPaused={workflowStage === 'PAUSED'}
+                />
+              )}
+              {activeTestObj.id === 'word_recall' && (
+                <AutomatedWordRecall
+                  test={activeTestObj}
+                  onFinish={handleTestFinish}
+                  onTickTimer={setTimeRemaining}
+                  isPaused={workflowStage === 'PAUSED'}
+                />
+              )}
+              {activeTestObj.id === 'stroop' && (
+                <AutomatedStroop
+                  test={activeTestObj}
+                  onFinish={handleTestFinish}
+                  onTickTimer={setTimeRemaining}
+                  isPaused={workflowStage === 'PAUSED'}
+                />
+              )}
+              {activeTestObj.id === 'trail_making' && (
+                <AutomatedTrailMaking
+                  test={activeTestObj}
+                  onFinish={handleTestFinish}
+                  onTickTimer={setTimeRemaining}
+                  isPaused={workflowStage === 'PAUSED'}
+                />
+              )}
+              {activeTestObj.id === 'reaction_time' && (
+                <AutomatedReactionTime
+                  test={activeTestObj}
+                  onFinish={handleTestFinish}
+                  onTickTimer={setTimeRemaining}
+                  isPaused={workflowStage === 'PAUSED'}
+                />
+              )}
+            </>
+          )}
+
+          {/* Pause Modal */}
+          {workflowStage === 'PAUSED' && (
+            <div className="cv-modal-backdrop">
+              <div className="cv-modal-card">
+                <span style={{ fontSize: '2.5rem' }}>⏸️</span>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', margin: 0, color: theme.text }}>
+                  Assessment Paused
+                </h3>
+                <p style={{ fontSize: '0.88rem', color: theme.subtext, margin: 0 }}>
+                  The timer is currently suspended. You may take a brief break and resume whenever ready.
+                </p>
+                <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'center' }}>
+                  <button
+                    className="cv-action-btn cv-tactile-btn"
+                    style={{ backgroundColor: '#273822', color: '#ffffff', flex: 1 }}
+                    onClick={handlePause}
+                  >
+                    ▶ Resume Assessment
+                  </button>
+                  <button
+                    style={{
+                      background: 'none',
+                      border: '1px solid #ef4444',
+                      color: '#ef4444',
+                      borderRadius: '8px',
+                      padding: '0.5rem 1rem',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => setShowExitModal(true)}
+                  >
+                    Exit
+                  </button>
                 </div>
-                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
-                  <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b' }}>DOMAIN COVERAGE</span>
-                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0F4C4A' }}>100% Complete</div>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Episodic, Working, Inhibitory, Motor Speed</span>
-                </div>
-                <div style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #eef2f6' }}>
-                  <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b' }}>CLINICAL CALIBRATION</span>
-                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#4338CA' }}>Age-Normed (65+)</div>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Z-Score threshold σ = ±1.5 SD</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                {clinicianTestsData.domain_breakdown?.map((domain) => {
-                  const isImpaired = domain.z_score < -1.0;
-                  return (
-                    <div
-                      key={domain.test_type}
-                      style={{
-                        backgroundColor: '#FFFFFF',
-                        border: '1px solid #eef2f6',
-                        borderRadius: '12px',
-                        padding: '1.15rem 1.25rem',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-2 3.5 4 4 0 0 0 1 2.8 4 4 0 0 0-1 2.7 4 4 0 0 0 4 4h4a4 4 0 0 0 4-4 4 4 0 0 0-1-2.7 4 4 0 0 0 1-2.8 4 4 0 0 0-2-3.5V6a4 4 0 0 0-4-4z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h4 style={{ margin: '0 0 2px 0', fontSize: '0.95rem', fontWeight: '800', color: '#1e293b' }}>
-                            {domain.name}
-                          </h4>
-                          <span style={{ fontSize: '0.76rem', color: '#64748b' }}>
-                            {domain.domain} · Battery Weight: {domain.weight}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>
-                            Patient Avg Score
-                          </span>
-                          <strong style={{ fontSize: '1.2rem', color: isImpaired ? '#C94C4C' : '#1e293b' }}>
-                            {domain.average_score} <span style={{ fontSize: '0.72rem', color: '#64748b' }}>/ 100</span>
-                          </strong>
-                        </div>
-
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontSize: '0.66rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>
-                            Normative Mean
-                          </span>
-                          <span style={{ fontSize: '0.95rem', fontWeight: '700', color: '#64748b' }}>
-                            {domain.normative_mean} pts
-                          </span>
-                        </div>
-
-                        <div style={{ minWidth: '130px', textAlign: 'right' }}>
-                          <span
-                            style={{
-                              fontSize: '0.72rem',
-                              fontWeight: '800',
-                              padding: '0.25rem 0.65rem',
-                              borderRadius: '6px',
-                              border: '1px solid',
-                              backgroundColor: isImpaired ? '#FEF2F2' : '#F0FDF4',
-                              color: isImpaired ? '#C94C4C' : '#15803D',
-                              borderColor: isImpaired ? '#FECACA' : '#BBF7D0'
-                            }}
-                          >
-                            Z = {domain.z_score > 0 ? `+${domain.z_score}` : domain.z_score} ({domain.status})
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
-          ) : (
-            <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>No test data available for selected patient.</div>
+          )}
+
+          {/* Exit Confirmation Modal */}
+          {showExitModal && (
+            <div className="cv-modal-backdrop">
+              <div className="cv-modal-card">
+                <span style={{ fontSize: '2.5rem' }}>⚠️</span>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', margin: 0, color: '#ef4444' }}>
+                  Exit Cognitive Assessment?
+                </h3>
+                <p style={{ fontSize: '0.88rem', color: theme.subtext, margin: 0 }}>
+                  Exiting will terminate the active screening session. Completed subtests will remain saved.
+                </p>
+                <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'center' }}>
+                  <button
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: `1px solid ${theme.borderSubtle}`,
+                      color: theme.text,
+                      borderRadius: '8px',
+                      padding: '0.6rem 1.2rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      flex: 1
+                    }}
+                    onClick={() => setShowExitModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    style={{
+                      backgroundColor: '#ef4444',
+                      border: 'none',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      padding: '0.6rem 1.2rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      flex: 1
+                    }}
+                    onClick={handleExit}
+                  >
+                    Confirm Exit
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </DoctorLayout>
     );
   }
 
-  if (alreadyDone && !simulateMode) return (
-    <DoctorLayout activeTitle="Daily Tests">
-      <div 
-        className="cv-tests-hero" 
-        style={{ 
-          backgroundColor: theme.cardBg, 
-          borderColor: theme.border, 
-          maxWidth: '560px', 
-          margin: '3rem auto',
-          textAlign: 'center',
-          alignItems: 'center',
-          padding: '2.5rem'
-        }}
-      >
-        <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', color: '#4ade80', marginBottom: '0.75rem' }}>
-          ✓
-        </div>
-        <h2 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: '24px', fontWeight: 600, color: theme.text, margin: '0 0 0.5rem 0', letterSpacing: '-0.015em' }}>
-          Today's Battery Completed
-        </h2>
-        <p style={{ color: theme.subtext, fontSize: '0.88rem', lineHeight: '1.5', margin: '0 0 1rem 0' }}>
-          You have already recorded your standardized psychometric metrics for today. Come back tomorrow for longitudinal tracking.
-        </p>
-        <p style={{ color: theme.subtext, fontSize: '0.78rem', marginBottom: '1.5rem', fontFamily: 'Inter, system-ui, sans-serif', fontWeight: '500' }}>
-          Next session available: Tomorrow ({new Date(Date.now() + 86400000).toLocaleDateString()})
-        </p>
-        <button 
-          className="cv-start-test-btn" 
-          style={{ backgroundColor: '#273822', color: '#ffffff', padding: '0.75rem 1.8rem' }}
-          onClick={() => navigate('/dashboard')}
-        >
-          View Clinical Dashboard →
-        </button>
-      </div>
-    </DoctorLayout>
-  );
-
-  if (allDone) return (
-    <DoctorLayout activeTitle="Daily Tests">
-      <div 
-        className="cv-tests-hero" 
-        style={{ 
-          backgroundColor: theme.cardBg, 
-          borderColor: theme.border, 
-          maxWidth: '560px', 
-          margin: '3rem auto',
-          textAlign: 'center',
-          alignItems: 'center',
-          padding: '2.5rem'
-        }}
-      >
-        <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#4ade80', marginBottom: '0.75rem' }}>
-          🎉
-        </div>
-        <h2 style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: '24px', fontWeight: 600, color: theme.text, margin: '0 0 0.5rem 0', letterSpacing: '-0.015em' }}>
-          Daily Battery Complete!
-        </h2>
-        <p style={{ color: theme.subtext, fontSize: '0.88rem', lineHeight: '1.5', margin: '0 0 1.25rem 0' }}>
-          Your longitudinal CogniScore and domain-specific psychometric indices have been updated in your profile.
-        </p>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button 
-            className="cv-start-test-btn" 
-            style={{ backgroundColor: '#273822', color: '#ffffff', padding: '0.75rem 1.5rem' }}
-            onClick={() => navigate('/dashboard')}
-          >
-            View Dashboard →
-          </button>
-          <button 
-            className="cv-back-link" 
-            style={{ color: theme.text, borderColor: theme.border, backgroundColor: theme.cardBg, padding: '0.75rem 1.5rem' }}
-            onClick={() => navigate('/voice')}
-          >
-            Take Voice Journal →
-          </button>
-        </div>
-      </div>
-    </DoctorLayout>
-  );
-
+  // ── 3. PRE-SESSION BRIEFING / ENTRYPOINT ────────────────────────────────────
   return (
-    <DoctorLayout activeTitle="Daily Tests">
-      {!activeTest ? (
-        <div className="cv-tests-container">
-          {isClinician && (
+    <DoctorLayout activeTitle="Daily Cognitive Battery">
+      <div className="cv-tests-container">
+        <div className="cv-tests-hero" style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}>
+          <div className="cv-tests-hero-top">
             <div>
-              <button
-                onClick={() => setSimulateMode(false)}
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  color: isDark ? '#a3b18a' : '#273822', 
-                  fontSize: '0.82rem', 
-                  fontWeight: '800', 
-                  cursor: 'pointer', 
-                  padding: 0,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                ← Back to Patient Psychometrics Review
-              </button>
+              <div className="cv-tests-eyebrow" style={{ color: theme.subtext }}>
+                <span className="cv-tests-dot" />
+                <span>STANDARDIZED CLINICAL PSYCHOMETRICS · AUTOMATED WORKFLOW</span>
+              </div>
+              <h1 className="cv-tests-title" style={{ color: theme.text }}>
+                Automated Cognitive Screening Battery
+              </h1>
+              <p className="cv-tests-subtitle" style={{ color: theme.subtext }}>
+                Self-administered, timed evaluation measuring visuospatial memory, working memory span, episodic verbal recall, executive inhibition, and motor reflex latencies.
+              </p>
             </div>
-          )}
 
-          {/* Hero Intelligence Card */}
-          <div 
-            className="cv-tests-hero" 
-            style={{ 
-              backgroundColor: theme.cardBg, 
-              borderColor: theme.border 
-            }}
-          >
-            <div className="cv-tests-hero-top">
-              <div>
-                <div className="cv-tests-eyebrow" style={{ color: theme.subtext }}>
-                  <span className="cv-tests-dot" />
-                  <span>STANDARDIZED CLINICAL PSYCHOMETRICS · TIER-1 PROTOCOL</span>
+            <button
+              className="cv-start-test-btn cv-tactile-btn"
+              style={{ backgroundColor: '#273822', color: '#ffffff', padding: '0.75rem 1.8rem', fontSize: '0.95rem' }}
+              onClick={() => handleStartWorkflow()}
+            >
+              <span>⚡ Start Assessment Workflow</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          <div className="cv-tests-telemetry-row">
+            <div className="cv-tests-chip" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eef4ed', color: theme.subtext }}>
+              <span>⏱️</span>
+              <span>Estimated Session Time: ~6 min</span>
+            </div>
+            <div className="cv-tests-chip" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eef4ed', color: theme.subtext }}>
+              <span>🧠</span>
+              <span>6 Validated Cognitive Domains</span>
+            </div>
+            <div className="cv-tests-chip" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eef4ed', color: theme.subtext }}>
+              <span>🤖</span>
+              <span>Fully Automated Administration & Scoring</span>
+            </div>
+          </div>
+        </div>
+
+        <VoiceGuideBar scriptKey="active_tests_intro" defaultLang="en" />
+
+        <div className="cv-tests-list">
+          {tests.map((test, i) => (
+            <div
+              key={test.id}
+              className="cv-test-card"
+              style={{
+                backgroundColor: theme.cardBg,
+                borderColor: theme.border
+              }}
+            >
+              <div className="cv-test-icon-box" style={{ color: isDark ? '#a3b18a' : '#273822' }}>
+                {renderTestIcon(test.iconType)}
+              </div>
+
+              <div className="cv-test-details">
+                <div className="cv-test-top-meta">
+                  <span className="cv-test-domain-badge">
+                    Subtest {i + 1} · {test.domain}
+                  </span>
+                  <span className="cv-test-duration-tag">
+                    ⏱️ {test.duration}
+                  </span>
                 </div>
-                <h1 className="cv-tests-title" style={{ color: theme.text }}>
-                  Daily Cognitive Battery
-                </h1>
-                <p className="cv-tests-subtitle" style={{ color: theme.subtext }}>
-                  Calibrated daily evaluations measuring short-term spatial memory, working memory span, episodic verbal recall, executive inhibition, and motor reflex latencies.
+                <h3 className="cv-test-name" style={{ color: theme.text }}>
+                  {test.name}
+                </h3>
+                <p className="cv-test-desc" style={{ color: theme.subtext }}>
+                  {test.description}
                 </p>
               </div>
-
-              {/* Counter Card */}
-              <div 
-                className="cv-tests-counter-card"
-                style={{ 
-                  backgroundColor: isDark ? 'rgba(0,0,0,0.35)' : 'rgba(39, 56, 34, 0.04)',
-                  borderColor: theme.borderSubtle 
-                }}
-              >
-                <span className="cv-tests-counter-num" style={{ color: completed.length === tests.length ? '#4ade80' : isDark ? '#a3b18a' : '#273822' }}>
-                  {completed.length} <span style={{ fontSize: '1rem', color: theme.subtext, fontWeight: '600' }}>/ {tests.length}</span>
-                </span>
-                <span className="cv-tests-counter-label" style={{ color: theme.subtext }}>
-                  {completed.length === tests.length ? 'Battery Completed' : 'Tests Finalized'}
-                </span>
-              </div>
             </div>
-
-            {/* Progress Bar Track */}
-            <div 
-              className="cv-tests-progress-track"
-              style={{ backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' }}
-            >
-              <div 
-                className="cv-tests-progress-fill" 
-                style={{ width: `${(completed.length / tests.length) * 100}%` }} 
-              />
-            </div>
-
-            {/* Telemetry Row */}
-            <div className="cv-tests-telemetry-row">
-              <div className="cv-tests-chip" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eef4ed', color: theme.subtext }}>
-                <span>⏱️</span>
-                <span>Est. Session Time: ~7 min</span>
-              </div>
-              <div className="cv-tests-chip" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eef4ed', color: theme.subtext }}>
-                <span>🔬</span>
-                <span>Longitudinal Baseline Calibration</span>
-              </div>
-              <div className="cv-tests-chip" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eef4ed', color: theme.subtext }}>
-                <span>🔒</span>
-                <span>Evidence-Grade HIPAA Encryption</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Voice Guide Bar */}
-          <VoiceGuideBar scriptKey="active_tests_intro" defaultLang="en" />
-
-          {/* Test Cards List */}
-          <div className="cv-tests-list">
-            {tests.map((test) => {
-              const isDone = completed.includes(test.id);
-              return (
-                <div
-                  key={test.id}
-                  className={`cv-test-card ${isDone ? 'completed' : 'clickable'}`}
-                  style={{
-                    backgroundColor: theme.cardBg,
-                    borderColor: isDone 
-                      ? (isDark ? 'rgba(74, 222, 128, 0.3)' : 'rgba(39, 56, 34, 0.25)') 
-                      : theme.border,
-                  }}
-                  onClick={() => !isDone && setActiveTest(test.id)}
-                >
-                  {/* Icon Box */}
-                  <div 
-                    className="cv-test-icon-box"
-                    style={{
-                      backgroundColor: isDone 
-                        ? (isDark ? 'rgba(74, 222, 128, 0.12)' : 'rgba(39, 56, 34, 0.08)')
-                        : (isDark ? 'rgba(255, 255, 255, 0.03)' : '#f4f8f3'),
-                      borderColor: isDone 
-                        ? (isDark ? 'rgba(74, 222, 128, 0.35)' : 'rgba(39, 56, 34, 0.2)')
-                        : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#d2ded0'),
-                      color: isDone 
-                        ? '#4ade80' 
-                        : (isDark ? '#a3b18a' : '#273822')
-                    }}
-                  >
-                    {renderTestIcon(test.iconType)}
-                  </div>
-
-                  {/* Test Details */}
-                  <div className="cv-test-details">
-                    <div className="cv-test-top-meta">
-                      <span 
-                        className="cv-test-domain-badge"
-                        style={{
-                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#eef4ed',
-                          color: isDark ? '#a3b18a' : '#3d5236',
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#c8d8c6'
-                        }}
-                      >
-                        {test.domain}
-                      </span>
-                      <span className="cv-test-duration-tag" style={{ color: theme.subtext }}>
-                        ⏱️ {test.duration}
-                      </span>
-                    </div>
-
-                    <h3 className="cv-test-name" style={{ color: theme.text }}>
-                      {test.name}
-                    </h3>
-
-                    <p className="cv-test-desc" style={{ color: theme.subtext }}>
-                      {test.description}
-                    </p>
-
-                    <p className="cv-test-target" style={{ color: isDark ? 'rgba(163, 177, 138, 0.7)' : '#526e49' }}>
-                      {test.target}
-                    </p>
-                  </div>
-
-                  {/* Action / Status */}
-                  <div className="cv-test-action">
-                    {isDone ? (
-                      <span 
-                        className="cv-completed-badge"
-                        style={{
-                          backgroundColor: isDark ? 'rgba(74, 222, 128, 0.12)' : 'rgba(39, 56, 34, 0.08)',
-                          color: isDark ? '#4ade80' : '#273822',
-                          borderColor: isDark ? 'rgba(74, 222, 128, 0.3)' : 'rgba(39, 56, 34, 0.25)'
-                        }}
-                      >
-                        ✓ Completed
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="cv-start-test-btn"
-                        style={{
-                          backgroundColor: '#273822',
-                          color: '#ffffff',
-                          border: isDark ? '1px solid rgba(163, 177, 138, 0.3)' : 'none'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTest(test.id);
-                        }}
-                      >
-                        <span>Start Test</span>
-                        <span>→</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          ))}
         </div>
-      ) : (
-        <div className="cv-tests-container">
-          <div className="cv-active-test-header">
-            <button 
-              className="cv-back-link" 
-              style={{ 
-                color: theme.text,
-                borderColor: theme.border,
-                backgroundColor: theme.cardBg 
-              }}
-              onClick={() => setActiveTest(null)}
-            >
-              ← Back to Battery Overview
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div 
-                style={{ 
-                  width: '32px', 
-                  height: '32px', 
-                  borderRadius: '8px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  backgroundColor: isDark ? 'rgba(163, 177, 138, 0.12)' : '#eef4ed',
-                  color: isDark ? '#a3b18a' : '#273822' 
-                }}
-              >
-                {renderTestIcon(tests.find(t => t.id === activeTest)?.iconType)}
-              </div>
-              <div>
-                <span style={{ fontSize: '0.68rem', fontWeight: '800', letterSpacing: '0.06em', color: theme.subtext, textTransform: 'uppercase', display: 'block' }}>
-                  ACTIVE EVALUATION
-                </span>
-                <span style={{ fontSize: '0.92rem', fontWeight: '800', color: theme.text }}>
-                  {tests.find(t => t.id === activeTest)?.name}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {activeTest === 'pattern_recall' && <PatternRecall onComplete={(s, d) => handleComplete('pattern_recall', s, d)} />}
-          {activeTest === 'digit_span' && <DigitSpan onComplete={(s, d) => handleComplete('digit_span', s, d)} />}
-          {activeTest === 'word_recall' && <WordRecall onComplete={(s, d) => handleComplete('word_recall', s, d)} />}
-          {activeTest === 'stroop' && <StroopTest onComplete={(s, d) => handleComplete('stroop', s, d)} />}
-          {activeTest === 'trail_making' && <TrailMakingTest onComplete={(s, d, m) => handleComplete('trail_making', s, d, m)} />}
-          {activeTest === 'reaction_time' && <ReactionTimeTest onComplete={(s, d) => handleComplete('reaction_time', s, d)} />}
-        </div>
-      )}
+      </div>
     </DoctorLayout>
   );
 };
 
-export default Tests;
+export default Tests;
