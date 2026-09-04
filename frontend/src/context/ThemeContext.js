@@ -159,7 +159,7 @@ export const ThemeProvider = ({ children }) => {
     tableTd: isDark ? '#f1f5ee' : '#0d170e',
     chartGrid: isDark ? 'rgba(255, 255, 255, 0.05)' : '#d2ded0',
     chartText: isDark ? '#a3b18a' : '#475e43',
-    sidebarBg: isDark ? '#0b100c' : '#e9efe8',
+    sidebarBg: isDark ? '#111A12' : '#203625',
     primaryTeal: isDark ? '#3d5236' : '#273822',
     secondaryTeal: isDark ? '#526e49' : '#3d5236',
     aiCyan: isDark ? '#a3b18a' : '#273822',

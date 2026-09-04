@@ -159,9 +159,16 @@ def predict(features: Optional[Dict[str, Any]], transcript: str = "") -> dict[st
         transcription_conf=float((features or {}).get("transcription_confidence", 0.90)),
     )
 
+    operating_notes = (
+        "Insufficient speech evidence detected (< 3 words or < 2.0s active speech). Non-diagnostic."
+        if evidence_quality == "INSUFFICIENT"
+        else "Screening support probability derived from validated speech-risk model artifact."
+    )
+
     return {
         "available": True,
         "probability": round(proba, 3),
+        "risk_probability": round(proba, 3),
         "risk_percentage": risk_pct,
         "screen_positive": proba >= threshold,
         "operating_threshold": round(threshold, 3),
@@ -170,5 +177,5 @@ def predict(features: Optional[Dict[str, Any]], transcript: str = "") -> dict[st
         "evidence_quality": evidence_quality,
         "features_used": sanitized_feats,
         "imputed_features": imputed_cols,
-        "operating_notes": "Screening support probability derived from validated speech-risk model artifact.",
+        "operating_notes": operating_notes,
     }

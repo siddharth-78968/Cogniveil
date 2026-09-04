@@ -21,12 +21,12 @@ def evaluate_evidence_quality(
     transcription_conf: Optional[float] = None,
 ) -> str:
     """Evaluates biometric evidence quality into 4 standardized clinical tiers:
-    - GOOD: Recording >= 15.0s, active speech >= 6.0s, normal RMS energy (0.012 - 0.75),
+    - GOOD: Recording >= 15.0s, active speech >= 6.0s, >= 12 words, normal RMS energy (0.012 - 0.75),
             confident transcription, stable acoustic signal.
-    - MODERATE: Recording >= 10.0s, active speech >= 3.5s, acceptable energy & audio telemetry.
-    - LIMITED: Recording >= 5.0s, active speech >= 2.0s, but low volume, clipping,
+    - MODERATE: Recording >= 10.0s, active speech >= 3.5s, >= 6 words, acceptable energy & audio telemetry.
+    - LIMITED: Recording >= 5.0s, active speech >= 2.0s, >= 3 words, but low volume, clipping,
                or missing/empty transcript.
-    - INSUFFICIENT: Recording < 5.0s, active speech < 2.0s, silent / near-zero RMS,
+    - INSUFFICIENT: Recording < 5.0s, active speech < 2.0s, < 3 words detected, silent / near-zero RMS,
                     or corrupted signal.
     """
     feats = features or {}
@@ -34,19 +34,22 @@ def evaluate_evidence_quality(
     rms = float(mean_rms if mean_rms is not None else feats.get("mean_rms", 0.045))
     act = float(activity_ratio if activity_ratio is not None else feats.get("speech_activity_ratio", 0.65))
     tconf = float(transcription_conf if transcription_conf is not None else feats.get("transcription_confidence", 0.90))
-    has_text = bool(transcript.strip())
+    
+    words = re.findall(r"\b[\w']+\b", transcript or "", flags=re.UNICODE)
+    word_count = len(words)
+    has_text = bool(word_count > 0)
     active_speech = dur * act
 
-    # 1. Insufficient tier
-    if dur < 5.0 or active_speech < 2.0 or (rms < 0.003 and not has_text):
+    # 1. Insufficient tier: very short duration, near silence, or insufficient speech (< 3 words)
+    if dur < 5.0 or active_speech < 2.0 or (rms < 0.003 and not has_text) or word_count < 3:
         return "INSUFFICIENT"
 
-    # 2. Limited tier
-    if dur < 10.0 or active_speech < 3.5 or rms < 0.008 or rms > 0.85 or not has_text or tconf < 0.50:
+    # 2. Limited tier: short recording, low word volume, or questionable SNR/confidence
+    if dur < 10.0 or active_speech < 3.5 or word_count < 6 or rms < 0.008 or rms > 0.85 or tconf < 0.50:
         return "LIMITED"
 
-    # 3. Moderate tier
-    if dur < 15.0 or active_speech < 6.0 or tconf < 0.80 or rms < 0.012:
+    # 3. Moderate tier: acceptable recording length with partial linguistic content
+    if dur < 15.0 or active_speech < 6.0 or word_count < 12 or tconf < 0.80 or rms < 0.012:
         return "MODERATE"
 
     # 4. Good tier
@@ -366,7 +369,7 @@ def extract_linguistic_metrics(
             "unique_word_count": 0,
             "type_token_ratio": 0.0,
             "ttr": 0.0,
-            "lexical_diversity": 0.70,
+            "lexical_diversity": 0.0,
             "content_density": 0.0,
             "verb_noun_ratio": 0.0,
             "hesitation_word_rate": 0.0,
@@ -395,6 +398,8 @@ def extract_linguistic_metrics(
     unique_words = set(words_lower)
     unique_count = len(unique_words)
     ttr = round(unique_count / max(word_count, 1), 3)
+    # Calibrated lexical diversity reflects small-sample linguistic bounds
+    lexical_diversity = round(min(1.0, unique_count / 5.0), 3) if word_count < 3 else ttr
 
     # Sentences
     sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]

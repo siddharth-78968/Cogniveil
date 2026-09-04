@@ -334,6 +334,7 @@ const VoiceJournal = () => {
         speechMlModel: {
           available: speechML.available !== false,
           probability: speechML.probability,
+          riskProbability: speechML.probability ?? (speechML.risk_percentage !== undefined ? speechML.risk_percentage / 100.0 : undefined),
           riskPercentage: mlRiskPct,
           screenPositive: speechML.screen_positive || false,
           operatingThreshold: speechML.operating_threshold || 0.92,
@@ -341,7 +342,8 @@ const VoiceJournal = () => {
           algorithm: speechML.algorithm || 'Scaled Logistic Regression (Median Imputed)',
           featuresUsed: speechML.features_used || {},
           imputedFeatures: speechML.imputed_features || [],
-          disclaimer: 'Non-diagnostic speech screening risk derived from validated ML artifact.',
+          operatingNotes: speechML.operating_notes,
+          disclaimer: speechML.operating_notes || 'Non-diagnostic speech screening risk derived from validated ML artifact.',
         },
 
         // Explicit Measurable Speech Features (Physical Telemetry)
@@ -763,8 +765,9 @@ const VoiceJournal = () => {
 
             {/* Top Row: AI Model Score & Audio Recording */}
             {(() => {
-              const riskScore = Math.round(Number(result.speechMlModel?.riskProbability ?? result.speechProbability ?? 0.25) * 100);
+              const riskScore = result.speechMlModel?.riskPercentage ?? Math.round(Number(result.speechMlModel?.probability ?? result.speechMlModel?.riskProbability ?? 0.25) * 100);
               const riskCategory = result.speechMlModel?.riskCategory || (riskScore >= 60 ? 'High' : riskScore >= 35 ? 'Moderate' : 'Low');
+              const isInsufficient = result.evidenceQuality === 'INSUFFICIENT';
               const circumference = 2 * Math.PI * 40;
               const offset = circumference - (riskScore / 100) * circumference;
 
@@ -794,7 +797,7 @@ const VoiceJournal = () => {
                         <circle
                           cx="50" cy="50" r="40"
                           fill="none"
-                          stroke={getRiskColor(riskCategory)}
+                          stroke={isInsufficient ? '#94a3b8' : getRiskColor(riskCategory)}
                           strokeWidth="8"
                           strokeDasharray={circumference}
                           strokeDashoffset={offset}
@@ -804,20 +807,22 @@ const VoiceJournal = () => {
                         />
                       </svg>
                       <div style={styles.ringCenter}>
-                        <span style={{ ...styles.scoreNum, color: getRiskColor(riskCategory) }}>{riskScore}</span>
+                        <span style={{ ...styles.scoreNum, color: isInsufficient ? '#64748b' : getRiskColor(riskCategory) }}>{riskScore}</span>
                         <span style={styles.scoreOf}>% RISK PROB</span>
                       </div>
                     </div>
 
                     <div style={{
                       ...styles.riskPill,
-                      backgroundColor: getRiskColor(riskCategory) + '20',
-                      border: `1px solid ${getRiskColor(riskCategory)}44`,
-                      color: getRiskColor(riskCategory),
+                      backgroundColor: isInsufficient ? '#fff1f2' : getRiskColor(riskCategory) + '20',
+                      border: isInsufficient ? '1px solid #fecdd3' : `1px solid ${getRiskColor(riskCategory)}44`,
+                      color: isInsufficient ? '#be123c' : getRiskColor(riskCategory),
                       marginTop: '0.4rem',
                       fontSize: '0.78rem'
                     }}>
-                      {result.speechMlModel?.screenPositive ? '⚠️ Screen Positive' : '✓ Screen Negative'} ({riskCategory} Risk · {riskScore}%)
+                      {isInsufficient
+                        ? '⚠️ Insufficient Evidence (< 3 words)'
+                        : (result.speechMlModel?.screenPositive ? '⚠️ Screen Positive' : '✓ Screen Negative') + ` (${riskCategory} Risk · ${riskScore}%)`}
                     </div>
 
                     {/* Supporting Deterministic Voice Score Pill */}

@@ -821,6 +821,53 @@ async def analyse_voice_endpoint(
     effective_transcript = asr_result.get("transcript") if asr_result.get("available") else transcript
     effective_language = asr_result.get("language_code") if asr_result.get("available") else language_hint
 
+    # Decode audio waveform to extract genuine physical acoustic measurements
+    if audio_bytes:
+        try:
+            import io
+            import numpy as np
+            import scipy.io.wavfile as wavfile
+            from acoustic_features import acoustic_feature_extractor
+            
+            sr, raw_audio = wavfile.read(io.BytesIO(audio_bytes))
+            if raw_audio.dtype == np.int16:
+                audio_np = raw_audio.astype(np.float32) / 32768.0
+            elif raw_audio.dtype == np.int32:
+                audio_np = raw_audio.astype(np.float32) / 2147483648.0
+            else:
+                audio_np = raw_audio.astype(np.float32)
+            if audio_np.ndim > 1:
+                audio_np = np.mean(audio_np, axis=0)
+
+            extracted_acoustics = acoustic_feature_extractor.extract(
+                audio_np, transcript=effective_transcript, sample_rate=sr
+            )
+            if extracted_acoustics.get("available"):
+                sp = extracted_acoustics.get("speech_characteristics", {})
+                st = extracted_acoustics.get("voice_stability", {})
+                
+                # Update features dictionary with genuinely measured acoustic parameters
+                features["duration_seconds"] = extracted_acoustics.get("duration_seconds", features.get("duration_seconds"))
+                if isinstance(sp.get("speech_activity_ratio"), (int, float)):
+                    features["speech_activity_ratio"] = float(sp["speech_activity_ratio"])
+                if isinstance(sp.get("num_pauses"), (int, float)):
+                    features["pause_count"] = int(sp["num_pauses"])
+                if isinstance(sp.get("avg_pause_sec"), (int, float)):
+                    features["mean_pause_duration"] = float(sp["avg_pause_sec"])
+                if isinstance(sp.get("speech_rate_wpm"), (int, float)):
+                    features["words_per_minute"] = float(sp["speech_rate_wpm"])
+                if isinstance(sp.get("pitch_variation_hz"), (int, float)):
+                    features["pitch_variability"] = float(sp["pitch_variation_hz"])
+                
+                features["speech_characteristics"] = sp
+                features["voice_stability"] = st
+                features["interpretations"] = extracted_acoustics.get("interpretations", [])
+                features["timeline"] = extracted_acoustics.get("timeline", [])
+                features["mean_rms"] = float(np.sqrt(np.mean(audio_np ** 2)))
+        except Exception:
+            # Fallback gracefully to client-provided features
+            pass
+
     # 2. Retrieve user's historical voice sessions to compute personal baseline
     prior_voice_tests = db.query(models.TestResult).filter(
         models.TestResult.user_id == current_user.id,
