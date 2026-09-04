@@ -628,18 +628,24 @@ const WordRecall = ({ onComplete }) => {
   }, []);
   const [phase, setPhase] = useState('memorise'); // 'memorise' | 'distract' | 'recall' | 'evaluating' | 'done'
   const [input, setInput] = useState('');
-  const [distractInput, setDistractInput] = useState('');
-  const [distractFeedback, setDistractFeedback] = useState(null);
-  const [distractAttempts, setDistractAttempts] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resultData, setResultData] = useState(null);
   const startTime = React.useRef(Date.now());
+
+  // Distractor task state
+  const [distractorInput, setDistractorInput] = useState('');
+  const [distractorError, setDistractorError] = useState('');
+  const [distractorSuccess, setDistractorSuccess] = useState(false);
+  const distractorEquation = { num1: 47, num2: 36, answer: 83 };
 
   const handleProceedToDistract = () => {
     setIsSubmitting(true);
     setTimeout(() => {
       setPhase('distract');
       setIsSubmitting(false);
+      setDistractorInput('');
+      setDistractorError('');
+      setDistractorSuccess(false);
     }, 280);
   };
 
@@ -651,31 +657,33 @@ const WordRecall = ({ onComplete }) => {
     }, 280);
   };
 
-  const handleDistractSubmit = (e) => {
-    if (e) e.preventDefault();
-    if (isSubmitting) return;
+  const handleDistractorChange = (e) => {
+    const val = e.target.value;
+    setDistractorInput(val);
+    setDistractorError('');
 
-    const val = parseInt(distractInput.trim(), 10);
-    if (isNaN(val)) {
-      setDistractFeedback({ type: 'error', msg: 'Please type the numeric sum.' });
-      return;
-    }
-
-    if (val === 83) {
-      setDistractFeedback({ type: 'success', msg: '✓ Correct! Opening retrieval buffer...' });
-      setIsSubmitting(true);
+    // If correct answer (83) is entered, auto-advance to the recall phase on its own
+    if (val.trim() === String(distractorEquation.answer)) {
+      setDistractorSuccess(true);
+      setDistractorError('');
       setTimeout(() => {
-        setPhase('recall');
-        setIsSubmitting(false);
-      }, 400);
+        handleProceedToRecall();
+      }, 450);
+    }
+  };
+
+  const handleDistractorSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (distractorSuccess || isSubmitting) return;
+
+    if (distractorInput.trim() === String(distractorEquation.answer)) {
+      setDistractorSuccess(true);
+      setDistractorError('');
+      setTimeout(() => {
+        handleProceedToRecall();
+      }, 450);
     } else {
-      const nextAttempts = distractAttempts + 1;
-      setDistractAttempts(nextAttempts);
-      if (nextAttempts >= 2) {
-        setDistractFeedback({ type: 'hint', msg: '47 + 36 = 83. You can now proceed to word recall.' });
-      } else {
-        setDistractFeedback({ type: 'error', msg: 'Incorrect sum. Check your calculation and try again.' });
-      }
+      setDistractorError('Incorrect answer. Please solve 47 + 36 and enter the correct sum.');
     }
   };
 
@@ -727,12 +735,12 @@ const WordRecall = ({ onComplete }) => {
         </span>
         <h3 className="cv-runner-instruction">
           {phase === 'memorise' && 'Memorize these 5 clinical target words'}
-          {phase === 'distract' && 'Solve the math problem below'}
+          {phase === 'distract' && 'Quick distractor mental task'}
           {phase === 'recall' && 'Type all the words you remember'}
         </h3>
         <p className="cv-runner-subtext">
           {phase === 'memorise' && 'Store these semantic representations in your episodic memory ledger.'}
-          {phase === 'distract' && 'Type the calculated sum into the input box to clear working memory cache.'}
+          {phase === 'distract' && 'Solve this equation mentally to clear working memory cache.'}
           {phase === 'recall' && 'Separate recalled words with commas or spaces.'}
         </p>
       </div>
@@ -769,7 +777,7 @@ const WordRecall = ({ onComplete }) => {
       )}
 
       {phase === 'distract' && (
-        <form onSubmit={handleDistractSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', width: '100%', maxWidth: '420px' }}>
+        <form onSubmit={handleDistractorSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', width: '100%' }}>
           <div style={{
             fontSize: '2.8rem',
             fontWeight: '900',
@@ -779,57 +787,88 @@ const WordRecall = ({ onComplete }) => {
             borderRadius: '16px',
             background: 'rgba(0, 0, 0, 0.25)',
             border: '2px solid rgba(163, 177, 138, 0.3)',
-            userSelect: 'none',
-            textAlign: 'center',
-            letterSpacing: '2px'
+            userSelect: 'none'
           }}>
             47 + 36 = ?
           </div>
 
-          <div className="cv-test-input-wrap" style={{ width: '100%' }}>
+          <div className="cv-test-input-wrap">
             <input
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
-              value={distractInput}
-              onChange={e => {
-                setDistractInput(e.target.value);
-                if (distractFeedback) setDistractFeedback(null);
-              }}
+              value={distractorInput}
+              onChange={handleDistractorChange}
+              onKeyDown={e => e.key === 'Enter' && handleDistractorSubmit(e)}
               className="cv-test-input"
-              placeholder="Type your calculated sum..."
+              placeholder="Enter answer..."
               autoFocus
-              disabled={isSubmitting}
-              style={{ textAlign: 'center', fontSize: '1.3rem', fontFamily: 'JetBrains Mono, monospace' }}
+              disabled={isSubmitting || distractorSuccess}
+              style={{
+                borderColor: distractorError ? '#ef4444' : distractorSuccess ? '#4ade80' : undefined,
+                boxShadow: distractorError ? '0 0 0 3px rgba(239, 68, 68, 0.25)' : distractorSuccess ? '0 0 0 3px rgba(74, 222, 128, 0.25)' : undefined
+              }}
             />
           </div>
 
-          {distractFeedback && (
-            <div style={{
-              color: distractFeedback.type === 'error' ? '#ef4444' : distractFeedback.type === 'success' ? '#22c55e' : '#eab308',
-              fontSize: '0.92rem',
-              fontWeight: '600',
-              textAlign: 'center'
-            }}>
-              {distractFeedback.msg}
+          {distractorError && (
+            <div 
+              className="cv-seq-feedback-banner error" 
+              style={{ 
+                color: '#ef4444', 
+                background: 'rgba(239, 68, 68, 0.12)', 
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                padding: '0.6rem 1.2rem',
+                borderRadius: '10px',
+                fontSize: '0.92rem',
+                fontWeight: '600'
+              }}
+            >
+              ⚠️ {distractorError}
+            </div>
+          )}
+
+          {distractorSuccess && (
+            <div 
+              className="cv-seq-feedback-banner success" 
+              style={{ 
+                color: '#4ade80',
+                background: 'rgba(74, 222, 128, 0.15)',
+                border: '1px solid rgba(74, 222, 128, 0.35)',
+                padding: '0.6rem 1.2rem',
+                borderRadius: '10px',
+                fontSize: '0.92rem',
+                fontWeight: '600'
+              }}
+            >
+              ✓ Correct! Advancing to Word Recall...
             </div>
           )}
 
           <button
-            type={distractAttempts >= 2 && !distractInput.trim() ? "button" : "submit"}
+            type="submit"
             className="cv-action-btn cv-tactile-btn"
-            style={{ backgroundColor: '#273822', color: '#ffffff', border: '1px solid rgba(163, 177, 138, 0.4)', width: '100%' }}
-            onClick={distractAttempts >= 2 && !distractInput.trim() ? handleProceedToRecall : undefined}
-            disabled={isSubmitting || (!distractInput.trim() && distractAttempts < 2)}
+            style={{ 
+              backgroundColor: distractorSuccess ? '#166534' : '#273822', 
+              color: '#ffffff', 
+              border: distractorSuccess ? '1px solid #4ade80' : '1px solid rgba(163, 177, 138, 0.4)',
+              cursor: (isSubmitting || distractorSuccess || !distractorInput.trim()) ? 'not-allowed' : 'pointer'
+            }}
+            disabled={isSubmitting || distractorSuccess || !distractorInput.trim()}
           >
-            {isSubmitting ? (
+            {distractorSuccess ? (
+              <>
+                <span>✓ Correct — Advancing</span>
+                <span>→</span>
+              </>
+            ) : isSubmitting ? (
               <>
                 <span className="cv-spinner-mini" />
                 <span>Opening Retrieval Buffer...</span>
               </>
             ) : (
               <>
-                <span>{distractAttempts >= 2 && !distractInput.trim() ? 'Proceed to Word Recall' : 'Submit & Proceed to Recall'}</span>
+                <span>Submit Answer</span>
                 <span>→</span>
               </>
             )}
