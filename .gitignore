@@ -13,4 +13,5 @@ backend/data/*.db
 *.apk
 node_modules/
 catboost_info/
+.vscode/
 
