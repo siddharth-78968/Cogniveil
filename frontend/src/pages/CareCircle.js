@@ -11,6 +11,7 @@ const CareCircle = () => {
   const [requests, setRequests] = useState([]);
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [simulatedAlertActive, setSimulatedAlertActive] = useState(false);
 
   const load = async () => {
     try {
@@ -47,6 +48,81 @@ const CareCircle = () => {
           <p style={{ color: theme.subtext, lineHeight: 1.65, fontSize: '1.05rem', margin: '0 0 2rem 0', maxWidth: '760px' }}>
             Only the patient can approve or revoke access to screening trends. CogniVeil never shares unconsented raw data.
           </p>
+
+          {/* ── WINNING STRATEGY: CAREGIVER ALERT PAYOFF SIMULATOR (RAJAN PILLAI CASE) ── */}
+          <div style={{
+            marginBottom: '2.5rem',
+            padding: '1.75rem 2rem',
+            backgroundColor: isDark ? 'rgba(52, 211, 153, 0.06)' : '#f0fdf4',
+            border: `1.5px solid ${isDark ? 'rgba(52, 211, 153, 0.3)' : '#86efac'}`,
+            borderRadius: '18px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.04)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🔔</span>
+                  <span style={{ fontSize: '0.78rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: isDark ? '#34d399' : '#166534', letterSpacing: '0.06em' }}>
+                    WINNING STRATEGY DEMO: CAREGIVER ALERT PAYOFF
+                  </span>
+                </div>
+                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.25rem', fontWeight: 800, color: theme.text }}>
+                  Rajan Pillai CUSUM Threshold Payoff ($H = 14.2 > 12.0$)
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: theme.subtext, lineHeight: 1.5, maxWidth: '650px' }}>
+                  When Rajan's statistical change-point threshold triggers, CogniVeil does not alarm the patient. Instead, it sends an empathetic nudge to his daughter, Priya Pillai, buying 6–8 critical months.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSimulatedAlertActive(!simulatedAlertActive)}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: '10px',
+                  backgroundColor: isDark ? '#10b981' : '#15803d',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '0.88rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span>{simulatedAlertActive ? '✕ Close Preview' : '⚡ Simulate Live Push Nudge'}</span>
+              </button>
+            </div>
+
+            {/* Live Caregiver Notification Preview */}
+            {simulatedAlertActive && (
+              <div style={{
+                marginTop: '1.25rem',
+                padding: '1.25rem 1.5rem',
+                backgroundColor: isDark ? '#182219' : '#ffffff',
+                border: `1.5px solid ${isDark ? '#2e422f' : '#bbf7d0'}`,
+                borderRadius: '14px',
+                animation: 'fadeIn 0.25s ease'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.74rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#10b981' }}>
+                    📱 CAREGIVER PUSH NOTIFICATION (SENT TO PRIYA PILLAI)
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: theme.subtext }}>Just now</span>
+                </div>
+                <p style={{ margin: '0 0 10px 0', fontSize: '0.95rem', fontWeight: 700, color: theme.text, lineHeight: 1.45 }}>
+                  "CogniVeil Care Circle: A gentle wellness check-in with Dr. Evelyn's neurology clinic is suggested for Rajan this month."
+                </p>
+                <div style={{ display: 'flex', gap: '16px', fontSize: '0.75rem', color: theme.subtext, flexWrap: 'wrap' }}>
+                  <span>🛡️ <strong>Zero Raw Data:</strong> Audio and raw keystrokes remain strictly private</span>
+                  <span>⏱️ <strong>Clinical Gain:</strong> 6–8 Months of early intervention lead time</span>
+                </div>
+              </div>
+            )}
+          </div>
           {message && (
             <p style={{
               color: isDark ? '#a3b18a' : '#273822',

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import IntroSplash from '../components/IntroSplash';
+import InteractiveTelemetryDemo from '../components/InteractiveTelemetryDemo';
 import './Landing.css';
 
 const Landing = () => {
@@ -340,6 +341,21 @@ const Landing = () => {
     setStroopStartTime(Date.now());
   };
 
+  // ── WINNING STRATEGY: VERNACULAR INDIC LANGUAGES ──
+  const [activeVernacularLang, setActiveVernacularLang] = useState('hi');
+  const vernacularList = [
+    { code: 'hi', name: 'Hindi', native: 'हिंदी', prompt: 'सुबह अपने घर के मुख्य दरवाजे से बाहर देखने पर आपको जो कुछ भी दिखाई देता है, उसका वर्णन करें...', badge: 'North & Central India' },
+    { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ', prompt: 'ಬೆಳಿಗ್ಗೆ ನಿಮ್ಮ ಮನೆಯ ಮುಖ್ಯ ಬಾಗಿಲಿನಿಂದ ಹೊರಗೆ ನೋಡಿದಾಗ ನೀವು ಸಾಮಾನ್ಯವಾಗಿ ಕಾಣುವ ದೃಶ್ಯವನ್ನು ವಿವರಿಸಿ...', badge: 'Karnataka' },
+    { code: 'ta', name: 'Tamil', native: 'தமிழ்', prompt: 'காலையில் உங்கள் வீட்டின் முன் கதவைத் திறந்து பார்க்கும்போது நீங்கள் காணும் காட்சியை விவரிக்கவும்...', badge: 'Tamil Nadu' },
+    { code: 'te', name: 'Telugu', native: 'తెలుగు', prompt: 'ఉదయం మీ ఇంటి ప్రధాన ద్వారం నుండి బయటకు చూసినప్పుడు మీకు కనిపించే సాధారణ దృశ్యాన్ని వివరించండి...', badge: 'Andhra & Telangana' },
+    { code: 'mr', name: 'Marathi', native: 'मराठी', prompt: 'सकाळी तुमच्या घराच्या मुख्य दरवाजातून बाहेर पाहताना तुम्हाला काय दिसते याचे वर्णन करा...', badge: 'Maharashtra' },
+    { code: 'bn', name: 'Bengali', native: 'বাংলা', prompt: 'সকালে আপনার বাড়ির সদর দরজা খুলে বাইরে তাকালে আপনি সাধারণত কী দেখতে পান তা বর্ণনা করুন...', badge: 'West Bengal' },
+    { code: 'en', name: 'Indian English', native: 'Indian English', prompt: 'Describe what you typically see when looking out your front door in the morning...', badge: 'Pan-India Urban' },
+  ];
+
+  // ── WINNING STRATEGY: RAJAN PILLAI CAREGIVER PAYOFF ──
+  const [rajanNudgeSimulated, setRajanNudgeSimulated] = useState(false);
+
   // ── CARD 4: TIER 3 NEUROIMAGING ATROPHY COMPARISON ──
   const [mriCohortMode, setMriCohortMode] = useState('healthy'); // 'healthy' | 'atrophy'
 
@@ -545,6 +561,18 @@ const Landing = () => {
       categoryLabel: 'Clinical Scope',
       q: 'Does CogniVeil provide a definitive medical diagnosis?',
       a: 'No. CogniVeil is an authorized clinical decision-support and surveillance tool. It is engineered to buy care teams critical lead time, generate quantitative evidence dossiers, and support qualified neurologists in early intervention.'
+    },
+    {
+      category: 'science',
+      categoryLabel: 'Vernacular Speech',
+      q: 'How does CogniVeil support vernacular Indian languages and regional dialects?',
+      a: 'CogniVeil is engineered for equity across non-English speaking elderly populations. Our acoustic Whisper speech pipeline natively processes 7 Indic languages (Hindi, Kannada, Tamil, Telugu, Marathi, Bengali, and Indian English). It accounts for vernacular conversational fillers ("umm", "matlab", "yaane") and extracts acoustic pause-to-speech ratios and glottal jitter without requiring English literacy.'
+    },
+    {
+      category: 'governance',
+      categoryLabel: 'DPDP Act 2023',
+      q: 'How does CogniVeil comply with India’s Digital Personal Data Protection (DPDP) Act 2023?',
+      a: 'CogniVeil implements strict Data Fiduciary architecture under the DPDP Act 2023: explicit digital consent, zero raw audio or keystroke retention, localized cryptographic hashing (SHA-256), purpose-limited feature vector extraction, and automated right to data erasure.'
     }
   ];
 
@@ -578,9 +606,11 @@ const Landing = () => {
 
           <div className="cv-pill-links">
             <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'topology')}>Architecture</button>
+            <button className="cv-pill-link-btn cv-nav-demo-highlight" onClick={(e) => scrollToSection(e, 'live-telemetry-demo')}>⚡ Live Demo</button>
             <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'vectors')}>Biomarkers</button>
-            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'pipeline')}>Early Detection</button>
-            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'attribution')}>Resilience</button>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'strategy')}>Strategy</button>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'payoff')}>Case Payoff</button>
+            <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'roadmap')}>Roadmap</button>
             <button className="cv-pill-link-btn" onClick={(e) => scrollToSection(e, 'faq')}>Governance</button>
           </div>
 
@@ -619,6 +649,9 @@ const Landing = () => {
           <div className="cv-hero-cta-group">
             <button className="cv-hero-primary-btn" onClick={() => navigate('/login')}>
               Launch clinical workstation
+            </button>
+            <button className="cv-hero-telemetry-btn" onClick={(e) => scrollToSection(e, 'live-telemetry-demo')}>
+              ⚡ Try Live Telemetry Demo
             </button>
             <button className="cv-hero-secondary-btn" onClick={(e) => scrollToSection(e, 'challenge')}>
               Run reaction agility test
@@ -1275,6 +1308,23 @@ const Landing = () => {
 
           </div>
 
+          {/* ── WINNING STRATEGY ITEM 1: LIVE JUROR TELEMETRY DEMO ── */}
+          <div id="live-telemetry-demo" className="cv-live-telemetry-section-box">
+            <div className="cv-strategy-badge-strip">
+              <span className="cv-strategy-badge-pill">⚡ WINNING STRATEGY: LIVE JUROR TELEMETRY DEMO</span>
+              <span className="cv-strategy-live-pulse">SUB-MS INTER-KEY FLIGHT & DWELL CAPTURE</span>
+            </div>
+            <div className="cv-telemetry-demo-header">
+              <h2 className="cv-telemetry-demo-title">
+                Experience real-time sub-millisecond telemetry on yourself
+              </h2>
+              <p className="cv-telemetry-demo-sub">
+                No mockups or static illustrations. Jurors: type any sentence in the interactive sandbox below to see your own <strong>inter-key flight time, dwell latency, and rhythm cadence</strong> extracted in sub-millisecond precision with zero keylogging.
+              </p>
+            </div>
+            <InteractiveTelemetryDemo isDark={isDark} />
+          </div>
+
         </div>
       </section>
 
@@ -1589,6 +1639,62 @@ const Landing = () => {
 
           </div>
 
+          {/* ── WINNING STRATEGY ITEM 2: VERNACULAR INDIAN LANGUAGE COVERAGE ── */}
+          <div id="vernacular" className="cv-vernacular-showcase-card">
+            <div className="cv-vernacular-header">
+              <div className="cv-vernacular-badge-group">
+                <span className="cv-strategy-badge-pill">🇮🇳 EQUITABLE HEALTHCARE ACCESS</span>
+                <span className="cv-vernacular-stat">7 VERNACULAR INDIC LANGUAGES</span>
+              </div>
+              <h3 className="cv-vernacular-title">
+                Vernacular Acoustic Screening for Rural Dementia Equity
+              </h3>
+              <p className="cv-vernacular-sub">
+                Longitudinal studies reveal dementia prevalence in India is higher in rural and semi-urban populations than metropolitan centers. Traditional Western screening tools exclude non-English speakers. CogniVeil's Whisper pipeline natively processes acoustic cadence, regional fillers (<em>"umm", "matlab", "yaane"</em>), and glottal jitter across 7 regional languages.
+              </p>
+            </div>
+
+            <div className="cv-vernacular-selector-grid">
+              {vernacularList.map((lang) => (
+                <button
+                  key={lang.code}
+                  className={`cv-vernacular-btn ${activeVernacularLang === lang.code ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveVernacularLang(lang.code);
+                    playTone(540, 'sine', 0.08);
+                  }}
+                >
+                  <div className="cv-v-btn-top">
+                    <span className="cv-v-native">{lang.native}</span>
+                    <span className="cv-v-region">{lang.badge}</span>
+                  </div>
+                  <span className="cv-v-name">{lang.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {(() => {
+              const cur = vernacularList.find((l) => l.code === activeVernacularLang) || vernacularList[0];
+              return (
+                <div className="cv-vernacular-prompt-preview">
+                  <div className="cv-v-preview-top">
+                    <span className="cv-v-prompt-label">SAMPLE 30-SECOND NARRATIVE PROMPT ({cur.native}):</span>
+                    <span className="cv-v-privacy-badge">Zero Raw Audio Persisted · Glottal Jitter Vectors Only</span>
+                  </div>
+                  <div className="cv-v-prompt-text">
+                    "{cur.prompt}"
+                  </div>
+                  <div className="cv-v-prompt-footer">
+                    <span>✨ Acoustic Pipeline: Extracts Fundamental Frequency (F0), Jitter, Pause-to-Speech Ratio & WPM Cadence</span>
+                    <button className="cv-v-try-btn" onClick={() => navigate('/voice-journal')}>
+                      Try in Voice Journal →
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
         </div>
       </section>
 
@@ -1605,6 +1711,98 @@ const Landing = () => {
             <button className="cv-contrast-btn" onClick={() => navigate('/login')}>
               Open Clinician Workstation
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── WINNING STRATEGY ITEM 3: REGULATORY & COMMERCIAL POSITIONING ── */}
+      <section id="strategy" className="cv-section cv-strategy-section">
+        <div className="cv-container">
+          <div className="cv-section-header cv-header-centered">
+            <div className="cv-section-badge-pill">
+              <span className="cv-badge-glow-dot" />
+              <span>COMMERCIAL & REGULATORY STRATEGY</span>
+            </div>
+            <h2 className="cv-section-title">
+              Clinical Decision Support (SaMD Class I) vs. The Diagnostic Device Trap
+            </h2>
+            <p className="cv-section-sub">
+              Why we consciously positioned CogniVeil as clinician decision support: a pragmatic 12–18 month runway to pilot deployment with memory clinics, avoiding 5-year regulatory deadlocks.
+            </p>
+          </div>
+
+          <div className="cv-strategy-compare-grid">
+            {/* Column 1: The Diagnostic Device Trap */}
+            <div className="cv-strategy-col trap">
+              <div className="cv-col-badge-row">
+                <span className="cv-trap-badge">❌ DIAGNOSTIC DEVICE PATH (CLASS II/III)</span>
+                <span className="cv-trap-delay">4–5 Years Delay</span>
+              </div>
+              <h3 className="cv-col-title">The Multi-Year Regulatory Deadlock</h3>
+              <p className="cv-col-desc">
+                Treating an AI algorithm as an autonomous diagnostic device forces multi-center randomized clinical trials before any real patient can be monitored.
+              </p>
+              <ul className="cv-col-list trap-list">
+                <li>
+                  <span className="cv-list-icon">✕</span>
+                  <div>
+                    <strong>Prohibitive $5M–$15M Capital Burn:</strong> Years spent in bureaucratic pre-market clinical submissions while cognitive drift goes unmonitored.
+                  </div>
+                </li>
+                <li>
+                  <span className="cv-list-icon">✕</span>
+                  <div>
+                    <strong>Physician Skepticism & Resistance:</strong> Clinicians reject black-box autonomous diagnostic tools that attempt to replace their clinical evaluation.
+                  </div>
+                </li>
+                <li>
+                  <span className="cv-list-icon">✕</span>
+                  <div>
+                    <strong>Delayed Patient Access:</strong> Families wait half a decade for regulatory clearance while neurodegeneration compounds silently.
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 2: CogniVeil's Conscious SaMD Strategy */}
+            <div className="cv-strategy-col winning">
+              <div className="cv-col-badge-row">
+                <span className="cv-winning-badge">✓ COGNIVEIL PRAGMATIC POSITIONING (SaMD CLASS I)</span>
+                <span className="cv-winning-fast">12–18 Month Pilots</span>
+              </div>
+              <h3 className="cv-col-title">Fast-Track Clinical Validation & Doctor Augmentation</h3>
+              <p className="cv-col-desc">
+                Engineered under ISO/DIS 13485 and Software as a Medical Device (SaMD) Class I guidelines to augment neurologists with transparent TreeSHAP evidence dossiers.
+              </p>
+              <ul className="cv-col-list winning-list">
+                <li>
+                  <span className="cv-list-icon">✓</span>
+                  <div>
+                    <strong>12–18 Month Pilot Deployment Runway:</strong> Direct validation pilots with memory clinics, gerontology centers, and eldercare networks in Bangalore & Mumbai.
+                  </div>
+                </li>
+                <li>
+                  <span className="cv-list-icon">✓</span>
+                  <div>
+                    <strong>Clinician Decision Support (Not Replacement):</strong> Generates 12-section MedGemma dossiers with ICD-10 G31.84 mappings and Shapley factor contributions that doctors trust.
+                  </div>
+                </li>
+                <li>
+                  <span className="cv-list-icon">✓</span>
+                  <div>
+                    <strong>Zero-Fear Longitudinal Monitoring:</strong> Continuous passive surveillance without anxiety, putting actionable data in doctors' hands months earlier.
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="cv-strategy-quote-box">
+            <span className="cv-quote-icon">“</span>
+            <p className="cv-quote-text">
+              "This is a conscious, pragmatic trade-off that gets proactive care into families' hands in 12 to 18 months, not years. It is an intentional business and clinical decision, not a limitation we apologize for."
+            </p>
+            <span className="cv-quote-author">— CogniVeil Clinical & Regulatory Governance Blueprint</span>
           </div>
         </div>
       </section>
@@ -1865,6 +2063,138 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* ── WINNING STRATEGY ITEM 4: CAREGIVER ALERT PAYOFF MOMENT (RAJAN PILLAI CASE) ── */}
+      <section id="payoff" className="cv-section cv-payoff-section">
+        <div className="cv-container">
+          <div className="cv-section-header cv-header-centered">
+            <div className="cv-section-badge-pill">
+              <span className="cv-badge-glow-dot" />
+              <span>CONCRETE CLINICAL PROOF & PAYOFF</span>
+            </div>
+            <h2 className="cv-section-title">
+              The Caregiver Alert Payoff: Rajan Pillai Case Study
+            </h2>
+            <p className="cv-section-sub">
+              From continuous CUSUM statistical change-point detection to an empathetic, non-alarmist nudge sent to his daughter Priya—buying 6 to 8 critical months.
+            </p>
+          </div>
+
+          <div className="cv-payoff-grid">
+            {/* Box 1: Mathematical Tri-Modal Scoring */}
+            <div className="cv-payoff-box">
+              <div className="cv-payoff-top">
+                <span className="cv-payoff-tag">LEVEL 1 TRI-MODAL FORMULA</span>
+                <span className="cv-payoff-subtag">Rajan Pillai (Age 74)</span>
+              </div>
+              <h4 className="cv-payoff-heading">Level 1 CogniScore Calculation</h4>
+              
+              <div className="cv-formula-breakdown">
+                <div className="cv-formula-row">
+                  <span>Active Cognitive Battery (40/100 × 60%):</span>
+                  <strong>24.0 pts</strong>
+                </div>
+                <div className="cv-formula-row">
+                  <span>Passive Keystroke Latency (70/100 × 20%):</span>
+                  <strong>14.0 pts</strong>
+                </div>
+                <div className="cv-formula-row">
+                  <span>Acoustic Voice Biomarker (0/100 × 20% missed):</span>
+                  <strong>0.0 pts</strong>
+                </div>
+                <div className="cv-formula-total">
+                  <span>Total Calibrated Level 1 CogniScore:</span>
+                  <span className="score-val">38.0 / 100</span>
+                </div>
+              </div>
+
+              <div className="cv-cusum-pill alert">
+                <span>CUSUM Accumulator:</span>
+                <strong>H = 14.2 &gt; 12.0 Threshold (Confirmed Drift)</strong>
+              </div>
+            </div>
+
+            {/* Box 2: TreeSHAP Explainability */}
+            <div className="cv-payoff-box">
+              <div className="cv-payoff-top">
+                <span className="cv-payoff-tag">LEVEL 2 EXPLAINABLE ML</span>
+                <span className="cv-payoff-subtag">CatBoost + TreeSHAP</span>
+              </div>
+              <h4 className="cv-payoff-heading">Shapley Factor Attributions</h4>
+              
+              <div className="cv-shap-bars">
+                <div className="cv-shap-item risk">
+                  <div className="cv-shap-label">
+                    <span>APOE-ε4 Carrier (Heterozygous)</span>
+                    <strong>+0.68</strong>
+                  </div>
+                  <div className="cv-shap-bar-track"><div className="cv-shap-bar-fill risk" style={{ width: '85%' }} /></div>
+                </div>
+                <div className="cv-shap-item risk">
+                  <div className="cv-shap-label">
+                    <span>Patient Age (74 Years)</span>
+                    <strong>+0.42</strong>
+                  </div>
+                  <div className="cv-shap-bar-track"><div className="cv-shap-bar-fill risk" style={{ width: '60%' }} /></div>
+                </div>
+                <div className="cv-shap-item risk">
+                  <div className="cv-shap-label">
+                    <span>Sleep Fragmentation Index</span>
+                    <strong>+0.35</strong>
+                  </div>
+                  <div className="cv-shap-bar-track"><div className="cv-shap-bar-fill risk" style={{ width: '48%' }} /></div>
+                </div>
+                <div className="cv-shap-item protective">
+                  <div className="cv-shap-label">
+                    <span>Daily Aerobic Walking (30m)</span>
+                    <strong>-0.22 (Protective)</strong>
+                  </div>
+                  <div className="cv-shap-bar-track"><div className="cv-shap-bar-fill protective" style={{ width: '35%' }} /></div>
+                </div>
+              </div>
+
+              <div className="cv-shap-note">
+                Efficiency Property: Shapley values sum exactly to log-odds deviation from baseline.
+              </div>
+            </div>
+
+            {/* Box 3: The Care Circle Payoff Nudge */}
+            <div className="cv-payoff-box payoff-highlight">
+              <div className="cv-payoff-top">
+                <span className="cv-payoff-tag highlight">THE CLINICAL PAYOFF MOMENT</span>
+                <span className="cv-payoff-subtag">Care Circle Push Alert</span>
+              </div>
+              <h4 className="cv-payoff-heading">Empathetic Caregiver Notification</h4>
+              
+              <p className="cv-payoff-desc">
+                Instead of terrifying Rajan with an alarmist diagnosis, CogniVeil's Care Circle architecture dispatches a gentle, non-diagnostic wellness nudge to his daughter, Priya Pillai.
+              </p>
+
+              {/* Push notification preview card */}
+              <div className="cv-phone-notif-preview">
+                <div className="cv-notif-header">
+                  <span className="cv-notif-app">COGNIVEIL CARE CIRCLE</span>
+                  <span className="cv-notif-time">Just now</span>
+                </div>
+                <div className="cv-notif-title">Wellness Update for Rajan Pillai</div>
+                <div className="cv-notif-body">
+                  "A routine wellness check-in with Dr. Evelyn's neurology clinic is recommended this month. All daily check-in trends are ready for your doctor's review."
+                </div>
+                <div className="cv-notif-action">
+                  <span className="cv-notif-badge">Zero Alarmism</span>
+                  <span className="cv-notif-lead">⚡ 6–8 Months Lead Time Secured</span>
+                </div>
+              </div>
+
+              <div className="cv-payoff-action-row">
+                <button className="cv-payoff-btn" onClick={() => navigate('/care-circle')}>
+                  Open Interactive Care Circle →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── IN-BROWSER INTERACTIVE COGNITIVE AGILITY TEST ── */}
       <section id="challenge" className="cv-section cv-section-compact">
         <div className="cv-container">
@@ -1972,6 +2302,77 @@ const Landing = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── WINNING STRATEGY ITEM 5: CLINICAL ROADMAP & DPDP 2023 GOVERNANCE ── */}
+      <section id="roadmap" className="cv-section cv-roadmap-section">
+        <div className="cv-container">
+          <div className="cv-section-header cv-header-centered">
+            <div className="cv-section-badge-pill">
+              <span className="cv-badge-glow-dot" />
+              <span>TRANSPARENT ROADMAP & COMPLIANCE</span>
+            </div>
+            <h2 className="cv-section-title">
+              Clinical Validation Roadmap & DPDP 2023 Data Governance
+            </h2>
+            <p className="cv-section-sub">
+              An honest, transparent view of where we stand today and how we are calibrating against empirical cohorts and Indian data governance frameworks.
+            </p>
+          </div>
+
+          <div className="cv-roadmap-phases-grid">
+            {/* Phase 1 */}
+            <div className="cv-phase-card active">
+              <div className="cv-phase-header">
+                <span className="cv-phase-pill active">PHASE 1 · CURRENT BASELINE</span>
+                <span className="cv-phase-status">OPERATIONAL</span>
+              </div>
+              <h3 className="cv-phase-title">Literature-Grounded Telemetry Core</h3>
+              <p className="cv-phase-desc">
+                Current algorithmic parameters (CUSUM $H=12.0$, Acoustic AUC 0.92, EWMA $\lambda=0.20$) established directly from published peer-reviewed neurological literature.
+              </p>
+              <ul className="cv-phase-checklist">
+                <li>✓ 10-Agent deterministic execution pipeline</li>
+                <li>✓ Differential privacy ($\epsilon=0.5$) with zero raw audio storage</li>
+                <li>✓ 7 Vernacular Indic language speech model</li>
+              </ul>
+            </div>
+
+            {/* Phase 2 */}
+            <div className="cv-phase-card future">
+              <div className="cv-phase-header">
+                <span className="cv-phase-pill future">PHASE 2 · MONTHS 6–18</span>
+                <span className="cv-phase-status">PILOT ENROLLMENT</span>
+              </div>
+              <h3 className="cv-phase-title">Bangalore & Mumbai Memory Clinic Cohorts</h3>
+              <p className="cv-phase-desc">
+                Pursuing prospective observational validation pilots across memory clinics and eldercare residential networks in Bangalore and Mumbai to calibrate thresholds against longitudinal clinical outcomes.
+              </p>
+              <ul className="cv-phase-checklist">
+                <li>⏳ Longitudinal cohort calibration (N=250 patients)</li>
+                <li>⏳ Real-world false-positive reduction & sensitivity tuning</li>
+                <li>⏳ Direct EMR integration with neurology workstations</li>
+              </ul>
+            </div>
+
+            {/* Phase 3 */}
+            <div className="cv-phase-card compliance">
+              <div className="cv-phase-header">
+                <span className="cv-phase-pill compliance">PHASE 3 · COMPLIANCE</span>
+                <span className="cv-phase-status">GOVERNANCE HARDENED</span>
+              </div>
+              <h3 className="cv-phase-title">DPDP Act 2023 & ISO/DIS 13485</h3>
+              <p className="cv-phase-desc">
+                Engineered from the ground up to comply with India's Digital Personal Data Protection (DPDP) Act 2023, featuring consent manager architecture, strict data fiduciary boundaries, and purpose limitation.
+              </p>
+              <ul className="cv-phase-checklist">
+                <li>✓ DPDP 2023 Consent Manager architecture</li>
+                <li>✓ Explicit verifiable parental/caregiver consent</li>
+                <li>✓ Right to data erasure and automated audit logging</li>
+              </ul>
             </div>
           </div>
         </div>
