@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { grantConsent } from '../utils/api';
+import AccessibilityBar from '../components/AccessibilityBar';
 
 const Consent = () => {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
-  const [agreedPassive, setAgreedPassive] = useState(true);
-  const [agreedVoice, setAgreedVoice] = useState(true);
-  const [agreedCalib, setAgreedCalib] = useState(true);
+  const { theme, isDark, toggleTheme } = useTheme();
+  const [hasConsented, setHasConsented] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const allChecked = agreedPassive && agreedVoice && agreedCalib;
-
   const handleGrantConsent = async () => {
-    if (!allChecked) {
-      setError('Please review and acknowledge all consent items to proceed.');
+    if (!hasConsented) {
+      setError('Please review and acknowledge the consent agreement to proceed.');
       return;
     }
     setSubmitting(true);
@@ -32,15 +31,210 @@ const Consent = () => {
     }
   };
 
-  return (
-    <div style={styles.page}>
-      <div style={styles.bgGlow1} />
-      <div style={styles.bgGlow2} />
-      <div style={styles.bgGrid} />
+  const styles = {
+    wrapper: {
+      minHeight: '100vh',
+      backgroundColor: theme.bg,
+      color: theme.text,
+      fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+      transition: 'background-color 0.25s ease, color 0.25s ease',
+      display: 'flex',
+      flexDirection: 'column',
+    },
+    page: {
+      flex: 1,
+      padding: '2.5rem 1.5rem 4rem 1.5rem',
+      maxWidth: '820px',
+      width: '100%',
+      margin: '0 auto',
+      boxSizing: 'border-box',
+      position: 'relative',
+    },
+    header: {
+      textAlign: 'center',
+      marginBottom: '2rem',
+      position: 'relative',
+    },
+    topActions: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '1rem',
+    },
+    badge: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      backgroundColor: isDark ? 'rgba(163, 177, 138, 0.16)' : '#e8efe6',
+      color: isDark ? '#a3b18a' : '#273822',
+      border: `1px solid ${isDark ? '#526e49' : '#b8cab5'}`,
+      padding: '0.4rem 0.95rem',
+      borderRadius: '20px',
+      fontSize: '0.72rem',
+      fontWeight: '800',
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+    },
+    themeToggleBtn: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '0.38rem 0.85rem',
+      borderRadius: '20px',
+      border: `1px solid ${theme.border}`,
+      backgroundColor: theme.cardBg,
+      color: theme.text,
+      fontSize: '0.76rem',
+      fontWeight: '700',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+    },
+    title: {
+      fontSize: '2.1rem',
+      fontWeight: '800',
+      color: theme.text,
+      letterSpacing: '-0.025em',
+      margin: '0 0 0.65rem 0',
+      lineHeight: '1.2',
+    },
+    subtitle: {
+      color: theme.subtext,
+      fontSize: '0.94rem',
+      lineHeight: '1.6',
+      maxWidth: '650px',
+      margin: '0 auto',
+    },
+    errorBox: {
+      backgroundColor: isDark ? 'rgba(217, 119, 127, 0.15)' : '#faebec',
+      border: `1px solid ${isDark ? '#d9777f' : '#fecaca'}`,
+      color: isDark ? '#fca5a5' : '#943840',
+      padding: '0.85rem 1.1rem',
+      borderRadius: '12px',
+      marginBottom: '1.5rem',
+      fontSize: '0.88rem',
+      fontWeight: '600',
+    },
+    cardsGrid: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1.25rem',
+      marginBottom: '2rem',
+    },
+    card: {
+      backgroundColor: theme.cardBg,
+      border: `1px solid ${theme.border}`,
+      borderRadius: '18px',
+      padding: '1.75rem',
+      boxShadow: isDark ? '0 4px 20px rgba(0, 0, 0, 0.35)' : '0 4px 20px rgba(39, 56, 34, 0.05)',
+      transition: 'all 0.2s ease',
+    },
+    cardHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      marginBottom: '0.75rem',
+    },
+    cardTitle: {
+      fontSize: '1.15rem',
+      fontWeight: '800',
+      color: theme.text,
+      margin: 0,
+      letterSpacing: '-0.01em',
+    },
+    cardText: {
+      fontSize: '0.9rem',
+      color: isDark ? '#c8d4c2' : '#334730',
+      lineHeight: '1.65',
+      margin: '0 0 1rem 0',
+    },
+    privacyHighlight: {
+      backgroundColor: isDark ? '#162018' : '#eaf1e8',
+      border: `1px solid ${isDark ? 'rgba(163, 177, 138, 0.2)' : '#d2ded0'}`,
+      borderRadius: '10px',
+      padding: '0.75rem 1rem',
+      fontSize: '0.84rem',
+      color: isDark ? '#a3b18a' : '#273822',
+      fontWeight: '600',
+      lineHeight: '1.5',
+    },
+    actionBox: {
+      backgroundColor: theme.cardBg,
+      border: `1.5px solid ${isDark ? '#3d5236' : '#b8cab5'}`,
+      borderRadius: '18px',
+      padding: '1.65rem',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: '1.25rem',
+      boxShadow: isDark ? '0 8px 30px rgba(0, 0, 0, 0.45)' : '0 4px 24px rgba(39, 56, 34, 0.08)',
+    },
+    actionInfo: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '6px',
+      flex: 1,
+      minWidth: '280px',
+    },
+    checkboxRow: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '0.75rem',
+      cursor: 'pointer',
+      userSelect: 'none',
+    },
+    checkbox: {
+      accentColor: isDark ? '#a3b18a' : '#273822',
+      width: '20px',
+      height: '20px',
+      cursor: 'pointer',
+      marginTop: '2px',
+      flexShrink: 0,
+    },
+    checkboxLabel: {
+      fontSize: '0.92rem',
+      fontWeight: '700',
+      color: theme.text,
+      lineHeight: '1.5',
+    },
+    actionInfoSub: {
+      color: theme.subtext,
+      fontSize: '0.8rem',
+      fontWeight: '600',
+      paddingLeft: '2.1rem',
+    },
+    submitBtn: {
+      backgroundColor: isDark ? '#3d5236' : '#273822',
+      color: '#ffffff',
+      border: `1px solid ${isDark ? '#526e49' : '#1b2818'}`,
+      borderRadius: '12px',
+      padding: '0.9rem 1.85rem',
+      fontSize: '0.95rem',
+      fontWeight: '800',
+      transition: 'all 0.2s ease',
+      boxShadow: isDark ? '0 4px 14px rgba(61, 82, 54, 0.4)' : '0 4px 14px rgba(39, 56, 34, 0.25)',
+      fontFamily: "'Inter', sans-serif",
+    },
+  };
 
-      <div style={styles.container}>
+  return (
+    <div style={styles.wrapper}>
+      {/* Top Accessibility & Theme Control Bar */}
+      <AccessibilityBar />
+
+      <div style={styles.page}>
         <div style={styles.header}>
-          <div style={styles.badge}>ETHICAL AI & TRANSPARENCY PROTOCOL</div>
+          <div style={styles.topActions}>
+            <div style={styles.badge}>Ethical AI & Transparency Protocol</div>
+            <button 
+              onClick={toggleTheme} 
+              style={styles.themeToggleBtn}
+              title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+            >
+              {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
+            </button>
+          </div>
+
           <h1 style={styles.title}>Informed Consent & Privacy</h1>
           <p style={styles.subtitle}>
             CogniVeil is designed with transparent digital biomarker tracking. 
@@ -62,15 +256,6 @@ const Consent = () => {
             <div style={styles.privacyHighlight}>
               <strong>Privacy Guarantee:</strong> We <u>never</u> record typed text or key content. Only millisecond intervals are computed.
             </div>
-            <label style={styles.checkboxRow}>
-              <input
-                type="checkbox"
-                checked={agreedPassive}
-                onChange={(e) => setAgreedPassive(e.target.checked)}
-                style={styles.checkbox}
-              />
-              <span style={styles.checkboxLabel}>I consent to passive motor timing collection</span>
-            </label>
           </div>
 
           {/* Card 2 */}
@@ -84,15 +269,6 @@ const Consent = () => {
             <div style={styles.privacyHighlight}>
               <strong>Zero Audio Retention:</strong> Raw voice audio is processed on-device / in-memory and discarded after acoustic biomarker extraction.
             </div>
-            <label style={styles.checkboxRow}>
-              <input
-                type="checkbox"
-                checked={agreedVoice}
-                onChange={(e) => setAgreedVoice(e.target.checked)}
-                style={styles.checkbox}
-              />
-              <span style={styles.checkboxLabel}>I consent to voice biomarker analysis</span>
-            </label>
           </div>
 
           {/* Card 3 */}
@@ -106,200 +282,42 @@ const Consent = () => {
             <div style={styles.privacyHighlight}>
               <strong>False-Alarm Shield:</strong> During your first 7 days, drift alerts are muted while your personalized baseline is established.
             </div>
+          </div>
+        </div>
+
+        {/* Action Row with Single Unified Consent Checkbox */}
+        <div style={styles.actionBox}>
+          <div style={styles.actionInfo}>
             <label style={styles.checkboxRow}>
               <input
                 type="checkbox"
-                checked={agreedCalib}
-                onChange={(e) => setAgreedCalib(e.target.checked)}
+                checked={hasConsented}
+                onChange={(e) => setHasConsented(e.target.checked)}
                 style={styles.checkbox}
               />
-              <span style={styles.checkboxLabel}>I understand the 7-day calibration requirement</span>
+              <span style={styles.checkboxLabel}>
+                I consent to passive motor timing collection, voice biomarker analysis, and the 7-day baseline calibration protocol.
+              </span>
             </label>
-          </div>
-        </div>
-
-        {/* Action Row */}
-        <div style={styles.actionBox}>
-          <div style={styles.actionInfo}>
-            <span style={styles.actionInfoTitle}>Ready to begin your baseline week</span>
-            <span style={styles.actionInfoSub}>You can revoke consent or request data export at any time in Settings.</span>
+            <span style={styles.actionInfoSub}>
+              You can revoke consent or request data export at any time in Settings.
+            </span>
           </div>
           <button
             onClick={handleGrantConsent}
-            disabled={!allChecked || submitting}
+            disabled={!hasConsented || submitting}
             style={{
               ...styles.submitBtn,
-              opacity: !allChecked || submitting ? 0.6 : 1,
-              cursor: !allChecked || submitting ? 'not-allowed' : 'pointer'
+              opacity: !hasConsented || submitting ? 0.6 : 1,
+              cursor: !hasConsented || submitting ? 'not-allowed' : 'pointer'
             }}
           >
-            {submitting ? 'Recording Consent...' : 'Confirm & Begin Baseline Week →'}
+            {submitting ? 'Recording Consent...' : 'I Consent and Continue'}
           </button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
-};
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    backgroundColor: '#f4f6fc',
-    padding: '3rem 1.5rem',
-    fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
-    color: '#1e293b',
-  },
-  container: {
-    maxWidth: '780px',
-    margin: '0 auto',
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '2rem',
-  },
-  badge: {
-    display: 'inline-block',
-    backgroundColor: '#f5f3ff',
-    color: '#4338CA',
-    border: '1px solid #c7d2fe',
-    padding: '0.35rem 0.9rem',
-    borderRadius: '20px',
-    fontSize: '0.72rem',
-    fontWeight: '800',
-    letterSpacing: '0.08em',
-    marginBottom: '0.75rem',
-  },
-  title: {
-    fontSize: '2rem',
-    fontWeight: '800',
-    color: '#1e293b',
-    letterSpacing: '-0.02em',
-    margin: '0 0 0.5rem 0',
-  },
-  subtitle: {
-    color: '#64748b',
-    fontSize: '0.92rem',
-    lineHeight: '1.6',
-    maxWidth: '650px',
-    margin: '0 auto',
-  },
-  errorBox: {
-    backgroundColor: '#fee2e2',
-    border: '1px solid #fecaca',
-    color: '#dc2626',
-    padding: '0.75rem 1rem',
-    borderRadius: '10px',
-    marginBottom: '1.5rem',
-    fontSize: '0.88rem',
-    fontWeight: '600',
-  },
-  cardsGrid: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1.25rem',
-    marginBottom: '2rem',
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    border: '1px solid #eef2f6',
-    borderRadius: '20px',
-    padding: '1.75rem',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-  },
-  cardHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    marginBottom: '0.75rem',
-  },
-  cardIcon: {
-    fontSize: '1.4rem',
-  },
-  cardTitle: {
-    fontSize: '1.1rem',
-    fontWeight: '800',
-    color: '#1e293b',
-    margin: 0,
-  },
-  cardText: {
-    fontSize: '0.88rem',
-    color: '#475569',
-    lineHeight: '1.6',
-    margin: '0 0 1rem 0',
-  },
-  privacyHighlight: {
-    backgroundColor: '#f8fafc',
-    border: '1px solid #e2e8f0',
-    borderRadius: '10px',
-    padding: '0.65rem 0.9rem',
-    fontSize: '0.82rem',
-    color: '#4338CA',
-    marginBottom: '1rem',
-    fontWeight: '600',
-  },
-  checkboxRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.65rem',
-    cursor: 'pointer',
-    userSelect: 'none',
-  },
-  checkbox: {
-    accentColor: '#4338CA',
-    width: '18px',
-    height: '18px',
-    cursor: 'pointer',
-  },
-  checkboxLabel: {
-    fontSize: '0.85rem',
-    fontWeight: '700',
-    color: '#1e293b',
-  },
-  actionBox: {
-    backgroundColor: '#ffffff',
-    border: '1px solid #c7d2fe',
-    borderRadius: '20px',
-    padding: '1.5rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '1rem',
-    boxShadow: '0 4px 20px rgba(67, 56, 202, 0.06)',
-  },
-  actionInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  actionInfoTitle: {
-    color: '#1e293b',
-    fontSize: '0.95rem',
-    fontWeight: '800',
-  },
-  actionInfoSub: {
-    color: '#64748b',
-    fontSize: '0.78rem',
-    fontWeight: '600',
-  },
-  submitBtn: {
-    backgroundColor: '#4338CA',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '0.85rem 1.75rem',
-    fontSize: '0.92rem',
-    fontWeight: '800',
-    transition: 'all 0.2s',
-    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.25)',
-  },
 };
 
 export default Consent;

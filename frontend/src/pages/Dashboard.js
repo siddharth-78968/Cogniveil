@@ -434,10 +434,25 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Consolidated Baseline & Routine Progress Banner */}
+            {/* Baseline Calibration Progress */}
+            <div style={{ ...styles.baselineProgressBox, backgroundColor: theme.statBoxBg, borderColor: theme.border }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.92rem', fontWeight: '700', color: theme.text }}>
+                  {history.length < 7 ? `Day ${Math.max(history.length, 1)} of 7: Baseline Calibration Mode` : `Personal Baseline Established`}
+                </span>
+                <span style={{ fontSize: '0.85rem', color: theme.subtext, fontWeight: '600' }}>
+                  {history.length < 7 ? `${Math.round((history.length / 7) * 100)}% Calibrated` : `${history.length} Sessions Logged`}
+                </span>
+              </div>
+              <div style={{ ...styles.progressBarTrack, height: '8px' }}>
+                <div style={{ ...styles.progressBarFill, width: `${Math.min((history.length / 7) * 100, 100)}%` }} />
+              </div>
+            </div>
+
+            {/* DementAI "Buy Patients Time" Lead Time Benefit Callout */}
             <div style={{
-              marginTop: '1.25rem',
-              padding: '1.1rem 1.4rem',
+              marginTop: '1rem',
+              padding: '0.95rem 1.4rem',
               borderRadius: '14px',
               backgroundColor: theme.statBoxBg,
               border: `1px solid ${theme.border}`,
