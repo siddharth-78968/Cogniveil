@@ -505,7 +505,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
-    marginLeft: '260px',
     overflowY: 'auto'
   },
   topHeader: {
